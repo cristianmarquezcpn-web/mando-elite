@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>MANDO ELITE - PUSH & SEGURIDAD</title>
+    <title>MANDO ELITE - FULL ALERTS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -27,12 +27,12 @@
         .msg { padding: 8px; border-radius: 10px; font-size: 13px; max-width: 90%; }
         .msg-me { background: var(--primary); color: white; align-self: flex-end; }
         .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; }
-        #alerta-mando { position: fixed; top: 10px; left: 5%; width: 90%; z-index: 100000; padding: 15px; border-radius: 15px; background: var(--urgente); color: white; font-weight: 800; display: none; text-align: center; }
+        #alerta-mando { position: fixed; top: 0; left: 0; width: 100%; z-index: 100000; padding: 20px; background: var(--urgente); color: white; font-weight: 800; display: none; text-align: center; font-size: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 <div id="alerta-mando"></div>
-<audio id="snd-mando" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+<audio id="snd-mando" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 <div id="bloqueo-mando" style="position:fixed; inset:0; background:white; z-index:50000; display:flex; align-items:center; justify-content:center;"><div style="text-align:center"><h2 style="color:var(--primary)">SISTEMA ELITE</h2><input type="tel" id="pass-mando" placeholder="CLAVE" style="width:140px; text-align:center; font-size:24px;" onkeypress="if(event.key==='Enter') loginMando()"><br><br><button class="btn-pro" style="width:100%" onclick="loginMando()">ACCEDER</button></div></div>
 <div class="main-container">
     <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
@@ -74,15 +74,27 @@
     let usuarioActivo = "", todasLasTareas = {}, appCargada = false;
 
     function solicitarPermisoNotificaciones() {
-        if (!("Notification" in window)) return;
-        Notification.requestPermission();
+        if ("Notification" in window) Notification.requestPermission();
     }
 
-    function dispararNotificacion(titulo, cuerpo) {
+    function dispararAlerta(titulo, cuerpo) {
+        // Alerta visual en pantalla (Banner Rojo)
+        const alerta = document.getElementById('alerta-mando');
+        alerta.innerHTML = `⚠️ ${titulo}<br><small>${cuerpo}</small>`;
+        alerta.style.display = 'block';
+        
+        // Sonido y Vibración
+        const sonido = document.getElementById('snd-mando');
+        sonido.currentTime = 0;
+        sonido.play().catch(e => console.log("Audio bloqueado por navegador"));
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+
+        // Notificación de sistema (Banner superior de Android/iOS)
         if (Notification.permission === "granted") {
-            new Notification(titulo, { body: cuerpo, icon: "https://cdn-icons-png.flaticon.com/512/1827/1827347.png" });
+            new Notification(titulo, { body: cuerpo });
         }
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+        setTimeout(() => alerta.style.display = 'none', 6000);
     }
 
     function loginMando() {
@@ -93,38 +105,34 @@
             document.getElementById('bloqueo-mando').style.display = 'none';
             document.getElementById('user-tag').innerText = "RANGO: " + usuarioActivo;
             solicitarPermisoNotificaciones();
-            
-            // Jerarquía de botones
             if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'COORD') document.getElementById('btn-caja').style.display = 'block';
             if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'DIRECTORES') document.getElementById('f-dest').style.display = 'block';
-            
-            // SOLO ADMINISTRACION PUEDE BORRAR TODO
             if(usuarioActivo === 'ADMINISTRACION') {
                 document.getElementById('btn-borrado-total').style.display = 'block'; 
                 document.getElementById('btn-del-chat').style.display = 'block'; 
             }
-            
             iniciarApp();
         } else { alert("Acceso Denegado"); }
     }
 
     function iniciarApp() {
+        // Escuchar nuevas tareas
         db.ref('/pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const t = snap.val();
+            // Notificar si es para todos o para mí (y yo no la creé)
             if(t.emisor !== usuarioActivo && (t.destino === usuarioActivo || t.destino === 'TODOS')) {
-                dispararNotificacion(`NUEVA MISIÓN: ${t.emisor}`, t.desc);
-                document.getElementById('alerta-mando').innerHTML = `⚠️ NUEVA TAREA DE ${t.emisor}`;
-                document.getElementById('alerta-mando').style.display = 'block';
-                document.getElementById('snd-mando').play().catch(()=>{});
-                setTimeout(() => document.getElementById('alerta-mando').style.display = 'none', 5000);
+                dispararAlerta(`NUEVA MISIÓN DE ${t.emisor}`, t.desc);
             }
         });
+
+        // Escuchar mensajes de chat
         db.ref('/chat_pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const m = snap.val();
-            if(m.u !== usuarioActivo) dispararNotificacion(`MENSAJE DE ${m.u}`, m.t);
+            if(m.u !== usuarioActivo) dispararAlerta(`MENSAJE DE ${m.u}`, m.t);
         });
+
         db.ref('/pizarra').on('value', snap => { todasLasTareas = snap.val() || {}; renderPizarra(); appCargada = true; });
         db.ref('/chat_pizarra').limitToLast(50).on('value', snap => {
             const msgs = snap.val() || {};
