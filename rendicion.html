@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Esencial Salud - CAJA DUAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root { --cobalto: #1a2a6c; --oro: #f1c40f; --verde: #2ecc71; --rojo: #e74c3c; --azul: #3498db; --gris: #f0f2f5; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--gris); margin: 0; padding: 10px; color: #333; }
+        #bloqueo { position: fixed; inset:0; background: linear-gradient(135deg, var(--cobalto) 0%, #2a48ad 100%); z-index:10000; display:flex; align-items:center; justify-content:center; color:white; }
+        .glass-panel { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; backdrop-filter: blur(10px); text-align: center; border: 1px solid rgba(255,255,255,0.2); width: 90%; max-width: 350px; }
+        .header { background: white; padding: 15px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 12px; }
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .stat-card { background: white; padding: 15px; border-radius: 18px; border-bottom: 5px solid var(--cobalto); box-shadow: 0 4px 10px rgba(0,0,0,0.02); position: relative; }
+        .stat-card .val { font-size: 18px; font-weight: 800; color: var(--cobalto); display: block; margin: 5px 0; }
+        .btn-edit-pres { position: absolute; top: 8px; right: 8px; background: #f1f5f9; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; display: none; font-size: 10px; }
+        .card { background: white; padding: 15px; border-radius: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 12px; }
+        .btn { padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 10px; text-transform: uppercase; color: white; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border-radius: 10px; border: 1px solid #eee; background: #f8fafc; font-size: 14px; box-sizing: border-box; }
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .chart-box { height: 140px; position: relative; }
+        .tabla-scroll { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { text-align: left; padding: 10px; color: #94a3b8; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 10px; border-bottom: 1px solid #f8fafc; }
+        .tag-sede { background: #eef2ff; color: #4e66f8; padding: 3px 8px; border-radius: 10px; font-size: 8px; font-weight: bold; }
+        @media (max-width: 600px) { .grid-stats, .charts-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div id="bloqueo">
+    <div class="glass-panel">
+        <h2 style="margin:0 0 15px 0">SEGURIDAD CAJA</h2>
+        <input type="tel" id="pass-caja" placeholder="Clave..." style="text-align:center;" onkeypress="if(event.key==='Enter') login()">
+        <button class="btn" style="background:var(--oro); color:black; width:100%; margin-top:15px; height:45px;" onclick="login()">ACCEDER AL TESORO 💰</button>
+    </div>
+</div>
+
+<div class="header">
+    <div>
+        <h2 style="margin:0; font-size:16px; color:var(--cobalto)">💰 GESTIÓN CAJA</h2>
+        <small id="user-display" style="color:var(--verde); font-weight:800;"></small>
+    </div>
+    <div style="display:flex; gap:5px;">
+        <button class="btn" style="background:var(--verde)" onclick="exportarExcel()">📊 EXCEL</button>
+        <button class="btn" style="background:var(--azul)" onclick="window.location.href='index.html'">🚩 MANDO</button>
+        <button id="admin-reset" class="btn" style="background:var(--rojo); display:none;" onclick="resetCaja()">⚠️ RESET</button>
+    </div>
+</div>
+
+<div class="grid-stats">
+    <div class="stat-card" style="border-color: var(--azul)">
+        <button class="btn-edit-pres" id="edit-c" onclick="cambiarPresupuesto('pres_cordoba')">✏️</button>
+        <h5 style="margin:0; font-size:12px; color:#64748b">Av. Córdoba</h5>
+        <span class="val" id="saldo-cordoba">$ 0</span>
+        <small id="total-cordoba" style="color:#cbd5e1; font-size:9px;"></small>
+    </div>
+    <div class="stat-card" style="border-color: var(--oro)">
+        <button class="btn-edit-pres" id="edit-m" onclick="cambiarPresupuesto('pres_mayo')">✏️</button>
+        <h5 style="margin:0; font-size:12px; color:#64748b">25 de Mayo</h5>
+        <span class="val" id="saldo-mayo">$ 0</span>
+        <small id="total-mayo" style="color:#cbd5e1; font-size:9px;"></small>
+    </div>
+</div>
+
+<div class="charts-container">
+    <div class="card"><div style="font-size:9px; font-weight:bold; color:#94a3b8; text-align:center;">CÓRDOBA</div><div class="chart-box"><canvas id="chartCordoba"></canvas></div></div>
+    <div class="card"><div style="font-size:9px; font-weight:bold; color:#94a3b8; text-align:center;">25 DE MAYO</div><div class="chart-box"><canvas id="chartMayo"></canvas></div></div>
+</div>
+
+<div class="card" style="border-left: 8px solid var(--cobalto);">
+    <h4 style="margin:0 0 10px 0; font-size:14px;">💸 NUEVO GASTO</h4>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        <input type="date" id="g-fecha">
+        <select id="g-sede"><option value="CORDOBA">Av. Córdoba</option><option value="MAYO">25 de Mayo</option></select>
+    </div>
+    <div style="display:flex; gap:5px; align-items: flex-end;">
+        <div style="flex:1">
+            <small style="font-size:9px; color:#94a3b8">Categoría</small>
+            <select id="g-cat"></select>
+        </div>
+        <button class="btn" style="background:var(--cobalto); height:38px; width:40px;" onclick="nuevaCat()">+</button>
+    </div>
+    <input type="text" id="g-concepto" placeholder="¿Qué se compró?" style="margin-top:8px">
+    <input type="number" id="g-monto" placeholder="Monto $" style="margin-top:8px">
+    <div style="margin-top:12px; display:flex; gap:10px;">
+        <button class="btn" style="background:#64748b; flex:1;" id="btn-foto" onclick="subirTicket()">📸 TICKET</button>
+        <button class="btn" style="background:var(--cobalto); flex:2;" onclick="guardarGasto()">GUARDAR GASTO ✨</button>
+    </div>
+    <input type="hidden" id="g-url-foto">
+</div>
+
+<div class="card">
+    <h4 style="margin:0 0 10px 0; color:var(--cobalto); font-size:14px;">📋 ÚLTIMOS MOVIMIENTOS</h4>
+    <div class="tabla-scroll">
+        <table>
+            <thead><tr><th>FECHA</th><th>DETALLE</th><th>MONTO</th><th>ACCIÓN</th></tr></thead>
+            <tbody id="lista-gastos"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Configuración Firebase (La misma del Index)
+    const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let usuario = "";
+    let baseData = { pres_cordoba: 800000, pres_mayo: 300000, gastos: {}, categorias: ["LIMPIEZA", "INSUMOS", "VARIOS"] };
+    let chartC = null, chartM = null;
+    document.getElementById('g-fecha').valueAsDate = new Date();
+
+    function login() {
+        const p = document.getElementById('pass-caja').value;
+        const CLAVES = { "1234": "SECRETARIA", "1515": "DIRECTORES", "1986": "ADMIN", "1586": "COORD" };
+        if(CLAVES[p]) {
+            usuario = CLAVES[p];
+            document.getElementById('bloqueo').style.display = 'none';
+            document.getElementById('user-display').innerText = usuario;
+            if(usuario === 'ADMIN' || usuario === 'COORD') {
+                document.getElementById('admin-reset').style.display = 'block';
+                document.getElementById('edit-c').style.display = 'block';
+                document.getElementById('edit-m').style.display = 'block';
+            }
+            iniciarApp();
+        } else { alert("Clave denegada"); }
+    }
+
+    function iniciarApp() {
+        db.ref('/contabilidad_sedes').on('value', snap => {
+            const data = snap.val() || {};
+            baseData.gastos = data.gastos || {};
+            baseData.categorias = data.categorias || ["LIMPIEZA", "INSUMOS", "VARIOS"];
+            baseData.pres_cordoba = Number(data.pres_cordoba) || 800000;
+            baseData.pres_mayo = Number(data.pres_mayo) || 300000;
+            render();
+        });
+    }
+
+    function render() {
+        const hoy = new Date();
+        const mAct = hoy.getMonth(), aAct = hoy.getFullYear();
+        const todos = Object.keys(baseData.gastos).map(id => ({ id, ...baseData.gastos[id] }));
+        const gMes = todos.filter(g => {
+            const f = new Date(g.fechaFactura + "T12:00:00");
+            return f.getMonth() === mAct && f.getFullYear() === aAct;
+        });
+
+        const sumaC = gMes.filter(g => g.sede === 'CORDOBA').reduce((a, b) => a + Number(b.monto), 0);
+        const sumaM = gMes.filter(g => g.sede === 'MAYO').reduce((a, b) => a + Number(b.monto), 0);
+
+        document.getElementById('saldo-cordoba').innerText = `$ ${(baseData.pres_cordoba - sumaC).toLocaleString()}`;
+        document.getElementById('total-cordoba').innerText = `Asignado: $ ${baseData.pres_cordoba.toLocaleString()}`;
+        document.getElementById('saldo-mayo').innerText = `$ ${(baseData.pres_mayo - sumaM).toLocaleString()}`;
+        document.getElementById('total-mayo').innerText = `Asignado: $ ${baseData.pres_mayo.toLocaleString()}`;
+
+        document.getElementById('g-cat').innerHTML = baseData.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        const tabla = document.getElementById('lista-gastos');
+        tabla.innerHTML = todos.sort((a,b) => new Date(b.fechaFactura) - new Date(a.fechaFactura)).slice(0, 15).map(g => `
+            <tr>
+                <td><b>${g.fechaFactura.split('-').reverse().join('/')}</b><br><span class="tag-sede">${g.sede}</span></td>
+                <td><b style="color:var(--cobalto)">${g.cat}</b><br><small style="color:#64748b">${g.concepto}</small></td>
+                <td style="color:var(--rojo); font-weight:800;">-$${Number(g.monto).toLocaleString()}</td>
+                <td>
+                    <div style="display:flex; gap:3px;">
+                        ${g.foto ? `<button class="btn" style="background:var(--azul); padding:5px;" onclick="window.open('${g.foto}')">🖼️</button>` : ''}
+                        ${(usuario === 'ADMIN' || usuario === 'COORD') ? `<button class="btn" style="background:#f1f5f9; color:#94a3b8; padding:5px;" onclick="eliminarGasto('${g.id}')">🗑️</button>` : ''}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        actualizarGraficoSede('chartCordoba', gMes.filter(g => g.sede === 'CORDOBA'), 'chartC');
+        actualizarGraficoSede('chartMayo', gMes.filter(g => g.sede === 'MAYO'), 'chartM');
+    }
+
+    function actualizarGraficoSede(canvasId, gastos, instanceKey) {
+        const porCat = {};
+        gastos.forEach(g => porCat[g.cat] = (porCat[g.cat] || 0) + Number(g.monto));
+        const ctx = document.getElementById(canvasId);
+        if(instanceKey === 'chartC' && chartC) chartC.destroy();
+        if(instanceKey === 'chartM' && chartM) chartM.destroy();
+        const newChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat), backgroundColor: ['#1a2a6c', '#f1c40f', '#2ecc71', '#e74c3c', '#3498db', '#9b59b6'] }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+        if(instanceKey === 'chartC') chartC = newChart; else chartM = newChart;
+    }
+
+    function guardarGasto() {
+        const m = document.getElementById('g-monto').value, c = document.getElementById('g-concepto').value;
+        if(!m || !c) return alert("Completa monto y concepto");
+        db.ref('/contabilidad_sedes/gastos').push({
+            monto: Number(m), concepto: c, sede: document.getElementById('g-sede').value,
+            cat: document.getElementById('g-cat').value, fechaFactura: document.getElementById('g-fecha').value,
+            foto: document.getElementById('g-url-foto').value || "", fechaCarga: new Date().toISOString()
+        }).then(() => {
+            document.getElementById('g-monto').value = ""; document.getElementById('g-concepto').value = "";
+            document.getElementById('btn-foto').style.background = "#64748b"; document.getElementById('btn-foto').innerText = "📸 TICKET";
+            document.getElementById('g-url-foto').value = "";
+        });
+    }
+
+    function cambiarPresupuesto(key) {
+        const n = prompt("Nuevo presupuesto:", baseData[key]);
+        if(n && !isNaN(n)) db.ref(`/contabilidad_sedes/${key}`).set(Number(n));
+    }
+
+    function resetCaja() { if(prompt("Escribe 'ELIMINAR' para borrar todo el historial:") === "ELIMINAR") db.ref('/contabilidad_sedes/gastos').remove(); }
+    function eliminarGasto(id) { if(confirm("¿Eliminar este registro?")) db.ref('/contabilidad_sedes/gastos/' + id).remove(); }
+    function nuevaCat() {
+        const n = prompt("Nombre de la nueva categoría:").toUpperCase().trim();
+        if(n && !baseData.categorias.includes(n)) db.ref('/contabilidad_sedes/categorias').set([...baseData.categorias, n]);
+    }
+
+    function subirTicket() {
+        const i = document.createElement('input'); i.type = 'file';
+        i.onchange = e => {
+            const f = new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset");
+            document.getElementById('btn-foto').innerText = "Cargando...";
+            fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`, { method: 'POST', body: f })
+            .then(r => r.json()).then(d => {
+                document.getElementById('g-url-foto').value = d.secure_url;
+                document.getElementById('btn-foto').style.background = "var(--verde)";
+                document.getElementById('btn-foto').innerText = "LISTO ✔";
+            });
+        }; i.click();
+    }
+
+    function exportarExcel() {
+        const g = Object.values(baseData.gastos).map(x => ({ Fecha: x.fechaFactura, Sede: x.sede, Categoria: x.cat, Detalle: x.concepto, Monto: x.monto }));
+        const ws = XLSX.utils.json_to_sheet(g);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Caja_Elite");
+        XLSX.writeFile(wb, "Reporte_Caja_Esencial.xlsx");
+    }
+</script>
+</body>
+</html>
