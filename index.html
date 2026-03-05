@@ -78,23 +78,23 @@
     }
 
     function dispararAlerta(titulo, cuerpo) {
-        // Alerta visual en pantalla (Banner Rojo)
+        // 1. Banner Rojo en Pantalla
         const alerta = document.getElementById('alerta-mando');
         alerta.innerHTML = `⚠️ ${titulo}<br><small>${cuerpo}</small>`;
         alerta.style.display = 'block';
         
-        // Sonido y Vibración
+        // 2. Sonido y Vibración (Forzado)
         const sonido = document.getElementById('snd-mando');
+        sonido.volume = 1.0;
         sonido.currentTime = 0;
-        sonido.play().catch(e => console.log("Audio bloqueado por navegador"));
-        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+        sonido.play().catch(e => console.log("Audio en espera de interacción"));
+        if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
 
-        // Notificación de sistema (Banner superior de Android/iOS)
+        // 3. Notificación de Sistema (Banner de Android/iOS)
         if (Notification.permission === "granted") {
-            new Notification(titulo, { body: cuerpo });
+            new Notification(titulo, { body: cuerpo, icon: "https://cdn-icons-png.flaticon.com/512/1827/1827347.png" });
         }
-
-        setTimeout(() => alerta.style.display = 'none', 6000);
+        setTimeout(() => alerta.style.display = 'none', 8000);
     }
 
     function loginMando() {
@@ -116,24 +116,32 @@
     }
 
     function iniciarApp() {
-        // Escuchar nuevas tareas
+        // --- DETECTOR DE MISIONES (SIN FILTROS RAROS) ---
         db.ref('/pizarra').limitToLast(1).on('child_added', snap => {
-            if(!appCargada) return;
+            if(!appCargada) return; // Evita que suene todo lo viejo al entrar
             const t = snap.val();
-            // Notificar si es para todos o para mí (y yo no la creé)
-            if(t.emisor !== usuarioActivo && (t.destino === usuarioActivo || t.destino === 'TODOS')) {
+            // Si el mensaje NO es mío, disparo alerta
+            if(t.emisor !== usuarioActivo) {
                 dispararAlerta(`NUEVA MISIÓN DE ${t.emisor}`, t.desc);
             }
         });
 
-        // Escuchar mensajes de chat
+        // --- DETECTOR DE CHAT ---
         db.ref('/chat_pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const m = snap.val();
-            if(m.u !== usuarioActivo) dispararAlerta(`MENSAJE DE ${m.u}`, m.t);
+            if(m.u !== usuarioActivo) {
+                dispararAlerta(`MENSAJE DE ${m.u}`, m.t);
+            }
         });
 
-        db.ref('/pizarra').on('value', snap => { todasLasTareas = snap.val() || {}; renderPizarra(); appCargada = true; });
+        // Sincronización de datos
+        db.ref('/pizarra').on('value', snap => { 
+            todasLasTareas = snap.val() || {}; 
+            renderPizarra(); 
+            appCargada = true; // Aquí activamos los sensores después de la primera carga
+        });
+
         db.ref('/chat_pizarra').limitToLast(50).on('value', snap => {
             const msgs = snap.val() || {};
             document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}"><b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}</div>`).join('');
@@ -144,7 +152,7 @@
     function renderPizarra() {
         const container = document.getElementById('lista-tareas'); container.innerHTML = "";
         const fDest = document.getElementById('f-dest').value; const fEst = document.getElementById('f-est').value;
-        Object.keys(todasLasTareas).forEach(id => {
+        Object.keys(todasLasTareas).sort((a,b)=>todasLasTareas[b].fecha - todasLasTareas[a].fecha).forEach(id => {
             const t = todasLasTareas[id];
             if(usuarioActivo !== 'ADMINISTRACION' && usuarioActivo !== 'DIRECTORES') { if(t.destino !== usuarioActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return; }
             else if (fDest !== 'TODOS' && t.destino !== fDest) return;
@@ -160,7 +168,7 @@
     function borradoTotal() { if(confirm("¿BORRAR TODA LA PIZARRA?")) db.ref('/pizarra').remove(); }
     function borrarChat() { if(confirm("¿Limpiar chat?")) db.ref('/chat_pizarra').remove(); }
     function enviarFeed(id) { const m = document.getElementById('feed-'+id).value; if(m) { db.ref(`/pizarra/${id}/feedback`).push({ u: usuarioActivo, msg: m }); document.getElementById('feed-'+id).value=""; } }
-    function crearTarea() { const d = document.getElementById('t-desc').value; if(!d) return; db.ref('/pizarra').push({ desc: d, vence: document.getElementById('t-vence').value||'S/D', prio: document.getElementById('t-prio-val').value, destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, estado: 'PENDIENTE', drive: document.getElementById('t-drive-val').value }); document.getElementById('t-desc').value=""; }
+    function crearTarea() { const d = document.getElementById('t-desc').value; if(!d) return; db.ref('/pizarra').push({ desc: d, vence: document.getElementById('t-vence').value||'S/D', prio: document.getElementById('t-prio-val').value, destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, estado: 'PENDIENTE', drive: document.getElementById('t-drive-val').value, fecha: Date.now() }); document.getElementById('t-desc').value=""; }
     function enviarMsg() { const v = document.getElementById('chat-in').value; if(v) { db.ref('/chat_pizarra').push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } }
     function subirArchivo(id, n) { const i = document.createElement('input'); i.type='file'; i.onchange=e=>{ const f=new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset"); fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`,{method:'POST',body:f}).then(r=>r.json()).then(d=>{ db.ref(`/pizarra/${id}`).update({adjunto:d.secure_url}); db.ref('/chat_pizarra').push({u:"SISTEMA",t:`📎 ADJUNTO en "${n}"`}); }); }; i.click(); }
 </script>
