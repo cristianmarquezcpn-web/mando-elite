@@ -2,11 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>MANDO ELITE - V3.0</title>
+    <title>MANDO ELITE - V4.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         :root { --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; --oro: #f59e0b; }
@@ -26,23 +25,14 @@
         .msg { padding: 8px; border-radius: 10px; font-size: 13px; max-width: 90%; }
         .msg-me { background: var(--primary); color: white; align-self: flex-end; }
         .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; }
-        
-        /* BANNER MEJORADO */
-        #alerta-mando { 
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 100000; 
-            padding: 20px; background: var(--urgente); color: white; 
-            font-weight: 800; display: none; text-align: center; font-size: 18px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
-            animation: slideDown 0.5s ease;
-        }
-        @keyframes slideDown { from {transform: translateY(-100%)} to {transform: translateY(0)} }
+        #alerta-mando { position: fixed; top: 0; left: 0; width: 100%; z-index: 100000; padding: 20px; background: var(--urgente); color: white; font-weight: 800; display: none; text-align: center; font-size: 18px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
 
 <div id="alerta-mando" onclick="this.style.display='none'">
     <span id="alerta-txt"></span>
-    <div style="font-size: 10px; margin-top: 5px;">(TOCA PARA CERRAR)</div>
+    <div style="font-size: 10px; margin-top: 5px;">(TOCA PARA OCULTAR)</div>
 </div>
 
 <audio id="snd-mando" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -78,15 +68,15 @@
         <button class="btn-pro" style="width:100%; margin-top:10px;" onclick="crearTarea()">LANZAR MISIÓN ✨</button>
     </div>
     <div style="display:flex; gap:10px;">
-        <select id="f-dest" onchange="renderPizarra()" style="display:none; flex:1"><option value="TODOS">📍 Todos</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option></select>
-        <select id="f-est" onchange="renderPizarra()" style="flex:1"><option value="ACTIVAS">Activas</option><option value="CONFIRMADO">Historial</option></select>
+        <select id="f-dest" onchange="renderPizarraLocal()" style="display:none; flex:1"><option value="TODOS">📍 Todos</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option></select>
+        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1"><option value="ACTIVAS">Activas</option><option value="CONFIRMADO">Historial</option></select>
     </div>
     <div id="lista-tareas"></div>
 </div>
 
 <div class="sidebar">
     <div style="padding:15px; font-weight:800; background:var(--primary); color:white; display:flex; justify-content:space-between; align-items:center;">
-        <span>CHAT DE MANDO</span>
+        <span>CHAT</span>
         <button id="btn-del-chat" style="display:none; background:rgba(255,0,0,0.5); border:none; color:white; font-size:9px; padding:5px; border-radius:5px;" onclick="borrarChat()">LIMPIAR</button>
     </div>
     <div id="chat-msgs" class="chat-content"></div>
@@ -95,34 +85,22 @@
         <button class="btn-pro" style="width: 50px;" onclick="enviarMsg()">></button>
     </div>
 </div>
+
 <script>
     const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let usuarioActivo = "", appCargada = false;
+    let usuarioActivo = "", appCargada = false, cacheTareas = {};
 
-    // --- FUNCIÓN DE ALERTA CORREGIDA ---
     function dispararAlerta(titulo, cuerpo) {
         const banner = document.getElementById('alerta-mando');
-        const txt = document.getElementById('alerta-txt');
-        
-        txt.innerHTML = `<strong>${titulo}</strong><br>${cuerpo}`;
+        document.getElementById('alerta-txt').innerHTML = `⚠️ ${titulo}<br>${cuerpo}`;
         banner.style.display = 'block';
-        
         const sonido = document.getElementById('snd-mando');
         sonido.currentTime = 0;
-        sonido.play().catch(() => console.log("Audio bloqueado"));
-
+        sonido.play().catch(() => {});
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-
-        if (Notification.permission === "granted") {
-            new Notification(titulo, { body: cuerpo });
-        }
-
-        // AUTO-CIERRE SEGURO EN 6 SEGUNDOS
-        setTimeout(() => { 
-            banner.style.display = 'none'; 
-        }, 6000);
+        setTimeout(() => { banner.style.display = 'none'; }, 6000);
     }
 
     function loginMando() {
@@ -132,8 +110,6 @@
             usuarioActivo = CLAVES[val];
             document.getElementById('bloqueo-mando').style.display = 'none';
             document.getElementById('user-tag').innerText = "RANGO: " + usuarioActivo;
-            if ("Notification" in window) Notification.requestPermission();
-            
             if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'COORD') document.getElementById('btn-caja').style.display = 'block';
             if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'DIRECTORES') document.getElementById('f-dest').style.display = 'block';
             if(usuarioActivo === 'ADMINISTRACION') {
@@ -145,15 +121,13 @@
     }
 
     function iniciarApp() {
-        // 1. CARGA INICIAL (Silenciosa)
-        db.ref('/pizarra').once('value').then(snap => {
-            renderPizarra(snap.val());
-            
-            // 2. ACTIVAR SENSORES DESPUÉS DE LA CARGA
-            setTimeout(() => { appCargada = true; }, 2000);
+        db.ref('/pizarra').on('value', snap => {
+            const data = snap.val() || {};
+            cacheTareas = data;
+            renderPizarraLocal();
+            if(!appCargada) { appCargada = true; return; }
         });
 
-        // 3. ESCUCHAR NUEVAS TAREAS
         db.ref('/pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const t = snap.val();
@@ -162,17 +136,12 @@
             }
         });
 
-        // 4. ESCUCHAR CHAT
         db.ref('/chat_pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const m = snap.val();
-            if(m.u !== usuarioActivo) {
-                dispararAlerta(`CHAT: ${m.u}`, m.t);
-            }
+            if(m.u !== usuarioActivo) dispararAlerta(`CHAT: ${m.u}`, m.t);
         });
 
-        // REFRESCO EN TIEMPO REAL
-        db.ref('/pizarra').on('value', snap => { renderPizarra(snap.val()); });
         db.ref('/chat_pizarra').limitToLast(50).on('value', snap => {
             const msgs = snap.val() || {};
             document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}"><b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}</div>`).join('');
@@ -180,15 +149,14 @@
         });
     }
 
-    function renderPizarra(data) {
+    function renderPizarraLocal() {
         const container = document.getElementById('lista-tareas'); 
         container.innerHTML = "";
-        const tareas = data || {};
         const fDest = document.getElementById('f-dest').value;
         const fEst = document.getElementById('f-est').value;
         
-        Object.keys(tareas).reverse().forEach(id => {
-            const t = tareas[id];
+        Object.keys(cacheTareas).reverse().forEach(id => {
+            const t = cacheTareas[id];
             if(usuarioActivo !== 'ADMINISTRACION' && usuarioActivo !== 'DIRECTORES') {
                 if(t.destino !== usuarioActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return;
             } else if (fDest !== 'TODOS' && t.destino !== fDest) return;
@@ -196,20 +164,55 @@
             if(fEst === 'ACTIVAS' && t.estado === 'CONFIRMADO') return;
             if(fEst === 'CONFIRMADO' && t.estado !== 'CONFIRMADO') return;
 
-            const misVistos = t.vistos || {};
-            const yaVi = misVistos[usuarioActivo];
-            container.innerHTML += `<div class="task-card prio-${t.prio}"><div style="font-size:9px; color:#64748b; margin-bottom:5px;">${t.emisor} -> ${t.destino}</div><h3 style="margin:0 0 10px 0; font-size:15px;">${t.desc}</h3><div style="display:flex; gap:5px; margin-bottom:8px;">${t.drive ? `<button class="btn-pro" style="height:30px; background:var(--oro); flex:1;" onclick="window.open('${t.drive}')">DRIVE</button>` : ''}${t.adjunto ? `<button class="btn-pro" style="height:30px; background:var(--accent); flex:1;" onclick="window.open('${t.adjunto}')">DOC</button>` : ''}</div><div style="background:#f1f5f9; border-radius:8px; padding:8px; font-size:10px; margin-bottom:8px; max-height:60px; overflow-y:auto;">${t.feedback ? Object.values(t.feedback).map(f=>`<div><b>${f.u}:</b> ${f.msg}</div>`).join('') : ''}</div><div style="display:flex; gap:5px; margin-bottom:8px;"><input id="feed-${id}" placeholder="Nota..." style="flex:1; height:35px;"><button class="btn-pro" style="width: 40px; min-height:35px;" onclick="enviarFeed('${id}')">💬</button></div><div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;"><button class="btn-pro" style="background:${yaVi?'#f1f5f9':'#fff'}; color:${yaVi?'var(--verde)':'#64748b'}; border:1px solid #ccc;" onclick="marcarVisto('${id}')">${yaVi?'✔ VISTO':'VISTO'}</button><button class="btn-pro" style="background:var(--verde);" onclick="cambiarEst('${id}', 'CONFIRMADO')">LISTO</button></div><div style="display:flex; gap:5px; margin-top:8px;"><button class="btn-pro" style="background:#64748b; font-size:10px; height:30px; flex:1" onclick="subirArchivo('${id}', '${t.desc}')">ADJUNTAR</button>${(usuarioActivo==='ADMINISTRACION')?`<button class="btn-pro" style="background:var(--urgente); width:40px; min-height:30px;" onclick="eliminarTarea('${id}')">🗑</button>`:''}</div></div>`;
+            const yaVi = (t.vistos || {})[usuarioActivo];
+            container.innerHTML += `
+                <div class="task-card prio-${t.prio}">
+                    <div style="font-size:9px; color:#64748b; margin-bottom:5px;">VENCE: ${t.vence || 'S/D'} | DE: ${t.emisor}</div>
+                    <h3 style="margin:0 0 10px 0; font-size:15px;">${t.desc}</h3>
+                    <div style="display:flex; gap:5px; margin-bottom:8px;">
+                        ${t.drive ? `<button class="btn-pro" style="height:30px; background:var(--oro); flex:1;" onclick="window.open('${t.drive}')">DRIVE</button>` : ''}
+                        ${t.adjunto ? `<button class="btn-pro" style="height:30px; background:var(--accent); flex:1;" onclick="window.open('${t.adjunto}')">DOC</button>` : ''}
+                    </div>
+                    <div style="background:#f1f5f9; border-radius:8px; padding:8px; font-size:10px; margin-bottom:8px; max-height:60px; overflow-y:auto;">
+                        ${t.feedback ? Object.values(t.feedback).map(f=>`<div><b>${f.u}:</b> ${f.msg}</div>`).join('') : ''}
+                    </div>
+                    <div style="display:flex; gap:5px; margin-bottom:8px;">
+                        <input id="feed-${id}" placeholder="Nota..." style="flex:1; height:35px;">
+                        <button class="btn-pro" style="width: 40px; min-height:35px;" onclick="enviarFeed('${id}')">💬</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <button class="btn-pro" style="background:${yaVi?'#f1f5f9':'#fff'}; color:${yaVi?'var(--verde)':'#64748b'}; border:1px solid #ccc;" onclick="marcarVisto('${id}')">${yaVi?'✔ VISTO':'VISTO'}</button>
+                        <button class="btn-pro" style="background:var(--verde);" onclick="cambiarEst('${id}', 'CONFIRMADO')">LISTO</button>
+                    </div>
+                    <div style="display:flex; gap:5px; margin-top:8px;">
+                        <button class="btn-pro" style="background:#64748b; font-size:10px; height:30px; flex:1" onclick="subirArchivo('${id}', '${t.desc}')">ADJUNTAR</button>
+                        ${(usuarioActivo==='ADMINISTRACION')?`<button class="btn-pro" style="background:var(--urgente); width:40px; min-height:30px;" onclick="eliminarTarea('${id}')">🗑</button>`:''}
+                    </div>
+                </div>`;
         });
     }
 
-    // Funciones de acción (marcarVisto, cambiarEst, etc., se mantienen igual)
     function marcarVisto(id) { db.ref(`/pizarra/${id}/vistos/${usuarioActivo}`).set(true); }
     function cambiarEst(id, est) { if(confirm("¿Finalizar?")) db.ref(`/pizarra/${id}`).update({ estado: est }); }
     function eliminarTarea(id) { if(confirm("¿Eliminar?")) db.ref(`/pizarra/${id}`).remove(); }
     function borradoTotal() { if(confirm("¿BORRAR TODO?")) db.ref('/pizarra').remove(); }
     function borrarChat() { if(confirm("¿Limpiar chat?")) db.ref('/chat_pizarra').remove(); }
     function enviarFeed(id) { const m = document.getElementById('feed-'+id).value; if(m) { db.ref(`/pizarra/${id}/feedback`).push({ u: usuarioActivo, msg: m }); document.getElementById('feed-'+id).value=""; } }
-    function crearTarea() { const d = document.getElementById('t-desc').value; if(!d) return; db.ref('/pizarra').push({ desc: d, vence: document.getElementById('t-vence').value||'S/D', prio: document.getElementById('t-prio-val').value, destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, estado: 'PENDIENTE', drive: document.getElementById('t-drive-val').value }); document.getElementById('t-desc').value=""; }
+    function crearTarea() { 
+        const d = document.getElementById('t-desc').value; 
+        const v = document.getElementById('t-vence').value;
+        if(!d) return; 
+        db.ref('/pizarra').push({ 
+            desc: d, 
+            vence: v || 'S/D', 
+            prio: document.getElementById('t-prio-val').value, 
+            destino: document.getElementById('t-dest-val').value, 
+            emisor: usuarioActivo, 
+            estado: 'PENDIENTE', 
+            drive: document.getElementById('t-drive-val').value 
+        }); 
+        document.getElementById('t-desc').value=""; 
+    }
     function enviarMsg() { const v = document.getElementById('chat-in').value; if(v) { db.ref('/chat_pizarra').push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } }
     function subirArchivo(id, n) { const i = document.createElement('input'); i.type='file'; i.onchange=e=>{ const f=new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset"); fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`,{method:'POST',body:f}).then(r=>r.json()).then(d=>{ db.ref(`/pizarra/${id}`).update({adjunto:d.secure_url}); db.ref('/chat_pizarra').push({u:"SISTEMA",t:`📎 ADJUNTO en "${n}"`}); }); }; i.click(); }
 </script>
