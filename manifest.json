@@ -1,0 +1,15 @@
+{
+  "name": "MANDO ELITE",
+  "short_name": "MandoElite",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1a2a6c",
+  "theme_color": "#1a2a6c",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1827/1827347.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
