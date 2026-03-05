@@ -95,32 +95,34 @@
         <button class="btn-pro" style="width: 50px;" onclick="enviarMsg()">></button>
     </div>
 </div>
-
 <script>
     const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let usuarioActivo = "", appCargada = false;
 
+    // --- FUNCIÓN DE ALERTA CORREGIDA ---
     function dispararAlerta(titulo, cuerpo) {
-        // Banner Visual
         const banner = document.getElementById('alerta-mando');
-        document.getElementById('alerta-txt').innerHTML = `⚠️ ${titulo}<br>${cuerpo}`;
+        const txt = document.getElementById('alerta-txt');
+        
+        txt.innerHTML = `<strong>${titulo}</strong><br>${cuerpo}`;
         banner.style.display = 'block';
         
-        // Sonido y Vibración
         const sonido = document.getElementById('snd-mando');
         sonido.currentTime = 0;
-        sonido.play().catch(() => {});
+        sonido.play().catch(() => console.log("Audio bloqueado"));
+
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
 
-        // Notificación de Sistema
         if (Notification.permission === "granted") {
             new Notification(titulo, { body: cuerpo });
         }
 
-        // AUTO-CIERRE EN 6 SEGUNDOS
-        setTimeout(() => { banner.style.display = 'none'; }, 6000);
+        // AUTO-CIERRE SEGURO EN 6 SEGUNDOS
+        setTimeout(() => { 
+            banner.style.display = 'none'; 
+        }, 6000);
     }
 
     function loginMando() {
@@ -143,32 +145,34 @@
     }
 
     function iniciarApp() {
-        // SENSOR UNIFICADO: Escucha CUALQUIER cambio en la raíz
-        db.ref('/').on('value', snap => {
-            if(!appCargada) { appCargada = true; return; }
+        // 1. CARGA INICIAL (Silenciosa)
+        db.ref('/pizarra').once('value').then(snap => {
+            renderPizarra(snap.val());
+            
+            // 2. ACTIVAR SENSORES DESPUÉS DE LA CARGA
+            setTimeout(() => { appCargada = true; }, 2000);
         });
 
-        // SENSOR DE PIZARRA (Igual al del Chat)
+        // 3. ESCUCHAR NUEVAS TAREAS
         db.ref('/pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const t = snap.val();
             if(t.emisor !== usuarioActivo && (t.destino === usuarioActivo || t.destino === 'TODOS')) {
                 dispararAlerta(`MISION DE ${t.emisor}`, t.desc);
-                renderPizarra();
             }
         });
 
-        // SENSOR DE CHAT
+        // 4. ESCUCHAR CHAT
         db.ref('/chat_pizarra').limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const m = snap.val();
-            if(m.u !== usuarioActivo) dispararAlerta(`CHAT: ${m.u}`, m.t);
+            if(m.u !== usuarioActivo) {
+                dispararAlerta(`CHAT: ${m.u}`, m.t);
+            }
         });
 
-        // REFRESCAR PIZARRA
+        // REFRESCO EN TIEMPO REAL
         db.ref('/pizarra').on('value', snap => { renderPizarra(snap.val()); });
-        
-        // REFRESCAR CHAT
         db.ref('/chat_pizarra').limitToLast(50).on('value', snap => {
             const msgs = snap.val() || {};
             document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}"><b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}</div>`).join('');
@@ -177,7 +181,8 @@
     }
 
     function renderPizarra(data) {
-        const container = document.getElementById('lista-tareas'); container.innerHTML = "";
+        const container = document.getElementById('lista-tareas'); 
+        container.innerHTML = "";
         const tareas = data || {};
         const fDest = document.getElementById('f-dest').value;
         const fEst = document.getElementById('f-est').value;
@@ -197,6 +202,7 @@
         });
     }
 
+    // Funciones de acción (marcarVisto, cambiarEst, etc., se mantienen igual)
     function marcarVisto(id) { db.ref(`/pizarra/${id}/vistos/${usuarioActivo}`).set(true); }
     function cambiarEst(id, est) { if(confirm("¿Finalizar?")) db.ref(`/pizarra/${id}`).update({ estado: est }); }
     function eliminarTarea(id) { if(confirm("¿Eliminar?")) db.ref(`/pizarra/${id}`).remove(); }
