@@ -108,10 +108,12 @@
 </div>
 
 <script>
-    // Configuración Firebase (La misma del Index)
     const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // RUTA BLINDADA
+    const refCajaSegura = db.ref('/SISTEMA_MANDO/contabilidad_sedes');
 
     let usuario = "";
     let baseData = { pres_cordoba: 800000, pres_mayo: 300000, gastos: {}, categorias: ["LIMPIEZA", "INSUMOS", "VARIOS"] };
@@ -135,7 +137,7 @@
     }
 
     function iniciarApp() {
-        db.ref('/contabilidad_sedes').on('value', snap => {
+        refCajaSegura.on('value', snap => {
             const data = snap.val() || {};
             baseData.gastos = data.gastos || {};
             baseData.categorias = data.categorias || ["LIMPIEZA", "INSUMOS", "VARIOS"];
@@ -200,7 +202,7 @@
     function guardarGasto() {
         const m = document.getElementById('g-monto').value, c = document.getElementById('g-concepto').value;
         if(!m || !c) return alert("Completa monto y concepto");
-        db.ref('/contabilidad_sedes/gastos').push({
+        refCajaSegura.child('gastos').push({
             monto: Number(m), concepto: c, sede: document.getElementById('g-sede').value,
             cat: document.getElementById('g-cat').value, fechaFactura: document.getElementById('g-fecha').value,
             foto: document.getElementById('g-url-foto').value || "", fechaCarga: new Date().toISOString()
@@ -213,14 +215,17 @@
 
     function cambiarPresupuesto(key) {
         const n = prompt("Nuevo presupuesto:", baseData[key]);
-        if(n && !isNaN(n)) db.ref(`/contabilidad_sedes/${key}`).set(Number(n));
+        if(n && !isNaN(n)) refCajaSegura.child(key).set(Number(n));
     }
 
-    function resetCaja() { if(prompt("Escribe 'ELIMINAR' para borrar todo el historial:") === "ELIMINAR") db.ref('/contabilidad_sedes/gastos').remove(); }
-    function eliminarGasto(id) { if(confirm("¿Eliminar este registro?")) db.ref('/contabilidad_sedes/gastos/' + id).remove(); }
+    function resetCaja() { if(prompt("Escribe 'ELIMINAR' para borrar todo el historial:") === "ELIMINAR") refCajaSegura.child('gastos').remove(); }
+    function eliminarGasto(id) { if(confirm("¿Eliminar este registro?")) refCajaSegura.child('gastos/' + id).remove(); }
+    
     function nuevaCat() {
         const n = prompt("Nombre de la nueva categoría:").toUpperCase().trim();
-        if(n && !baseData.categorias.includes(n)) db.ref('/contabilidad_sedes/categorias').set([...baseData.categorias, n]);
+        if(n && !baseData.categorias.includes(n)) {
+            refCajaSegura.child('categorias').set([...baseData.categorias, n]);
+        }
     }
 
     function subirTicket() {

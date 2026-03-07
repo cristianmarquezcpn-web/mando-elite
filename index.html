@@ -96,6 +96,11 @@
     const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // REFERENCIAS CLAVE
+    const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
+    const refChat = db.ref('/SISTEMA_MANDO/chat');
+
     let usuarioActivo = "", appCargada = false, cacheTareas = {};
 
     function dispararAlerta(titulo, cuerpo) {
@@ -116,8 +121,16 @@
             usuarioActivo = CLAVES[val];
             document.getElementById('bloqueo-mando').style.display = 'none';
             document.getElementById('user-tag').innerText = "RANGO: " + usuarioActivo;
-            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'COORD') document.getElementById('btn-caja').style.display = 'block';
-            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'DIRECTORES') document.getElementById('f-dest').style.display = 'block';
+            
+            // CORRECCIÓN BOTÓN CAJA
+            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'COORD') {
+                document.getElementById('btn-caja').style.display = 'block';
+            }
+            
+            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'DIRECTORES') {
+                document.getElementById('f-dest').style.display = 'block';
+            }
+            
             if(usuarioActivo === 'ADMINISTRACION') {
                 document.getElementById('btn-borrado-total').style.display = 'block'; 
                 document.getElementById('btn-del-chat').style.display = 'block'; 
@@ -126,36 +139,49 @@
         } else { alert("Denegado"); }
     }
 
-    function iniciarApp() {
-        db.ref('/pizarra').on('value', snap => {
-            const data = snap.val() || {};
-            cacheTareas = data;
+function iniciarApp() {
+        // 1. Escucha general de cambios en la pizarra
+        refPizarra.on('value', snap => {
+            cacheTareas = snap.val() || {};
             renderPizarraLocal();
-            if(!appCargada) { appCargada = true; return; }
+            if(!appCargada) { appCargada = true; }
         });
 
-        db.ref('/pizarra').limitToLast(1).on('child_added', snap => {
+        // 2. ALERTA DE MISIÓN NUEVA (CORREGIDA)
+        refPizarra.limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const t = snap.val();
-            if(t.emisor !== usuarioActivo && (t.destino === usuarioActivo || t.destino === 'TODOS')) {
-                dispararAlerta(`MISION DE ${t.emisor}`, t.desc);
+            
+            // Si yo no soy el emisor...
+            if(t.emisor !== usuarioActivo) {
+                // ...y la misión es para mi rango o para TODOS
+                if(t.destino === usuarioActivo || t.destino === 'TODOS') {
+                    dispararAlerta(`MISION DE ${t.emisor}`, t.desc);
+                }
             }
         });
 
-        db.ref('/chat_pizarra').limitToLast(1).on('child_added', snap => {
+        // 3. ALERTA DE CHAT
+        refChat.limitToLast(1).on('child_added', snap => {
             if(!appCargada) return;
             const m = snap.val();
-            if(m.u !== usuarioActivo) dispararAlerta(`CHAT: ${m.u}`, m.t);
+            if(m.u !== usuarioActivo && m.u !== "SISTEMA") {
+                dispararAlerta(`CHAT: ${m.u}`, m.t);
+            }
         });
 
-        db.ref('/chat_pizarra').limitToLast(50).on('value', snap => {
+        // 4. Render del Chat
+        refChat.limitToLast(50).on('value', snap => {
             const msgs = snap.val() || {};
-            document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}"><b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}</div>`).join('');
+            document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => 
+                `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}
+                </div>`
+            ).join('');
             document.getElementById('chat-msgs').scrollTop = document.getElementById('chat-msgs').scrollHeight;
         });
     }
-
-    function renderPizarraLocal() {
+        function renderPizarraLocal() {
         const container = document.getElementById('lista-tareas'); 
         container.innerHTML = "";
         const fDest = document.getElementById('f-dest').value;
@@ -198,17 +224,21 @@
         });
     }
 
-    function marcarVisto(id) { db.ref(`/pizarra/${id}/vistos/${usuarioActivo}`).set(true); }
-    function cambiarEst(id, est) { if(confirm("¿Finalizar?")) db.ref(`/pizarra/${id}`).update({ estado: est }); }
-    function eliminarTarea(id) { if(confirm("¿Eliminar?")) db.ref(`/pizarra/${id}`).remove(); }
-    function borradoTotal() { if(confirm("¿BORRAR TODO?")) db.ref('/pizarra').remove(); }
-    function borrarChat() { if(confirm("¿Limpiar chat?")) db.ref('/chat_pizarra').remove(); }
-    function enviarFeed(id) { const m = document.getElementById('feed-'+id).value; if(m) { db.ref(`/pizarra/${id}/feedback`).push({ u: usuarioActivo, msg: m }); document.getElementById('feed-'+id).value=""; } }
+    function marcarVisto(id) { refPizarra.child(`${id}/vistos/${usuarioActivo}`).set(true); }
+    function cambiarEst(id, est) { if(confirm("¿Finalizar?")) refPizarra.child(id).update({ estado: est }); }
+    function eliminarTarea(id) { if(confirm("¿Eliminar?")) refPizarra.child(id).remove(); }
+    function borradoTotal() { if(confirm("¿BORRAR TODO?")) refPizarra.remove(); }
+    function borrarChat() { if(confirm("¿Limpiar chat?")) refChat.remove(); }
+    function enviarFeed(id) { 
+        const m = document.getElementById('feed-'+id).value; 
+        if(m) { refPizarra.child(`${id}/feedback`).push({ u: usuarioActivo, msg: m }); document.getElementById('feed-'+id).value=""; } 
+    }
+    
     function crearTarea() { 
         const d = document.getElementById('t-desc').value; 
         const v = document.getElementById('t-vence').value;
         if(!d) return; 
-        db.ref('/pizarra').push({ 
+        refPizarra.push({ 
             desc: d, 
             vence: v || 'S/D', 
             prio: document.getElementById('t-prio-val').value, 
@@ -219,8 +249,22 @@
         }); 
         document.getElementById('t-desc').value=""; 
     }
-    function enviarMsg() { const v = document.getElementById('chat-in').value; if(v) { db.ref('/chat_pizarra').push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } }
-    function subirArchivo(id, n) { const i = document.createElement('input'); i.type='file'; i.onchange=e=>{ const f=new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset"); fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`,{method:'POST',body:f}).then(r=>r.json()).then(d=>{ db.ref(`/pizarra/${id}`).update({adjunto:d.secure_url}); db.ref('/chat_pizarra').push({u:"SISTEMA",t:`📎 ADJUNTO en "${n}"`}); }); }; i.click(); }
+
+    function enviarMsg() { 
+        const v = document.getElementById('chat-in').value; 
+        if(v) { refChat.push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } 
+    }
+    
+    function subirArchivo(id, n) { 
+        const i = document.createElement('input'); i.type='file'; 
+        i.onchange=e=>{ 
+            const f=new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset"); 
+            fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`,{method:'POST',body:f}).then(r=>r.json()).then(d=>{ 
+                refPizarra.child(id).update({adjunto:d.secure_url}); 
+                refChat.push({u:"SISTEMA",t:`📎 ADJUNTO en "${n}"`}); 
+            }); 
+        }; i.click(); 
+    }
 </script>
 </body>
 </html>
