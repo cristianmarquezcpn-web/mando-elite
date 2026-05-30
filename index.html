@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>MANDO ELITE TITANIUM - V6.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     
@@ -16,8 +16,12 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
         @media (max-width: 1000px) { 
-            body { flex-direction: column; overflow-y: auto; height: auto; } 
-            .col-radar, .col-comms { width: 100% !important; height: 450px; border:none !important; border-top: 2px solid #e2e8f0 !important; } 
+        body { flex-direction: column; height: auto; overflow-y: auto; display: block; } 
+        .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; } 
+        .col-radar { max-height: max-content; }
+        /* Ajustes táctiles para celular */
+        .btn-pro, input, select { min-height: 44px; font-size: 14px; }
+        .header { flex-direction: column; gap: 10px; align-items: flex-start; }
         }
 
         /* COL 1: RADAR */
@@ -25,7 +29,7 @@
         .radar-feed { flex: 1; overflow-y: auto; padding: 15px; }
         .radar-card { background: #1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        /* COL 2: PIZARRA (INTACTA) */
+        /* COL 2: PIZARRA */
         .col-pizarra { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: var(--bg); }
         .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
@@ -33,7 +37,7 @@
         .prio-ALTA { border-left: 8px solid var(--urgente); }
         .prio-MEDIA { border-left: 8px solid var(--oro); }
         
-        /* COL 3: DOMINGUITO & EXPEDIENTES (IDA Y VUELTA) */
+        /* COL 3: DOMINGUITO & EXPEDIENTES */
         .col-comms { width: 350px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
         .tab-btn { flex: 1; padding: 15px 0; border: none; background: #f8fafc; cursor: pointer; font-weight: 800; color: #64748b; border-bottom: 2px solid transparent; }
         .tab-btn.activa { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
@@ -57,18 +61,28 @@
 
 <div id="bloqueo-mando">
     <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-        <h2 style="color:var(--accent); margin-bottom: 20px;">IDENTIFICACIÓN ELITE</h2>
+        <h2 style="color:var(--accent); margin-bottom: 20px;">ACCESO ELITE</h2>
         <select id="sel-empleado" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
             <option value="">Cargando personal...</option>
         </select>
         <input type="password" id="pass-mando" placeholder="Clave (Solo Admin/Directores)" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginMando()">INGRESAR AL SISTEMA</button>
+        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginMando()">ENTRAR A MI PANEL</button>
     </div>
 </div>
 
 <div class="col-radar">
     <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155;">
         👁️ RADAR TÁCTICO
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 15px; padding: 0 15px;">
+    <div style="flex: 1; background: #334155; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #475569;">
+        <div style="font-size: 10px; color: #94a3b8; font-weight: bold;">CUDs ALERTA</div>
+        <div id="stat-cuds" style="font-size: 22px; font-weight: 900; color: var(--urgente);">0</div>
+    </div>
+    <div style="flex: 1; background: #334155; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #475569;">
+        <div style="font-size: 10px; color: #94a3b8; font-weight: bold;">AUSENCIAS</div>
+        <div id="stat-aus" style="font-size: 22px; font-weight: 900; color: var(--oro);">0</div>
+    </div>
     </div>
     <div id="radar-feed" class="radar-feed">
         <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">Monitoreando bases de datos...</div>
@@ -87,6 +101,23 @@
         </div>
     </div>
     
+    <div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
+        <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
+        
+        <div id="msj-rrhh" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
+            <p style="margin:0; font-size: 14px; color: #1e3a8a;">
+                <b>Estimado/a colaborador/a:</b> Nos ponemos en contacto desde el Departamento de RRHH para informarle que su liquidación del periodo actual ya está disponible. 
+                Le solicitamos tenga a bien emitir y presentar su factura antes del día <b>5 de cada mes</b> para proceder con el pago en tiempo y forma.
+            </p>
+        </div>
+
+        <div id="tabla-container"></div>
+        
+        <div style="margin-top:15px; font-size: 12px; color: #64748b;">
+            <p><b>Datos de Pago registrados:</b> <span id="datos-pago"></span></p>
+        </div>
+    </div>
+
     <div class="glass-panel">
         <input type="text" id="t-desc" placeholder="Describir nueva misión o instrucción...">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
@@ -111,10 +142,13 @@
     <div style="display: flex;">
         <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">🧠 EXPEDIENTE</button>
         <button id="tab2" class="tab-btn" onclick="switchTab(2)">🌐 GLOBAL</button>
+        <button class="btn-pro" style="background: #475569; font-size: 10px; margin-left: auto; height: 35px;" onclick="exportarPDF()">📄 DESCARGAR PDF</button>
     </div>
 
     <div id="vista-expediente" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
         <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <input type="text" id="busc-paciente" placeholder="🔍 Buscar chico por nombre..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
+            
             <select id="sel-paciente" onchange="cargarExpedientePaciente()">
                 <option value="">Selecciona un paciente a reportar...</option>
             </select>
@@ -137,8 +171,14 @@
     <div id="vista-global" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
         <div id="chat-msgs" class="chat-content"></div>
         <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
-            <input type="text" id="chat-in" placeholder="Mensaje a todos..." onkeypress="if(event.key==='Enter') enviarMsg()">
-            <button class="btn-pro" style="width: 50px;" onclick="enviarMsg()">></button>
+            <select id="select-destino" style="width: 110px; padding: 5px; font-size: 11px;">
+                <option value="TODOS">A TODOS</option>
+                <option value="DIRECTORES">A DIRECTORES</option>
+                <option value="T.S.">A T. SOCIALES</option>
+                <option value="ADMINISTRACION">A ADMIN</option>
+            </select>
+            <input type="text" id="chat-in" placeholder="Mensaje..." onkeypress="if(event.key==='Enter') enviarMsg()">
+            <button class="btn-pro" style="width: 40px;" onclick="enviarMsg()">></button>
         </div>
     </div>
 </div>
@@ -152,32 +192,38 @@
     // 2. REFERENCIAS
     const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
     const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
-    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientes_interactivos'); // Acá Python va a leer y escribir
+    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientes_interactivos'); 
     const refAsignaciones = db.ref('/SISTEMA_MANDO/asignaciones_ts');
 
-    let usuarioActivo = "", rangoActivo = "", appCargada = false, cacheTareas = {};
+    let usuarioActivo = "", rangoActivo = "", cacheTareas = {};
     let listaPacientesCache = [];
     let pacienteSeleccionado = "";
 
-    // 3. INICIO: CARGAR EMPLEADOS DIRECTO DE TU BASE
+    // 3. INICIO: CARGAR EMPLEADOS SIN DUPLICADOS
     db.ref('/SISTEMA_PERSONAL/empleados').once('value', snap => {
-        let sel = document.getElementById('sel-empleado');
+        const listaUnica = {};
         let selTs = document.getElementById('sel-asignar-ts');
         let htmlTs = '<option value="">Seleccionar T.S.</option>';
 
         snap.forEach(child => {
             const emp = child.val();
-            if(emp && emp.n) {
-                sel.innerHTML += `<option value="${emp.n}" data-rol="${emp.profesion || 'Empleado'}">${emp.n} (${emp.profesion || 'S/D'})</option>`;
-                if(emp.profesion === "TS" || emp.profesion === "T.S." || emp.profesion === "Trabajadora Social") {
-                    htmlTs += `<option value="${emp.n}">${emp.n}</option>`;
-                }
+            if(emp && emp.n) listaUnica[emp.n.trim()] = emp;
+        });
+
+        const empleadosOrdenados = Object.values(listaUnica).sort((a, b) => a.n.localeCompare(b.n));
+        let sel = document.getElementById('sel-empleado');
+        sel.innerHTML = '<option value="">Seleccione su nombre...</option>';
+        
+        empleadosOrdenados.forEach(emp => {
+            sel.innerHTML += `<option value="${emp.n}" data-rol="${emp.profesion || 'Empleado'}">${emp.n} (${emp.profesion || 'S/D'})</option>`;
+            if(emp.profesion === "TS" || emp.profesion === "T.S." || emp.profesion === "Trabajadora Social") {
+                htmlTs += `<option value="${emp.n}">${emp.n}</option>`;
             }
         });
         selTs.innerHTML = htmlTs;
     });
 
-    // 4. LOGIN INTELIGENTE
+    // 4. LOGIN INTELIGENTE Y CARGA DE PERFIL
     function loginMando() {
         const select = document.getElementById('sel-empleado');
         if(!select.value) return alert("Selecciona tu nombre");
@@ -202,7 +248,10 @@
             document.getElementById('btn-caja').style.display = 'block';
         }
 
+        // Arrancamos motores
         iniciarApp();
+        cargarDatosPrivados(usuarioActivo);
+        verificarNotificaciones(usuarioActivo);
     }
 
     // 5. MOTOR PRINCIPAL
@@ -213,87 +262,131 @@
             renderPizarraLocal();
         });
 
-        // Cargar Chat Global
-        
-refChatGlobal.on('value', snap => {
-    document.getElementById('chat-msgs').innerHTML = "";
-    snap.forEach(child => {
-        const m = child.val();
-        
-        // Filtro de jerarquía:
-        const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD', 'T.S.'].some(r => rangoActivo.includes(r));
-        
-        // Si el mensaje es "PRIVADO" (destinado a directores) y yo no soy admin, no lo muestro
-        if (m.privado === true && !esAdmin) return;
-       
-    });
-});
-        // Activar Radar Titanium
+        // Cargar Chat Global con Filtro Jerárquico
+        refChatGlobal.on('value', snap => {
+            document.getElementById('chat-msgs').innerHTML = "";
+            snap.forEach(child => {
+                const m = child.val();
+                const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD', 'T.S.', 'TS'].some(r => rangoActivo.includes(r));
+                
+                // Lógica de visibilidad
+                if (m.destino && m.destino !== 'TODOS' && m.destino !== rangoActivo && m.u !== usuarioActivo && !esAdmin) return;
+
+                let claseMsg = m.u === usuarioActivo ? 'msg-me' : 'msg-them';
+                let tagPrivado = m.destino && m.destino !== 'TODOS' ? `<span style="color:var(--oro);">[A: ${m.destino}]</span> ` : '';
+
+                document.getElementById('chat-msgs').innerHTML += `
+                    <div class="msg ${claseMsg}">
+                        <b style="font-size:9px; display:block; opacity:0.7">${m.u} (${m.rol})</b>
+                        ${tagPrivado}${m.t}
+                    </div>
+                `;
+            });
+            document.getElementById('chat-msgs').scrollTop = 9999;
+        });
+
+        // Activar Radar Titanium Universal
         escanearBaseDeDatos();
+    }
+
+    // =========================================================
+    // MÓDULO RRHH: LIQUIDACIONES PRIVADAS
+    // =========================================================
+    function cargarDatosPrivados(nombre) {
+        document.getElementById('panel-liquidacion').style.display = 'block';
+        
+        db.ref('/liquidaciones').orderByChild('nombre').equalTo(nombre).on('value', snap => {
+            const container = document.getElementById('tabla-container');
+            if(!snap.exists()){
+                container.innerHTML = "<p style='font-size:12px; color:#64748b;'>No hay liquidaciones pendientes este mes.</p>";
+                return;
+            }
+
+            let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">';
+            html += '<tr style="background:#f1f5f9;"><th>Sede/Puesto</th><th>Periodo</th><th>Total a Facturar</th></tr>';
+            
+            let cbu = "", email = "";
+            snap.forEach(child => {
+                const l = child.val();
+                html += `<tr>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.puesto || 'General'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.periodo}</td>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:bold;">$${Number(l.total).toLocaleString('es-AR')}</td>
+                </tr>`;
+                if(l.cbu) cbu = l.cbu;
+                if(l.email) email = l.email;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+            document.getElementById('datos-pago').innerText = `CBU: ${cbu || "No registrado"} | Email: ${email || "No registrado"}`;
+        });
+    }
+
+    function verificarNotificaciones(nombre) {
+        db.ref('/liquidaciones').orderByChild('nombre').equalTo(nombre).once('value', snap => {
+            if(snap.exists()) {
+                alert("¡Atención! Tiene una nueva liquidación disponible. Por favor, revise su panel de RRHH y presente su factura antes del día 5.");
+            }
+        });
     }
 
     // =========================================================
     // MÓDULO TITANIUM: EL RADAR QUE BUSCA DONDE CORRESPONDE
     // =========================================================
     function escanearBaseDeDatos() {
-    const feed = document.getElementById('radar-feed');
-    const selectPac = document.getElementById('sel-paciente');
+        const selectPac = document.getElementById('sel-paciente');
 
-    // Escaneamos la raíz para detectar cualquier rama (SAEI, cd, cet, etc)
-    db.ref('/').once('value', snap => {
-        snap.forEach(rama => {
-            // Si la rama tiene pacientes, los procesamos
-            if (rama.child('pacientes').exists()) {
-                rama.child('pacientes').forEach(childPac => {
-                    const nombre = childPac.key;
-                    const pac = childPac.val();
+        // 1. Escanear CUDs en TODA la base
+        db.ref('/').once('value', snap => {
+            snap.forEach(rama => {
+                if (rama.child('pacientes').exists()) {
+                    rama.child('pacientes').forEach(childPac => {
+                        const nombre = childPac.key;
+                        const pac = childPac.val();
 
-                    // 1. Llenar el selector de pacientes (sin duplicados)
-                    if(!listaPacientesCache.includes(nombre)) {
-                        listaPacientesCache.push(nombre);
-                        let opt = document.createElement('option');
-                        opt.value = nombre;
-                        opt.text = nombre;
-                        selectPac.add(opt);
-                    }
-
-                    // 2. Radar de CUDs vencidos o por vencer
-                    if(pac.cud) {
-                        const hoy = new Date();
-                        const venc = new Date(pac.cud);
-                        const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
-                        
-                        if(diff <= 60) { // Alerta si faltan 60 días o ya venció
-                            renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días)`);
+                        // Llenar selector sin duplicar
+                        if(!listaPacientesCache.includes(nombre)) {
+                            listaPacientesCache.push(nombre);
+                            let opt = document.createElement('option');
+                            opt.value = nombre; opt.text = nombre;
+                            selectPac.add(opt);
                         }
-                    }
-                });
-            }
-        });
-    });
-}
-        // 2. Escanear Asistencias en seguimiento_pacientes
-        db.ref('/seguimiento_pacientes').on('value', snap => {
-            snap.forEach(child => {
-                const nombre = child.key;
-                const data = child.val();
-                let faltas = 0;
-                Object.values(data).forEach(estado => { if(estado === 'A' || estado.val === 'A') faltas++; });
-                
-                if(faltas >= 3) {
-                    renderizarAlerta(nombre, 'AUSENCIAS', `Paciente acumula ${faltas} inasistencias registradas.`);
+
+                        // Alerta CUD
+                        if(pac.cud) {
+                            const hoy = new Date();
+                            const venc = new Date(pac.cud);
+                            const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
+                            if(diff <= 60) { 
+                                renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días)`);
+                            }
+                        }
+                    });
                 }
             });
         });
-    
+
+        // 2. Escanear Ausencias
+        db.ref('/seguimiento_pacientes').on('value', snap => {
+            snap.forEach(child => {
+                const nombre = child.key;
+                let faltas = 0;
+                Object.values(child.val()).forEach(estado => { if(estado === 'A' || estado.val === 'A') faltas++; });
+                
+                if(faltas >= 3) {
+                    renderizarAlerta(nombre, 'AUSENCIAS', `Acumula ${faltas} inasistencias.`);
+                }
+            });
+        });
+    }
 
     function renderizarAlerta(paciente, tipo, msg) {
         const feed = document.getElementById('radar-feed');
-        // Borrar el mensaje de "Monitoreando" si es la primera alerta
         if(feed.innerHTML.includes("Monitoreando")) feed.innerHTML = "";
         
         const idUnico = (paciente+tipo).replace(/[^a-zA-Z0-9]/g, '');
-        if(document.getElementById(idUnico)) return; // Evitar duplicados visuales
+        if(document.getElementById(idUnico)) return;
 
         const color = tipo === 'CUD' ? 'var(--urgente)' : 'var(--oro)';
         feed.innerHTML = `
@@ -308,8 +401,19 @@ refChatGlobal.on('value', snap => {
     }
 
     // =========================================================
-    // IDA Y VUELTA CON PYTHON (EXPEDIENTES DOMINGUITO)
+    // UTILIDADES (BUSCADOR Y TABS)
     // =========================================================
+    function filtrarPacientes() {
+        let input = document.getElementById('busc-paciente').value.toUpperCase();
+        let sel = document.getElementById('sel-paciente');
+        let options = sel.getElementsByTagName('option');
+        
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].text.toUpperCase().indexOf(input) > -1) options[i].style.display = "";
+            else options[i].style.display = "none";
+        }
+    }
+
     function switchTab(tab) {
         document.getElementById('tab1').className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
         document.getElementById('tab2').className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
@@ -317,6 +421,9 @@ refChatGlobal.on('value', snap => {
         document.getElementById('vista-global').style.display = tab === 2 ? 'flex' : 'none';
     }
 
+    // =========================================================
+    // EXPEDIENTES Y DOMINGUITO
+    // =========================================================
     function asignarTS() {
         if(!pacienteSeleccionado) return alert("Selecciona un paciente primero");
         const ts = document.getElementById('sel-asignar-ts').value;
@@ -334,13 +441,11 @@ refChatGlobal.on('value', snap => {
             return;
         }
 
-        // Escuchar el hilo de este paciente específico. ¡Python leerá de acá!
         refExpedientes.child(pacienteSeleccionado).on('value', snap => {
             const msgs = snap.val() || {};
             chatContainer.innerHTML = `<div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px;">EXPEDIENTE ABIERTO: ${pacienteSeleccionado}</div>`;
             
             Object.values(msgs).forEach(m => {
-                // Si el autor es Dominguito, tiene un estilo distinto
                 let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
                 if(m.autor === "DOMINGUITO") claseMsg = 'msg-bot';
                 
@@ -360,18 +465,25 @@ refChatGlobal.on('value', snap => {
         const txt = document.getElementById('in-dominguito').value;
         if(!txt) return;
 
-        // Escribimos en la ruta que Python va a estar escuchando
-        refExpedientes.child(pacienteSeleccionado).push({
-            autor: usuarioActivo,
-            rol: rangoActivo,
-            msg: txt,
-            ts: Date.now()
-        });
+        refExpedientes.child(pacienteSeleccionado).push({ autor: usuarioActivo, rol: rangoActivo, msg: txt, ts: Date.now() });
         document.getElementById('in-dominguito').value = '';
     }
 
     // =========================================================
-    // CÓDIGO MADRE (PIZARRA GLOBAL INTACTA)
+    // CHAT GLOBAL
+    // =========================================================
+    function enviarMsg() {
+        const v = document.getElementById('chat-in').value;
+        const destino = document.getElementById('select-destino').value; 
+        
+        if(v) {
+            refChatGlobal.push({ u: usuarioActivo, t: v, rol: rangoActivo, destino: destino });
+            document.getElementById('chat-in').value=""; 
+        } 
+    }
+
+    // =========================================================
+    // PIZARRA GLOBAL
     // =========================================================
     function renderPizarraLocal() {
         const container = document.getElementById('lista-tareas'); 
@@ -381,7 +493,6 @@ refChatGlobal.on('value', snap => {
         Object.keys(cacheTareas).reverse().forEach(id => {
             const t = cacheTareas[id];
             
-            // Filtro de visibilidad respetando jerarquías
             if(rangoActivo !== 'ADMINISTRACION' && !rangoActivo.includes('DIRECTOR')) {
                 if(t.destino !== rangoActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return;
             }
@@ -400,6 +511,18 @@ refChatGlobal.on('value', snap => {
                 </div>`;
         });
     }
+    function exportarPDF() {
+    if(!pacienteSeleccionado) return alert("Seleccioná un paciente primero para exportar su expediente.");
+    const elemento = document.getElementById('chat-dominguito');
+    const opciones = {
+        margin: 10,
+        filename: `Expediente_Clinico_${pacienteSeleccionado}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opciones).from(elemento).save();
+}
 
     function marcarVisto(id) { refPizarra.child(`${id}/vistos/${usuarioActivo}`).set(true); }
     function cambiarEst(id, est) { if(confirm("¿Finalizar misión?")) refPizarra.child(id).update({ estado: est }); }
@@ -412,20 +535,6 @@ refChatGlobal.on('value', snap => {
         }); 
         document.getElementById('t-desc').value=""; 
     }
-    function enviarMsg() {
-    const v = document.getElementById('chat-in').value;
-    const destino = document.getElementById('select-destino').value; // Agregá un select nuevo en el HTML
-    
-    if(v) {
-        refChatGlobal.push({ 
-            u: usuarioActivo, 
-            t: v, 
-            rol: rangoActivo,
-            destino: destino // Esto es clave
-        });
-        document.getElementById('chat-in').value=""; 
-    } 
-}
 </script>
 </body>
 </html>
