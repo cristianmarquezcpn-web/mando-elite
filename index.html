@@ -214,16 +214,20 @@
         });
 
         // Cargar Chat Global
-        refChatGlobal.limitToLast(40).on('value', snap => {
-            const msgs = snap.val() || {};
-            document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => 
-                `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}
-                </div>`
-            ).join('');
-            document.getElementById('chat-msgs').scrollTop = 9999;
-        });
-
+        
+refChatGlobal.on('value', snap => {
+    document.getElementById('chat-msgs').innerHTML = "";
+    snap.forEach(child => {
+        const m = child.val();
+        
+        // Filtro de jerarquía:
+        const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD', 'T.S.'].some(r => rangoActivo.includes(r));
+        
+        // Si el mensaje es "PRIVADO" (destinado a directores) y yo no soy admin, no lo muestro
+        if (m.privado === true && !esAdmin) return;
+       
+    });
+});
         // Activar Radar Titanium
         escanearBaseDeDatos();
     }
@@ -232,36 +236,42 @@
     // MÓDULO TITANIUM: EL RADAR QUE BUSCA DONDE CORRESPONDE
     // =========================================================
     function escanearBaseDeDatos() {
-        const modulos = ['cd', 'cet', 'REHAB', 'SAEI'];
-        const feed = document.getElementById('radar-feed');
-        let alertasTotales = [];
+    const feed = document.getElementById('radar-feed');
+    const selectPac = document.getElementById('sel-paciente');
 
-        // 1. Escanear CUDs en los módulos reales
-        modulos.forEach(mod => {
-            db.ref(`/${mod}/pacientes`).on('value', snap => {
-                snap.forEach(child => {
-                    const pac = child.val();
-                    const nombre = child.key;
-                    
-                    // Agregar al listado de pacientes para el chat de expedientes
+    // Escaneamos la raíz para detectar cualquier rama (SAEI, cd, cet, etc)
+    db.ref('/').once('value', snap => {
+        snap.forEach(rama => {
+            // Si la rama tiene pacientes, los procesamos
+            if (rama.child('pacientes').exists()) {
+                rama.child('pacientes').forEach(childPac => {
+                    const nombre = childPac.key;
+                    const pac = childPac.val();
+
+                    // 1. Llenar el selector de pacientes (sin duplicados)
                     if(!listaPacientesCache.includes(nombre)) {
                         listaPacientesCache.push(nombre);
-                        document.getElementById('sel-paciente').innerHTML += `<option value="${nombre}">${nombre} (${mod})</option>`;
+                        let opt = document.createElement('option');
+                        opt.value = nombre;
+                        opt.text = nombre;
+                        selectPac.add(opt);
                     }
 
+                    // 2. Radar de CUDs vencidos o por vencer
                     if(pac.cud) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
                         
-                        if(diff <= 30 && diff > -300) {
-                            renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días) - Rama: ${mod}`);
+                        if(diff <= 60) { // Alerta si faltan 60 días o ya venció
+                            renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días)`);
                         }
                     }
                 });
-            });
+            }
         });
-
+    });
+}
         // 2. Escanear Asistencias en seguimiento_pacientes
         db.ref('/seguimiento_pacientes').on('value', snap => {
             snap.forEach(child => {
@@ -402,10 +412,20 @@
         }); 
         document.getElementById('t-desc').value=""; 
     }
-    function enviarMsg() { 
-        const v = document.getElementById('chat-in').value; 
-        if(v) { refChatGlobal.push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } 
-    }
+    function enviarMsg() {
+    const v = document.getElementById('chat-in').value;
+    const destino = document.getElementById('select-destino').value; // Agregá un select nuevo en el HTML
+    
+    if(v) {
+        refChatGlobal.push({ 
+            u: usuarioActivo, 
+            t: v, 
+            rol: rangoActivo,
+            destino: destino // Esto es clave
+        });
+        document.getElementById('chat-in').value=""; 
+    } 
+}
 </script>
 </body>
 </html>
