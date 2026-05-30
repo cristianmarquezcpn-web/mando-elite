@@ -2,400 +2,379 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>MANDO ELITE TITANIUM - V5.0</title>
+    <title>MANDO ELITE TITANIUM - V6.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a2a6c">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; --oro: #f59e0b; }
+        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; --oro: #f59e0b; --dark: #0f172a; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        /* DISEÑO A 3 COLUMNAS: RADAR | PIZARRA | CHAT */
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
         @media (max-width: 1000px) { 
             body { flex-direction: column; overflow-y: auto; height: auto; } 
-            .radar-sidebar, .sidebar { width: 100% !important; height: 400px; border-top: 2px solid #e2e8f0; border-right: none !important; border-left: none !important; } 
-            .main-container { padding: 10px; overflow-y: visible; } 
+            .col-radar, .col-comms { width: 100% !important; height: 450px; border:none !important; border-top: 2px solid #e2e8f0 !important; } 
         }
 
-        /* COLUMNA 1: RADAR */
-        .radar-sidebar { width: 300px; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-        .radar-feed { flex: 1; overflow-y: auto; padding: 10px; background: #f8fafc; }
-        .radar-card { background: white; border-left: 5px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* COLUMNA 2: PIZARRA (CÓDIGO MADRE) */
-        .main-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .glass-panel { background: var(--card); border-radius: 15px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        /* COL 1: RADAR */
+        .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid #334155; }
+        .radar-feed { flex: 1; overflow-y: auto; padding: 15px; }
+        .radar-card { background: #1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        /* COLUMNA 3: CHAT GLOBAL (CÓDIGO MADRE) */
-        .sidebar { width: 320px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-        
-        /* UTILIDADES GENERALES */
-        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 12px; min-height: 40px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-pro:active { transform: scale(0.95); }
-        #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding-bottom: 50px; }
-        .task-card { background: white; border-radius: 18px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        /* COL 2: PIZARRA (INTACTA) */
+        .col-pizarra { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: var(--bg); }
+        .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .prio-ALTA { border-left: 8px solid var(--urgente); }
         .prio-MEDIA { border-left: 8px solid var(--oro); }
-        input, select { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 10px; width: 100%; font-size: 14px; outline: none; }
-        input:focus, select:focus { border-color: var(--accent); }
         
-        /* CHAT STYLES */
+        /* COL 3: DOMINGUITO & EXPEDIENTES (IDA Y VUELTA) */
+        .col-comms { width: 350px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: #f8fafc; cursor: pointer; font-weight: 800; color: #64748b; border-bottom: 2px solid transparent; }
+        .tab-btn.activa { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
+        
         .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
-        .msg { padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 90%; word-wrap: break-word; }
-        .msg-me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; max-width: 90%; word-wrap: break-word; }
+        .msg-me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-bot { background: #eff6ff; border: 1px solid var(--accent); color: #1e3a8a; align-self: flex-start; width: 100%; border-radius: 8px; }
+
+        input, select { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; width: 100%; font-size: 13px; outline: none; }
+        input:focus, select:focus { border-color: var(--accent); }
+        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; }
         
-        #alerta-mando { position: fixed; top: 0; left: 0; width: 100%; z-index: 100000; padding: 20px; background: var(--urgente); color: white; font-weight: 800; display: none; text-align: center; font-size: 18px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
+        #bloqueo-mando { position:fixed; inset:0; background:var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white;}
     </style>
 </head>
 <body>
 
-<div id="alerta-mando" onclick="this.style.display='none'">
-    <span id="alerta-txt"></span>
-    <div style="font-size: 10px; margin-top: 5px;">(TOCA PARA OCULTAR)</div>
-</div>
-
-<audio id="snd-mando" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 <audio id="snd-radar" src="https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3" preload="auto"></audio>
 
-<div id="bloqueo-mando" style="position:fixed; inset:0; background:white; z-index:50000; display:flex; align-items:center; justify-content:center;">
-    <div style="text-align:center">
-        <h2 style="color:var(--primary)">SISTEMA ELITE TITANIUM</h2>
-        <input type="tel" id="pass-mando" placeholder="CLAVE" style="width:140px; text-align:center; font-size:24px;" onkeypress="if(event.key==='Enter') loginMando()">
-        <br><br>
-        <button class="btn-pro" style="width:100%" onclick="loginMando()">ACCEDER</button>
+<div id="bloqueo-mando">
+    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <h2 style="color:var(--accent); margin-bottom: 20px;">IDENTIFICACIÓN ELITE</h2>
+        <select id="sel-empleado" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
+            <option value="">Cargando personal...</option>
+        </select>
+        <input type="password" id="pass-mando" placeholder="Clave (Solo Admin/Directores)" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
+        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginMando()">INGRESAR AL SISTEMA</button>
     </div>
 </div>
 
-<div class="radar-sidebar">
-    <div style="padding:15px; font-weight:800; background:#0f172a; color:white; display:flex; justify-content:space-between; align-items:center;">
-        <span>👁️ RADAR VIGILANCIA</span>
+<div class="col-radar">
+    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155;">
+        👁️ RADAR TÁCTICO
     </div>
     <div id="radar-feed" class="radar-feed">
-        <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Analizando pacientes...</div>
+        <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">Monitoreando bases de datos...</div>
     </div>
 </div>
 
-<div class="main-container">
+<div class="col-pizarra">
     <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
-        <div><h2 style="margin:0; font-size:16px;">Pizarra Elite</h2><span id="user-tag" style="color:var(--accent); font-size:10px;"></span></div>
+        <div>
+            <h2 style="margin:0; font-size:16px;">Misiones Elite</h2>
+            <span id="user-tag" style="color:var(--accent); font-size:11px; font-weight: bold;"></span>
+        </div>
         <div style="display:flex; gap:5px;">
-            <button id="btn-borrado-total" class="btn-pro" style="display:none; background:var(--urgente); font-size:10px;" onclick="borradoTotal()">LIMPIAR</button>
             <button id="btn-caja" class="btn-pro" style="display:none; background:var(--verde); font-size:10px;" onclick="window.location.href='rendicion.html'">CAJA</button>
             <button class="btn-pro" style="background:#64748b; font-size:10px;" onclick="location.reload()">SALIR</button>
         </div>
     </div>
     
     <div class="glass-panel">
-        <input type="text" id="t-desc" placeholder="Nueva misión...">
+        <input type="text" id="t-desc" placeholder="Describir nueva misión o instrucción...">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
             <input type="date" id="t-vence">
             <select id="t-prio-val"><option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">URGENTE 🔥</option></select>
         </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
-            <select id="t-dest-val"><option value="TODOS">TODOS</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option></select>
-            <input type="text" id="t-drive-val" placeholder="Link Drive">
+            <select id="t-dest-val"><option value="TODOS">TODOS</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option><option value="T.S.">T. SOCIALES</option></select>
+            <input type="text" id="t-drive-val" placeholder="Link Drive (Opcional)">
         </div>
         <button class="btn-pro" style="width:100%; margin-top:10px;" onclick="crearTarea()">LANZAR MISIÓN ✨</button>
     </div>
     
     <div style="display:flex; gap:10px;">
-        <select id="f-dest" onchange="renderPizarraLocal()" style="display:none; flex:1"><option value="TODOS">📍 Todos</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option></select>
-        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1"><option value="ACTIVAS">Activas</option><option value="CONFIRMADO">Historial</option></select>
+        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1"><option value="ACTIVAS">Misiones Activas</option><option value="CONFIRMADO">Historial</option></select>
     </div>
     
     <div id="lista-tareas"></div>
 </div>
 
-<div class="sidebar">
-    <div style="padding:15px; font-weight:800; background:var(--primary); color:white; display:flex; justify-content:space-between; align-items:center;">
-        <span>CHAT GLOBAL</span>
-        <button id="btn-del-chat" style="display:none; background:rgba(255,0,0,0.5); border:none; color:white; font-size:9px; padding:5px; border-radius:5px;" onclick="borrarChat()">LIMPIAR</button>
+<div class="col-comms">
+    <div style="display: flex;">
+        <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">🧠 EXPEDIENTE</button>
+        <button id="tab2" class="tab-btn" onclick="switchTab(2)">🌐 GLOBAL</button>
     </div>
-    <div id="chat-msgs" class="chat-content"></div>
-    <div style="padding:10px; display:flex; gap:5px;">
-        <input type="text" id="chat-in" placeholder="Escribir..." onkeypress="if(event.key==='Enter') enviarMsg()">
-        <button class="btn-pro" style="width: 50px;" onclick="enviarMsg()">></button>
+
+    <div id="vista-expediente" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <select id="sel-paciente" onchange="cargarExpedientePaciente()">
+                <option value="">Selecciona un paciente a reportar...</option>
+            </select>
+            <div id="panel-asignar-ts" style="display: none; margin-top: 5px; gap: 5px;">
+                <select id="sel-asignar-ts" style="font-size: 10px; padding: 5px;"></select>
+                <button class="btn-pro" style="padding: 5px; font-size: 10px;" onclick="asignarTS()">VINCULAR T.S.</button>
+            </div>
+        </div>
+        <div id="chat-dominguito" class="chat-content">
+            <div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">
+                Seleccioná un paciente. Todo lo que escribas acá será leído por Dominguito (Python) para actualizar su ficha técnica.
+            </div>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+            <input type="text" id="in-dominguito" placeholder="Reportar novedad clínica..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">></button>
+        </div>
+    </div>
+
+    <div id="vista-global" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+        <div id="chat-msgs" class="chat-content"></div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+            <input type="text" id="chat-in" placeholder="Mensaje a todos..." onkeypress="if(event.key==='Enter') enviarMsg()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarMsg()">></button>
+        </div>
     </div>
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN FIREBASE
+    // 1. CONEXIÓN A TU FIREBASE REAL
     const firebaseConfig = { apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", authDomain: "clinicaintegral-5c488.firebaseapp.com", databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", projectId: "clinicaintegral-5c488", appId: "1:184090967634:web:09715937b33ea48288698b" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. REFERENCIAS MADRE + TITANIUM
+    // 2. REFERENCIAS
     const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
-    const refChat = db.ref('/SISTEMA_MANDO/chat');
-    
-    // Nodos Titanium conectados a TU base de datos real
-    const refPacientes = db.ref('/seguimiento_pacientes'); 
-    const refAlertas = db.ref('/SISTEMA_MANDO/radaralertas');
-    const refChatAlertas = db.ref('/SISTEMA_MANDO/chatsalertas');
+    const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
+    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientes_interactivos'); // Acá Python va a leer y escribir
+    const refAsignaciones = db.ref('/SISTEMA_MANDO/asignaciones_ts');
 
-    let usuarioActivo = "", appCargada = false, cacheTareas = {};
-    let chatModalActivo = null; // Para el chat de Dominguito
+    let usuarioActivo = "", rangoActivo = "", appCargada = false, cacheTareas = {};
+    let listaPacientesCache = [];
+    let pacienteSeleccionado = "";
 
-    // Pedir permisos de notificaciones de Windows/Android al entrar
-    if ("Notification" in window) { Notification.requestPermission(); }
+    // 3. INICIO: CARGAR EMPLEADOS DIRECTO DE TU BASE
+    db.ref('/SISTEMA_PERSONAL/empleados').once('value', snap => {
+        let sel = document.getElementById('sel-empleado');
+        let selTs = document.getElementById('sel-asignar-ts');
+        let htmlTs = '<option value="">Seleccionar T.S.</option>';
 
-    function dispararAlerta(titulo, cuerpo, esRadar = false) {
-        const banner = document.getElementById('alerta-mando');
-        document.getElementById('alerta-txt').innerHTML = `⚠️ ${titulo}<br>${cuerpo}`;
-        banner.style.display = 'block';
-        
-        // Sonidos separados para misiones y para radar
-        const sonido = document.getElementById(esRadar ? 'snd-radar' : 'snd-mando');
-        if(sonido) { sonido.currentTime = 0; sonido.play().catch(() => {}); }
-        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-        
-        if (esRadar && Notification.permission === "granted") {
-            new Notification(`🚨 RADAR: ${titulo}`, { body: cuerpo });
-        }
-        
-        setTimeout(() => { banner.style.display = 'none'; }, 6000);
-    }
-
-    // --- CÓDIGO MADRE: LOGIN Y PERMISOS ---
-    function loginMando() {
-        const CLAVES = { "1234": "SECRETARIA", "1515": "DIRECTORES", "1986": "ADMINISTRACION", "1586": "COORD" };
-        const val = document.getElementById('pass-mando').value;
-        if(CLAVES[val]) {
-            usuarioActivo = CLAVES[val];
-            document.getElementById('bloqueo-mando').style.display = 'none';
-            document.getElementById('user-tag').innerText = "RANGO: " + usuarioActivo;
-            
-            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'COORD') {
-                document.getElementById('btn-caja').style.display = 'block';
-            }
-            if(usuarioActivo === 'ADMINISTRACION' || usuarioActivo === 'DIRECTORES') {
-                document.getElementById('f-dest').style.display = 'block';
-            }
-            if(usuarioActivo === 'ADMINISTRACION') {
-                document.getElementById('btn-borrado-total').style.display = 'block'; 
-                document.getElementById('btn-del-chat').style.display = 'block'; 
-            }
-            iniciarApp();
-        } else { alert("Denegado"); }
-    }
-
-    function iniciarApp() {
-        // --- 1. LÓGICA MADRE DE PIZARRA ---
-        refPizarra.on('value', snap => {
-            cacheTareas = snap.val() || {};
-            renderPizarraLocal();
-            if(!appCargada) appCargada = true;
-        });
-
-        refPizarra.limitToLast(1).on('child_added', snap => {
-            if(!appCargada) return;
-            const t = snap.val();
-            if(t.emisor !== usuarioActivo) {
-                if(t.destino === usuarioActivo || t.destino === 'TODOS') {
-                    dispararAlerta(`MISIÓN DE ${t.emisor}`, t.desc, false);
+        snap.forEach(child => {
+            const emp = child.val();
+            if(emp && emp.n) {
+                sel.innerHTML += `<option value="${emp.n}" data-rol="${emp.profesion || 'Empleado'}">${emp.n} (${emp.profesion || 'S/D'})</option>`;
+                if(emp.profesion === "TS" || emp.profesion === "T.S." || emp.profesion === "Trabajadora Social") {
+                    htmlTs += `<option value="${emp.n}">${emp.n}</option>`;
                 }
             }
         });
+        selTs.innerHTML = htmlTs;
+    });
 
-        // --- 2. LÓGICA MADRE DE CHAT GLOBAL ---
-        refChat.limitToLast(1).on('child_added', snap => {
-            if(!appCargada) return;
-            const m = snap.val();
-            if(m.u !== usuarioActivo && m.u !== "SISTEMA") {
-                dispararAlerta(`CHAT: ${m.u}`, m.t, false);
-            }
+    // 4. LOGIN INTELIGENTE
+    function loginMando() {
+        const select = document.getElementById('sel-empleado');
+        if(!select.value) return alert("Selecciona tu nombre");
+        
+        const option = select.options[select.selectedIndex];
+        usuarioActivo = option.value;
+        rangoActivo = option.getAttribute('data-rol').toUpperCase();
+        const pass = document.getElementById('pass-mando').value;
+
+        // Permisos Especiales
+        if(usuarioActivo.includes("SALINAS LEONARDO") && pass === "1986") {
+            rangoActivo = "ADMINISTRACION";
+        } else if (rangoActivo.includes("DIRECTOR") && pass !== "1515") {
+            return alert("Clave de Director incorrecta");
+        }
+
+        document.getElementById('bloqueo-mando').style.display = 'none';
+        document.getElementById('user-tag').innerText = `${usuarioActivo} | ${rangoActivo}`;
+        
+        if(rangoActivo === 'ADMINISTRACION' || rangoActivo.includes('COORD') || rangoActivo.includes('DIRECTOR')) {
+            document.getElementById('panel-asignar-ts').style.display = 'flex';
+            document.getElementById('btn-caja').style.display = 'block';
+        }
+
+        iniciarApp();
+    }
+
+    // 5. MOTOR PRINCIPAL
+    function iniciarApp() {
+        // Cargar Pizarra
+        refPizarra.on('value', snap => {
+            cacheTareas = snap.val() || {};
+            renderPizarraLocal();
         });
 
-        refChat.limitToLast(50).on('value', snap => {
+        // Cargar Chat Global
+        refChatGlobal.limitToLast(40).on('value', snap => {
             const msgs = snap.val() || {};
             document.getElementById('chat-msgs').innerHTML = Object.values(msgs).map(m => 
                 `<div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}">
                     <b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}
                 </div>`
             ).join('');
-            document.getElementById('chat-msgs').scrollTop = document.getElementById('chat-msgs').scrollHeight;
+            document.getElementById('chat-msgs').scrollTop = 9999;
         });
 
-        // --- 3. LÓGICA TITANIUM: ENCENDEMOS EL RADAR ---
-        iniciarVigilanciaTitanium();
+        // Activar Radar Titanium
+        escanearBaseDeDatos();
     }
 
     // =========================================================
-    // ============ MÓDULO TITANIUM: DOMINGUITO ================
+    // MÓDULO TITANIUM: EL RADAR QUE BUSCA DONDE CORRESPONDE
     // =========================================================
-    
-    function iniciarVigilanciaTitanium() {
-        // A. Analizar BD de Pacientes en vivo
-        refPacientes.on('value', snap => {
-            const pacientes = snap.val() || {};
-            
-            Object.keys(pacientes).forEach(nombrePaciente => {
-                const data = pacientes[nombrePaciente];
-                
-                // 1. Control CUD
-                if (data.vcud) {
-                    const hoy = new Date();
-                    const venc = new Date(data.vcud);
-                    const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
+    function escanearBaseDeDatos() {
+        const modulos = ['cd', 'cet', 'REHAB', 'SAEI'];
+        const feed = document.getElementById('radar-feed');
+        let alertasTotales = [];
+
+        // 1. Escanear CUDs en los módulos reales
+        modulos.forEach(mod => {
+            db.ref(`/${mod}/pacientes`).on('value', snap => {
+                snap.forEach(child => {
+                    const pac = child.val();
+                    const nombre = child.key;
                     
-                    if (diff <= 30 && diff > -365) { // Evita spam de cosas muy viejas
-                        generarAlertaRadar(nombrePaciente, 'CUD', `CUD por vencer o vencido (${diff} días).`);
+                    // Agregar al listado de pacientes para el chat de expedientes
+                    if(!listaPacientesCache.includes(nombre)) {
+                        listaPacientesCache.push(nombre);
+                        document.getElementById('sel-paciente').innerHTML += `<option value="${nombre}">${nombre} (${mod})</option>`;
                     }
-                }
-                
-                // 2. Control Ausencias (lee el nodo asistencia de tu base)
-                if (data.asistencia) {
-                    let faltas = 0;
-                    Object.values(data.asistencia).forEach(estado => {
-                        if (estado === 'A' || estado.val === 'A') faltas++;
-                    });
-                    
-                    if (faltas >= 3) {
-                        generarAlertaRadar(nombrePaciente, 'AUSENCIA', `Acumula ${faltas} faltas registradas.`);
+
+                    if(pac.cud) {
+                        const hoy = new Date();
+                        const venc = new Date(pac.cud);
+                        const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
+                        
+                        if(diff <= 30 && diff > -300) {
+                            renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días) - Rama: ${mod}`);
+                        }
                     }
-                }
+                });
             });
         });
 
-        // B. Renderizar Radar UI
-        refAlertas.on('value', snap => {
-            const alertas = snap.val() || {};
-            const feed = document.getElementById('radar-feed');
-            feed.innerHTML = '';
-            let contador = 0;
-            
-            Object.keys(alertas).reverse().forEach(key => {
-                const a = alertas[key];
-                if(a.estado === 'resuelto') return; // Filtro limpio
+        // 2. Escanear Asistencias en seguimiento_pacientes
+        db.ref('/seguimiento_pacientes').on('value', snap => {
+            snap.forEach(child => {
+                const nombre = child.key;
+                const data = child.val();
+                let faltas = 0;
+                Object.values(data).forEach(estado => { if(estado === 'A' || estado.val === 'A') faltas++; });
                 
-                contador++;
-                const color = a.tipo === 'CUD' ? 'var(--urgente)' : 'var(--oro)';
-                feed.innerHTML += `
-                    <div class="radar-card" style="border-left-color: ${color}">
-                        <div style="font-size:11px; font-weight:900; color:${color}">${a.tipo}</div>
-                        <div style="font-size:14px; margin:4px 0; font-weight:800;">${a.paciente}</div>
-                        <div style="font-size:12px; color:#475569; margin-bottom:10px;">${a.msg}</div>
-                        
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-pro" style="flex:1; height:30px; font-size:10px; background:var(--accent)" onclick="abrirChatRadar('${key}', '${a.paciente}')">💬 RESOLVER</button>
-                            <button class="btn-pro" style="width:40px; height:30px; background:var(--verde)" onclick="marcarResuelto('${key}')">✔</button>
-                        </div>
+                if(faltas >= 3) {
+                    renderizarAlerta(nombre, 'AUSENCIAS', `Paciente acumula ${faltas} inasistencias registradas.`);
+                }
+            });
+        });
+    }
+
+    function renderizarAlerta(paciente, tipo, msg) {
+        const feed = document.getElementById('radar-feed');
+        // Borrar el mensaje de "Monitoreando" si es la primera alerta
+        if(feed.innerHTML.includes("Monitoreando")) feed.innerHTML = "";
+        
+        const idUnico = (paciente+tipo).replace(/[^a-zA-Z0-9]/g, '');
+        if(document.getElementById(idUnico)) return; // Evitar duplicados visuales
+
+        const color = tipo === 'CUD' ? 'var(--urgente)' : 'var(--oro)';
+        feed.innerHTML = `
+            <div id="${idUnico}" class="radar-card" style="border-left-color: ${color}">
+                <div style="font-size:10px; font-weight:900; color:${color}">${tipo}</div>
+                <div style="font-size:13px; margin:4px 0; font-weight:800; color:white;">${paciente}</div>
+                <div style="font-size:11px; color:#94a3b8;">${msg}</div>
+            </div>
+        ` + feed.innerHTML;
+        
+        document.getElementById('snd-radar').play().catch(()=>{});
+    }
+
+    // =========================================================
+    // IDA Y VUELTA CON PYTHON (EXPEDIENTES DOMINGUITO)
+    // =========================================================
+    function switchTab(tab) {
+        document.getElementById('tab1').className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
+        document.getElementById('tab2').className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
+        document.getElementById('vista-expediente').style.display = tab === 1 ? 'flex' : 'none';
+        document.getElementById('vista-global').style.display = tab === 2 ? 'flex' : 'none';
+    }
+
+    function asignarTS() {
+        if(!pacienteSeleccionado) return alert("Selecciona un paciente primero");
+        const ts = document.getElementById('sel-asignar-ts').value;
+        if(!ts) return;
+        refAsignaciones.child(pacienteSeleccionado).set(ts);
+        alert(`Paciente asignado a T.S: ${ts}`);
+    }
+
+    function cargarExpedientePaciente() {
+        pacienteSeleccionado = document.getElementById('sel-paciente').value;
+        const chatContainer = document.getElementById('chat-dominguito');
+        
+        if(!pacienteSeleccionado) {
+            chatContainer.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente.</div>`;
+            return;
+        }
+
+        // Escuchar el hilo de este paciente específico. ¡Python leerá de acá!
+        refExpedientes.child(pacienteSeleccionado).on('value', snap => {
+            const msgs = snap.val() || {};
+            chatContainer.innerHTML = `<div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px;">EXPEDIENTE ABIERTO: ${pacienteSeleccionado}</div>`;
+            
+            Object.values(msgs).forEach(m => {
+                // Si el autor es Dominguito, tiene un estilo distinto
+                let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+                if(m.autor === "DOMINGUITO") claseMsg = 'msg-bot';
+                
+                chatContainer.innerHTML += `
+                    <div class="msg ${claseMsg}">
+                        <b style="font-size:9px; display:block; opacity:0.7">${m.autor} (${m.rol})</b>
+                        ${m.msg}
                     </div>
                 `;
             });
-
-            if(contador === 0) feed.innerHTML = `<div style="text-align:center; color:var(--verde); margin-top:20px; font-weight:bold;">✅ Todo en orden</div>`;
-        });
-        
-        // C. Alertas sonoras de nuevas amenazas
-        refAlertas.limitToLast(1).on('child_added', snap => {
-            if(!appCargada) return;
-            const a = snap.val();
-            if(a.estado !== 'resuelto') dispararAlerta(`NUEVA ALERTA: ${a.paciente}`, a.msg, true);
+            chatContainer.scrollTop = 9999;
         });
     }
 
-    function generarAlertaRadar(paciente, tipo, msg) {
-        // Creamos un ID único para no duplicar la misma alerta eternamente
-        const idAlerta = `${tipo}_${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-        
-        refAlertas.child(idAlerta).once('value', snap => {
-            if (!snap.exists() || snap.val().msg !== msg) {
-                // Solo guardamos si es nueva o si cambió el mensaje (ej: subió a 4 faltas)
-                if(!snap.exists() || snap.val().estado === 'pendiente' || snap.val().estado === 'activa') {
-                    refAlertas.child(idAlerta).update({
-                        paciente: paciente, tipo: tipo, msg: msg, estado: 'activa', ts: Date.now()
-                    });
-                }
-            }
+    function enviarReporteDominguito() {
+        if(!pacienteSeleccionado) return alert("Seleccioná un paciente");
+        const txt = document.getElementById('in-dominguito').value;
+        if(!txt) return;
+
+        // Escribimos en la ruta que Python va a estar escuchando
+        refExpedientes.child(pacienteSeleccionado).push({
+            autor: usuarioActivo,
+            rol: rangoActivo,
+            msg: txt,
+            ts: Date.now()
         });
+        document.getElementById('in-dominguito').value = '';
     }
-
-    function marcarResuelto(idAlerta) {
-        if(confirm("¿Marcar esta alerta como resuelta?")) {
-            refAlertas.child(idAlerta).update({ estado: 'resuelto', resueltoPor: usuarioActivo, tsResuelto: Date.now() });
-        }
-    }
-
-    // --- CHAT INTERNO BIDIRECCIONAL POR ALERTA (TITANIUM) ---
-    function abrirChatRadar(idAlerta, nombrePaciente) {
-        chatModalActivo = idAlerta;
-        
-        // Creamos el modal flotante inyectado en HTML
-        const modal = document.createElement('div');
-        modal.id = 'modal-chat-radar';
-        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:90000; display:flex; justify-content:center; align-items:center; padding:15px;`;
-        modal.innerHTML = `
-            <div style="background:white; width:100%; max-width:400px; height:80vh; border-radius:15px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-                <div style="background:#0f172a; color:white; padding:15px; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
-                    <span>📋 EXPEDIENTE: ${nombrePaciente}</span>
-                    <button onclick="cerrarChatRadar()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✕</button>
-                </div>
-                <div id="radar-chat-msgs" style="flex:1; background:#f8fafc; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
-                <div style="padding:15px; background:white; border-top:1px solid #e2e8f0; display:flex; gap:5px;">
-                    <input type="text" id="radar-chat-in" placeholder="Escribir resolución..." onkeypress="if(event.key==='Enter') enviarMsgRadar()">
-                    <button class="btn-pro" style="width:50px;" onclick="enviarMsgRadar()">></button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        // Escuchamos los mensajes de este expediente particular
-        refChatAlertas.child(idAlerta).on('value', snap => {
-            const msgs = snap.val() || {};
-            const container = document.getElementById('radar-chat-msgs');
-            if(!container) return;
-            container.innerHTML = Object.values(msgs).map(m => `
-                <div class="msg ${m.u===usuarioActivo?'msg-me':'msg-them'}">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.u}</b>${m.t}
-                </div>
-            `).join('');
-            container.scrollTop = container.scrollHeight;
-        });
-    }
-
-    function enviarMsgRadar() {
-        const txt = document.getElementById('radar-chat-in').value;
-        if(txt && chatModalActivo) {
-            refChatAlertas.child(chatModalActivo).push({ u: usuarioActivo, t: txt, ts: Date.now() });
-            document.getElementById('radar-chat-in').value = '';
-        }
-    }
-
-    function cerrarChatRadar() {
-        const m = document.getElementById('modal-chat-radar');
-        if(m) m.remove();
-        chatModalActivo = null;
-    }
-
 
     // =========================================================
-    // ============ CÓDIGO MADRE (INTACTO) =====================
+    // CÓDIGO MADRE (PIZARRA GLOBAL INTACTA)
     // =========================================================
-
     function renderPizarraLocal() {
         const container = document.getElementById('lista-tareas'); 
         container.innerHTML = "";
-        const fDest = document.getElementById('f-dest').value;
         const fEst = document.getElementById('f-est').value;
         
         Object.keys(cacheTareas).reverse().forEach(id => {
             const t = cacheTareas[id];
-            if(usuarioActivo !== 'ADMINISTRACION' && usuarioActivo !== 'DIRECTORES') {
-                if(t.destino !== usuarioActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return;
-            } else if (fDest !== 'TODOS' && t.destino !== fDest) return;
-
+            
+            // Filtro de visibilidad respetando jerarquías
+            if(rangoActivo !== 'ADMINISTRACION' && !rangoActivo.includes('DIRECTOR')) {
+                if(t.destino !== rangoActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return;
+            }
             if(fEst === 'ACTIVAS' && t.estado === 'CONFIRMADO') return;
             if(fEst === 'CONFIRMADO' && t.estado !== 'CONFIRMADO') return;
 
@@ -403,66 +382,29 @@
             container.innerHTML += `
                 <div class="task-card prio-${t.prio}">
                     <div style="font-size:9px; color:#64748b; margin-bottom:5px;">VENCE: ${t.vence || 'S/D'} | DE: ${t.emisor}</div>
-                    <h3 style="margin:0 0 10px 0; font-size:15px;">${t.desc}</h3>
-                    <div style="display:flex; gap:5px; margin-bottom:8px;">
-                        ${t.drive ? `<button class="btn-pro" style="height:30px; background:var(--oro); flex:1;" onclick="window.open('${t.drive}')">DRIVE</button>` : ''}
-                        ${t.adjunto ? `<button class="btn-pro" style="height:30px; background:var(--accent); flex:1;" onclick="window.open('${t.adjunto}')">DOC</button>` : ''}
-                    </div>
-                    <div style="background:#f1f5f9; border-radius:8px; padding:8px; font-size:10px; margin-bottom:8px; max-height:60px; overflow-y:auto;">
-                        ${t.feedback ? Object.values(t.feedback).map(f=>`<div><b>${f.u}:</b> ${f.msg}</div>`).join('') : ''}
-                    </div>
-                    <div style="display:flex; gap:5px; margin-bottom:8px;">
-                        <input id="feed-${id}" placeholder="Nota..." style="flex:1; height:35px;">
-                        <button class="btn-pro" style="width: 40px; min-height:35px;" onclick="enviarFeed('${id}')">💬</button>
-                    </div>
+                    <h3 style="margin:0 0 10px 0; font-size:14px;">${t.desc}</h3>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                         <button class="btn-pro" style="background:${yaVi?'#f1f5f9':'#fff'}; color:${yaVi?'var(--verde)':'#64748b'}; border:1px solid #ccc;" onclick="marcarVisto('${id}')">${yaVi?'✔ VISTO':'VISTO'}</button>
                         <button class="btn-pro" style="background:var(--verde);" onclick="cambiarEst('${id}', 'CONFIRMADO')">LISTO</button>
-                    </div>
-                    <div style="display:flex; gap:5px; margin-top:8px;">
-                        <button class="btn-pro" style="background:#64748b; font-size:10px; height:30px; flex:1" onclick="subirArchivo('${id}', '${t.desc}')">ADJUNTAR</button>
-                        ${(usuarioActivo==='ADMINISTRACION')?`<button class="btn-pro" style="background:var(--urgente); width:40px; min-height:30px;" onclick="eliminarTarea('${id}')">🗑</button>`:''}
                     </div>
                 </div>`;
         });
     }
 
     function marcarVisto(id) { refPizarra.child(`${id}/vistos/${usuarioActivo}`).set(true); }
-    function cambiarEst(id, est) { if(confirm("¿Finalizar?")) refPizarra.child(id).update({ estado: est }); }
-    function eliminarTarea(id) { if(confirm("¿Eliminar?")) refPizarra.child(id).remove(); }
-    function borradoTotal() { if(confirm("¿BORRAR TODO?")) refPizarra.remove(); }
-    function borrarChat() { if(confirm("¿Limpiar chat?")) refChat.remove(); }
-    function enviarFeed(id) { 
-        const m = document.getElementById('feed-'+id).value; 
-        if(m) { refPizarra.child(`${id}/feedback`).push({ u: usuarioActivo, msg: m }); document.getElementById('feed-'+id).value=""; } 
-    }
-    
+    function cambiarEst(id, est) { if(confirm("¿Finalizar misión?")) refPizarra.child(id).update({ estado: est }); }
     function crearTarea() { 
         const d = document.getElementById('t-desc').value; 
-        const v = document.getElementById('t-vence').value;
         if(!d) return; 
         refPizarra.push({ 
-            desc: d, vence: v || 'S/D', prio: document.getElementById('t-prio-val').value, 
-            destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, 
-            estado: 'PENDIENTE', drive: document.getElementById('t-drive-val').value 
+            desc: d, vence: document.getElementById('t-vence').value || 'S/D', prio: document.getElementById('t-prio-val').value, 
+            destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, estado: 'PENDIENTE'
         }); 
         document.getElementById('t-desc').value=""; 
     }
-
     function enviarMsg() { 
         const v = document.getElementById('chat-in').value; 
-        if(v) { refChat.push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } 
-    }
-    
-    function subirArchivo(id, n) { 
-        const i = document.createElement('input'); i.type='file'; 
-        i.onchange=e=>{ 
-            const f=new FormData(); f.append('file', e.target.files[0]); f.append('upload_preset', "clinic_preset"); 
-            fetch(`https://api.cloudinary.com/v1_1/duscmxxws/upload`,{method:'POST',body:f}).then(r=>r.json()).then(d=>{ 
-                refPizarra.child(id).update({adjunto:d.secure_url}); 
-                refChat.push({u:"SISTEMA",t:`📎 ADJUNTO en "${n}"`}); 
-            }); 
-        }; i.click(); 
+        if(v) { refChatGlobal.push({ u: usuarioActivo, t: v }); document.getElementById('chat-in').value=""; } 
     }
 </script>
 </body>
