@@ -770,7 +770,7 @@ function dominguitoNotificarTs(paciente, tipo, mensaje) {
 // =============== 6. CHATS INDIVIDUALES ======================
 // ============================================================
 function cargarContactos() {
-    listaContactos = []; // Reiniciamos
+    listaContactos = []; 
 
     // 1. Agregar a Dominguito
     listaContactos.push({
@@ -784,7 +784,6 @@ function cargarContactos() {
         snapUsuarios.forEach(child => {
             const user = child.val();
             if (user && user.nombre && user.nombre !== usuarioActivo) {
-                // Evitamos duplicados
                 if (!listaContactos.find(c => c.nombre === user.nombre)) {
                     listaContactos.push({
                         nombre: user.nombre,
@@ -799,13 +798,12 @@ function cargarContactos() {
         db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
             snapEmpleados.forEach(child => {
                 const emp = child.val();
-                // OJO: Aquí usamos 'n' (nombre) y 'm' (email) porque así están en tu BD
                 if (emp && emp.n && emp.n !== usuarioActivo) {
                     if (!listaContactos.find(c => c.nombre === emp.n)) {
                         listaContactos.push({
                             nombre: emp.n,
                             rol: emp.rol || 'Empleado',
-                            email: emp.m // El email está en 'm'
+                            email: emp.m
                         });
                     }
                 }
@@ -814,6 +812,11 @@ function cargarContactos() {
             // 3. Renderizar todo junto una sola vez
             renderizarContactos();
             console.log(`Total de contactos cargados: ${listaContactos.length}`);
+
+            // --- AQUÍ ES DONDE VA EL EVENTO ---
+            // Solo cuando las dos cargas terminaron, avisamos
+            const eventoCargaLista = new CustomEvent('listaContactosLista', { detail: listaContactos });
+            window.dispatchEvent(eventoCargaLista);
         });
     });
 }
@@ -1178,7 +1181,10 @@ function enviarADominguito() {
     const texto = input.value.trim();
     if (!texto) return;
     
-    const participantes = [uidActivo, 'dominguito'].sort();
+    // CORRECCIÓN AQUÍ: Sanitiza uidActivo antes de usarlo
+    const idEmisor = sanitizarKey(uidActivo);
+    const participantes = [idEmisor, 'dominguito'].sort();
+    
     const chatId = `chat_${participantes.join('_')}`;
     
     refChatsIndividuales.child(chatId).child('mensajes').push({
@@ -1190,7 +1196,6 @@ function enviarADominguito() {
     input.value = '';
     procesarComandoDominguito(texto);
 }
-
 // ============================================================
 // =============== 12. GRUPOS TIPO WHATSAPP ===================
 // ============================================================
@@ -1307,16 +1312,18 @@ function enviarMensajeGrupo() {
     
     input.value = '';
 }
+window.addEventListener('listaContactosLista', (e) => {
+    const contactos = e.detail; 
+    
+    // Filtramos los que no deben aparecer
+    const contactosDisponibles = contactos.filter(c => c.email !== 'dominguito' && c.nombre !== usuarioActivo);
 
-function mostrarModalCrearGrupo() {
-    // Forzamos la recarga de la lista de contactos antes de mostrar
-    if (typeof cargarContactos === 'function') cargarContactos();
+    // Evitamos duplicar el modal si el usuario hace doble clic
+    if (document.querySelector('.modal-overlay')) return;
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-    
-    const contactosDisponibles = listaContactos.filter(c => c.email !== 'dominguito' && c.nombre !== usuarioActivo);
+    overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
     
     overlay.innerHTML = `
         <div class="modal-content" style="padding: 24px;">
@@ -1344,6 +1351,11 @@ function mostrarModalCrearGrupo() {
         </div>
     `;
     document.body.appendChild(overlay);
+});
+function mostrarModalCrearGrupo() {
+    // Solo pedimos cargar los datos. 
+    // Cuando el servidor responda, el EventListener de arriba dibujará el modal automáticamente.
+    cargarContactos(); 
 }
 
 function crearGrupoDesdeModal() {
@@ -1417,7 +1429,7 @@ function abrirInfoGrupo(grupoId) {
         </div>
     `;
     document.body.appendChild(overlay);
-}
+};
 
 function agregarMiembroGrupo(grupoId) {
     const input = document.getElementById('input-nuevo-miembro');
@@ -1465,28 +1477,36 @@ function salirDelGrupo(grupoId) {
 // =============== 13. ASIGNACIÓN DE PACIENTES A T.S. =========
 // ============================================================
 function cargarTsDisponibles() {
-    refUsuarios.once('value', snap => {
-        const selTs = document.getElementById('sel-ts-asignar');
-        if (!selTs) return;
-        
-        selTs.innerHTML = '<option value="">Seleccionar T.S...</option>';
-        
+    const selTs = document.getElementById('sel-ts-asignar');
+    if (!selTs) return;
+
+    // Limpiamos el selector
+    selTs.innerHTML = '<option value="">Seleccionar T.S...</option>';
+
+    // Buscamos únicamente en el nuevo sistema
+    db.ref('SISTEMA_PERSONAL/empleados').once('value', snap => {
         snap.forEach(child => {
-            const user = child.val();
-            if (user && user.rol) {
-                const rolUpper = user.rol.toUpperCase();
+            const emp = child.val();
+            
+            // Verificamos que tenga datos de rol
+            if (emp && emp.rol) {
+                const rolUpper = emp.rol.toUpperCase();
+                
+                // Filtro para detectar T.S.
                 if (rolUpper.includes('T.S.') || rolUpper.includes('TRABAJADOR SOCIAL') || rolUpper.includes('TS')) {
                     const opt = document.createElement('option');
-                    // El value queda guardado "limpio" (sin puntos)
-                    opt.value = sanitizarKey(child.key);
-                    opt.text = `${user.nombre} (${user.email || child.key})`;
+                    
+                    // Definimos el ID (usamos el mail 'emp.m' si existe, si no, la key)
+                    const idParaValor = emp.m || child.key;
+                    
+                    opt.value = sanitizarKey(idParaValor);
+                    opt.text = `${emp.n || 'Sin nombre'} (${emp.rol})`;
                     selTs.add(opt);
                 }
             }
         });
     });
 }
-
 function asignarPacienteATS() {
     const selPac = document.getElementById('sel-paciente-asignar');
     const selTs = document.getElementById('sel-ts-asignar');
