@@ -412,6 +412,30 @@ function accesoConcedido(email, datos) {
     // Iniciar todo según rol
     iniciarApp();
 }
+function activarModoEspia(emailEspia) {
+    // 1. Buscamos los datos de ese usuario en la base de datos
+    const emailKey = sanitizarKey(emailEspia);
+    refUsuarios.child(emailKey).once('value', snap => {
+        const datos = snap.val();
+        if (datos) {
+            console.log("🕵️ MODO ESPÍA ACTIVADO: " + datos.nombre);
+            // 2. Sobrescribimos las variables globales de sesión
+            uidActivo = emailEspia;
+            usuarioActivo = datos.nombre;
+            rangoActivo = datos.rol;
+            
+            // 3. Actualizamos la interfaz
+            document.getElementById('user-tag').innerText = `🕵️ ESPÍANDO A: ${datos.nombre} | ${datos.rol}`;
+            
+            // 4. Recargamos los componentes que dependen de la identidad
+            cargarContactos(); // Ahora debería mostrar lo que ella ve
+            // renderPizarraLocal(); // Si tuvieras esta función, llámala también
+            alert("Ahora estás navegando como: " + datos.nombre);
+        } else {
+            alert("No se encontró el usuario en la base de datos.");
+        }
+    });
+}    
 
 function verificarPinChatGlobal() {
     const pinCorrecto = "2611";
@@ -716,48 +740,32 @@ function dominguitoNotificarTs(paciente, tipo, mensaje) {
 // =============== 6. CHATS INDIVIDUALES ======================
 // ============================================================
 function cargarContactos() {
-    // Cargar empleados de la base de datos
-    const refEmpleados = db.ref('/empleados');
-    refEmpleados.once('value', snap => {
+    // Leemos la rama de usuarios para obtener a todos (empleados, TS, directores)
+    refUsuarios.once('value', snapUsuarios => {
         listaContactos = [];
         
-        snap.forEach(child => {
-            const emp = child.val();
-            if (emp && emp.nombre && emp.nombre !== usuarioActivo) {
+        // 1. Agregar a Dominguito al inicio
+        listaContactos.push({
+            nombre: "🤖 DOMINGUITO",
+            rol: "Asistente IA",
+            email: "dominguito"
+        });
+
+        // 2. Procesar todos los usuarios
+        snapUsuarios.forEach(child => {
+            const user = child.val();
+            if (user && user.nombre && user.nombre !== usuarioActivo) {
                 listaContactos.push({
-                    nombre: emp.nombre,
-                    rol: emp.profesion || 'Empleado',
-                    email: emp.email || child.key
+                    nombre: user.nombre,
+                    rol: user.rol || 'Empleado',
+                    email: child.key.replace(/_/g, '.') // Normalizamos el email
                 });
             }
         });
-        
-        // También cargar desde usuarios
-        refUsuarios.once('value', snapUsuarios => {
-            snapUsuarios.forEach(child => {
-                const user = child.val();
-                if (user && user.nombre && user.nombre !== usuarioActivo) {
-                    // Evitar duplicados
-                    const existe = listaContactos.some(c => c.nombre === user.nombre);
-                    if (!existe) {
-                        listaContactos.push({
-                            nombre: user.nombre,
-                            rol: user.rol || 'Usuario',
-                            email: child.key.replace(/,/g, '.')
-                        });
-                    }
-                }
-            });
-            
-            // Agregar a Dominguito al inicio
-            listaContactos.unshift({
-                nombre: "🤖 DOMINGUITO",
-                rol: "Asistente IA",
-                email: "dominguito"
-            });
-            
-            renderizarContactos();
-        });
+
+        // 3. Renderizar la lista completa
+        renderizarContactos();
+        console.log(`Total de contactos cargados: ${listaContactos.length}`);
     });
 }
 
@@ -1039,35 +1047,34 @@ function procesarComandoDominguito(texto) {
 // ============================================================
 function escucharMensajesIndividuales() {
     if (!uidActivo) return;
-    
+
+    // Escuchar cambios en la lista general de chats
     refChatsIndividuales.on('child_changed', snap => {
-        const chatId = snap.key;
-        
-        // Solo procesar si el chat nos pertenece
-        if (!chatId.includes(uidActivo.replace(/\./g, ','))) return;
-        
         const data = snap.val();
         if (!data || !data.ultimo) return;
-        
-        // Si el último mensaje no es mío, es notificación
+
+        // Verificar si el chat involucra al usuario activo
+        // El ID del chat contiene los participantes, verificamos si contiene el email saneado
+        const emailSaneado = sanitizarKey(uidActivo);
+        if (!snap.key.includes(emailSaneado)) return;
+
+        // Si el último mensaje NO es mío, mostrar alerta
         if (data.ultimo.autor !== usuarioActivo && data.ultimo.autor !== '🤖 DOMINGUITO') {
             const de = data.ultimo.autor;
             
-            // Si no estoy en ese chat, notificar
             if (contactoSeleccionado !== de) {
-                const deLimpio = de.replace(/[^a-zA-Z0-9]/g, '');
-                const notifElement = document.getElementById(`notif-${deLimpio}`);
+                // Selector corregido (debe coincidir con el ID generado en renderizarContactos)
+                const notifId = `notif${de.replace(/[^a-zA-Z0-9]/g, '')}`;
+                const notifElement = document.getElementById(notifId);
                 if (notifElement) notifElement.style.display = 'block';
                 
-                mostrarNotificacion(`💬 ${de}`, data.ultimo.texto);
-                
+                // Reproducir sonido
                 const sound = document.getElementById('snd-msg');
-                if (sound) sound.play().catch(() => {});
+                if (sound) sound.play().catch(e => console.log("Sonido bloqueado por el navegador"));
             }
         }
     });
 }
-
 // ============================================================
 // =============== 10. NOTIFICACIONES =========================
 // ============================================================
@@ -1139,6 +1146,8 @@ function enviarADominguito() {
 // ============================================================
 // =============== 12. GRUPOS TIPO WHATSAPP ===================
 // ============================================================
+// --- FUNCIONES DE GRUPOS ---
+
 function cargarGrupos() {
     refGrupos.on('value', snap => {
         misGrupos = [];
@@ -1148,8 +1157,10 @@ function cargarGrupos() {
             const grupoId = child.key;
             const miembros = grupo.miembros || {};
             
-            // Verificar si soy miembro
-            if (miembros[uidActivo] || miembros[uidActivo.replace(/\./g, ',')]) {
+            // Verificamos si soy miembro (por nombre o por UID)
+            const esMiembro = miembros[usuarioActivo] || miembros[uidActivo] || miembros[uidActivo.replace(/\./g, ',')];
+            
+            if (esMiembro) {
                 misGrupos.push({ id: grupoId, ...grupo });
             }
         });
@@ -1194,21 +1205,18 @@ function seleccionarGrupo(grupoId) {
         }
     });
     
-    // Mostrar input de grupo
     const inputArea = document.getElementById('input-grupo-area');
     if (inputArea) inputArea.style.display = 'flex';
     
     const chatContainer = document.getElementById('chat-grupo');
     if (!chatContainer) return;
     
-    // Dejar de escuchar grupo anterior
     if (grupoEscuchando) {
         refGrupos.child(grupoEscuchando).child('mensajes').off();
     }
     
     grupoEscuchando = grupoId;
     
-    // Escuchar mensajes del grupo
     refGrupos.child(grupoId).child('mensajes').on('value', snap => {
         const grupo = misGrupos.find(g => g.id === grupoId);
         
@@ -1255,6 +1263,9 @@ function enviarMensajeGrupo() {
 }
 
 function mostrarModalCrearGrupo() {
+    // Forzamos la recarga de la lista de contactos antes de mostrar
+    if (typeof cargarContactos === 'function') cargarContactos();
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
@@ -1264,14 +1275,12 @@ function mostrarModalCrearGrupo() {
     overlay.innerHTML = `
         <div class="modal-content" style="padding: 24px;">
             <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
-            
             <div style="margin-bottom:15px;">
                 <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
-                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH, Turno Mañana..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
-            
             <div style="margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
+                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros (${contactosDisponibles.length} disponibles):</label>
                 <div style="max-height:250px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:8px;">
                     ${contactosDisponibles.map(c => `
                         <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid #f1f5f9; font-size:13px; cursor:pointer;">
@@ -1282,14 +1291,12 @@ function mostrarModalCrearGrupo() {
                     `).join('')}
                 </div>
             </div>
-            
             <div style="display:flex; gap:8px;">
                 <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
                 <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
             </div>
         </div>
     `;
-    
     document.body.appendChild(overlay);
 }
 
@@ -1299,32 +1306,26 @@ function crearGrupoDesdeModal() {
     
     if (!nombre) return alert("El nombre del grupo es obligatorio");
     
-    const miembrosArr = Array.from(checkboxes).map(cb => cb.value);
     const nuevoGrupo = refGrupos.push();
-    const grupoId = nuevoGrupo.key;
-    
-    // Construir objeto de miembros
     const miembrosObj = {};
-    miembrosArr.forEach(m => miembrosObj[m] = true);
-    // El creador también es miembro
+    
+    // Agregar seleccionados por nombre
+    checkboxes.forEach(cb => miembrosObj[cb.value] = true);
+    // El creador también es miembro por nombre
     miembrosObj[usuarioActivo] = true;
     
-    // Guardar en Firebase
     nuevoGrupo.set({
         nombre: nombre,
         creador: usuarioActivo,
         miembros: miembrosObj,
         admins: { [usuarioActivo]: true },
         mensajes: {},
-        ultimo: { autor: "Sistema", texto: `Grupo "${nombre}" creado por ${usuarioActivo}`, ts: Date.now() },
+        ultimo: { autor: "Sistema", texto: `Grupo "${nombre}" creado`, ts: Date.now() },
         ts: Date.now()
     });
     
-    // Cerrar modal
-    const modal = document.querySelector('.modal-overlay');
-    if (modal) modal.remove();
-    
-    mostrarToast(`✅ Grupo "${nombre}" creado con ${miembrosArr.length + 1} miembros`);
+    document.querySelector('.modal-overlay')?.remove();
+    mostrarToast(`✅ Grupo "${nombre}" creado`);
 }
 
 function abrirInfoGrupo(grupoId) {
@@ -1341,38 +1342,34 @@ function abrirInfoGrupo(grupoId) {
     overlay.innerHTML = `
         <div class="modal-content" style="padding: 24px;">
             <h3 style="margin:0 0 15px 0;">👥 ${grupo.nombre}</h3>
-            
             <div style="margin-bottom:15px;">
                 <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
                 <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
-                    ${miembrosArr.map(email => `
+                    ${miembrosArr.map(nombreMiembro => `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
-                            <span style="font-size:12px;">${email}</span>
-                            ${soyAdmin && email !== usuarioActivo && email !== uidActivo ? 
-                                `<button onclick="eliminarMiembroGrupo('${grupoId}','${email}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:10px;">✕</button>` 
+                            <span style="font-size:12px;">${nombreMiembro}</span>
+                            ${soyAdmin && nombreMiembro !== usuarioActivo ? 
+                                `<button onclick="eliminarMiembroGrupo('${grupoId}','${nombreMiembro}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:10px;">✕</button>` 
                                 : ''}
                         </div>
                     `).join('')}
                 </div>
             </div>
-            
             ${soyAdmin ? `
                 <div style="margin-bottom:15px;">
                     <b style="font-size:12px;">Agregar miembro:</b>
                     <div style="display:flex; gap:5px; margin-top:8px;">
-                        <input type="text" id="input-nuevo-miembro" placeholder="Nombre del usuario..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:12px;">
+                        <input type="text" id="input-nuevo-miembro" placeholder="Nombre..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:12px;">
                         <button onclick="agregarMiembroGrupo('${grupoId}')" style="padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:12px;">+</button>
                     </div>
                 </div>
             ` : ''}
-            
             <div style="display:flex; gap:8px; margin-top:15px;">
                 <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
                 <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer; color: #000;">CERRAR</button>
             </div>
         </div>
     `;
-    
     document.body.appendChild(overlay);
 }
 
@@ -1383,9 +1380,8 @@ function agregarMiembroGrupo(grupoId) {
     
     refGrupos.child(grupoId).child('miembros').update({ [nombre]: true });
     input.value = '';
-    mostrarToast(`✅ ${nombre} agregado al grupo`);
+    mostrarToast(`✅ ${nombre} agregado`);
     
-    // Mensaje de sistema en el grupo
     refGrupos.child(grupoId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `📢 ${nombre} se ha unido al grupo.`,
@@ -1394,29 +1390,26 @@ function agregarMiembroGrupo(grupoId) {
     });
 }
 
-function eliminarMiembroGrupo(grupoId, email) {
-    if (confirm(`¿Eliminar a ${email} del grupo?`)) {
-        refGrupos.child(grupoId).child('miembros').child(email.replace(/\./g, ',')).remove();
-        mostrarToast(`✕ ${email} eliminado del grupo`);
+function eliminarMiembroGrupo(grupoId, nombre) {
+    if (confirm(`¿Eliminar a ${nombre} del grupo?`)) {
+        refGrupos.child(grupoId).child('miembros').child(nombre).remove();
+        mostrarToast(`✕ ${nombre} eliminado del grupo`);
+        document.querySelector('.modal-overlay')?.remove();
     }
 }
 
 function salirDelGrupo(grupoId) {
     if (confirm("¿Salir del grupo?")) {
-        const miKey = uidActivo.replace(/\./g, ',');
-        refGrupos.child(grupoId).child('miembros').child(miKey).remove();
-        
-        // Si el usuario estaba guardado por el nombre y no por el UID también borrarlo
-        refGrupos.child(grupoId).child('miembros').child(usuarioActivo).remove();
+        const refMiembros = refGrupos.child(grupoId).child('miembros');
+        // Limpiamos tanto el nombre como el UID (por si acaso quedó guardado)
+        refMiembros.child(usuarioActivo).remove();
+        refMiembros.child(uidActivo.replace(/\./g, ',')).remove();
         
         grupoSeleccionado = null;
         grupoEscuchando = null;
         
-        // Limpiar chat
         const chatContainer = document.getElementById('chat-grupo');
-        if (chatContainer) {
-            chatContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo para chatear</div>';
-        }
+        if (chatContainer) chatContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo</div>';
         
         document.querySelector('.modal-overlay')?.remove();
         mostrarToast("👋 Saliste del grupo");
@@ -1438,6 +1431,7 @@ function cargarTsDisponibles() {
                 const rolUpper = user.rol.toUpperCase();
                 if (rolUpper.includes('T.S.') || rolUpper.includes('TRABAJADOR SOCIAL') || rolUpper.includes('TS')) {
                     const opt = document.createElement('option');
+                    // El value queda guardado "limpio" (sin puntos)
                     opt.value = sanitizarKey(child.key);
                     opt.text = `${user.nombre} (${user.email || child.key})`;
                     selTs.add(opt);
@@ -1456,7 +1450,8 @@ function asignarPacienteATS() {
     }
     
     const pacKey = sanitizarKey(selPac.value);
-    const tsKey = sanitizarKey(selTs.value);
+    // IMPORTANTE: selTs.value YA ESTÁ LIMPIO. No lo vuelvas a sanitizar.
+    const tsKey = selTs.value; 
     
     // Guardar en Firebase
     refAsignaciones.child(pacKey).set({
@@ -1465,7 +1460,7 @@ function asignarPacienteATS() {
         fecha: Date.now()
     });
     
-    // Notificar a la T.S.
+    // Notificar a la T.S. (usando el ID ya limpio)
     const participantes = [sanitizarKey(uidActivo), tsKey].sort();
     const chatId = `chat_${participantes.join('_')}`;
     
@@ -1535,16 +1530,15 @@ function cargarPacientesDeTs(emailTs) {
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
-        const tsSanitizado = sanitizarKey(emailTs);
+        // Filtramos siempre contra el ID "limpio"
+        const tsBuscada = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
-            if (asignaciones[paciente].ts === emailTs || 
-                asignaciones[paciente].ts === tsSanitizado) {
+            if (asignaciones[paciente].ts === tsBuscada) {
                 misPacientes.push(paciente);
             }
         });
         
-        // Actualizar selector de expedientes (solo los míos)
         const selExp = document.getElementById('sel-paciente');
         if (selExp) {
             selExp.innerHTML = '<option value="">Seleccionar paciente...</option>';
@@ -1556,7 +1550,6 @@ function cargarPacientesDeTs(emailTs) {
             });
         }
         
-        // Actualizar estadísticas
         const statElem = document.getElementById('stat-mispacientes');
         if (statElem) statElem.textContent = misPacientes.length;
     });
@@ -1570,11 +1563,11 @@ function cargarPanelTs(emailTs) {
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
-        const tsSanitizado = sanitizarKey(emailTs);
+        // Filtramos siempre contra el ID "limpio"
+        const tsBuscada = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
-            if (asignaciones[paciente].ts === emailTs || 
-                asignaciones[paciente].ts === tsSanitizado) {
+            if (asignaciones[paciente].ts === tsBuscada) {
                 misPacientes.push(paciente);
             }
         });
