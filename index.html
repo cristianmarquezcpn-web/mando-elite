@@ -650,7 +650,7 @@ function procesarComandoDominguito(texto) {
                         if (pac.cud) {
                             const hoy = new Date();
                             const venc = new Date(pac.cud);
-                            const diff = Math.floor((venc - hoy) / (1000  60  60  24));
+                            const diff = Math.floor((venc - hoy) / (1000*60*60*24));
                             
                             if (diff <= 0) {
                                 respuesta += `❌ ${childPac.key}: CUD VENCIDO (${pac.cud})\n`;
@@ -1311,6 +1311,20 @@ function cargarDatosPrivados(nombre) {
             `;
         }
     });
+}
+function switchTab(tabIndex) {
+    // Cambiar clases de los botones
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa'));
+    document.getElementById(`tab${tabIndex}`).classList.add('activa');
+    
+    // Cambiar vistas
+    if (tabIndex === 1) {
+        document.getElementById('vista-chats').style.display = 'flex';
+        document.getElementById('vista-expedientes').style.display = 'none';
+    } else {
+        document.getElementById('vista-chats').style.display = 'none';
+        document.getElementById('vista-expedientes').style.display = 'flex';
+    }
 }
 console.log("Sistema DOMINGUITO listo para operar.");
 };
