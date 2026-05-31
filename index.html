@@ -73,16 +73,17 @@
 <audio id="snd-radar" src="https://assets.mixkit.co/activestorage/sfx/2870/2870-preview.mp3" preload="auto"></audio>
 <audio id="snd-msg" src="https://assets.mixkit.co/activestorage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
 
-<div id="bloqueo-mando">
-    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-        <h2 style="color:var(--accent); margin-bottom: 20px;">🔐 ACCESO DOMINGUITO</h2>
-        <select id="sel-empleado" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-            <option value="">Cargando personal...</option>
-        </select>
-        <button onclick="loginGoogle()">Iniciar sesión con Google</button>
-        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginConToken()">ENTRAR AL SISTEMA</button>
-        <p style="font-size: 11px; color: #94a3b8; margin-top: 15px;">Si es tu primera vez, creá un token de 4 dígitos. Recordalo para próximos accesos.</p>
-    </div>
+<div id="bloqueo-mando" style="position: fixed; top:0; left:0; width:100%; height:100%; background: #f4f4f9; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;">
+    
+    <h2>Acceso al Sistema</h2>
+    <p>Por favor, autentícate para continuar.</p>
+
+    <button onclick="loginGoogle()" style="padding: 12px 24px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        Entrar con Google
+    </button>
+
+    <div id="contenedor-viejo" style="display: none;">
+        </div>
 </div>
 
 <div class="col-radar">
@@ -239,179 +240,87 @@
     // =============== CONFIGURACIÓN FIREBASE =====================
     // ============================================================
     
-    const firebaseConfig = { 
-    apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", 
-    authDomain: "clinicaintegral-5c488.firebaseapp.com", 
-    databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", 
-    projectId: "clinicaintegral-5c488", 
-    storageBucket: "clinicaintegral-5c488.appspot.com", 
-    appId: "1:184090967634:web:09715937b33ea48288698b" 
+    const firebaseConfig = {
+    apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
+    authDomain: "clinicaintegral-5c488.firebaseapp.com",
+    databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
+    projectId: "clinicaintegral-5c488",
+    storageBucket: "clinicaintegral-5c488.appspot.com",
+    appId: "1:184090967634:web:09715937b33ea48288698b"
 };
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
 
-    // Autenticación anónima para Firebase
-    firebase.auth().signInAnonymously().catch(console.error);
+// === REFERENCIAS ===
+const refUsuarios = db.ref('/usuarios');
+const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
+const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
+const refChatsIndividuales = db.ref('/SISTEMA_MANDO/chatsindividuales');
+const refExpedientes = db.ref('/SISTEMA_MANDO/expedientesinteractivos');
+const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
+const refOnline = db.ref('/SISTEMA_MANDO/online');
+const refMensajesDominguito = db.ref('/SISTEMA_MANDO/mensajesdominguito');
 
-    // ============================================================
-    // =============== REFERENCIAS ================================
-    // ============================================================
-    
-    const refEmpleados = db.ref('/SISTEMA_PERSONAL/empleados');
-    const refTokens = db.ref('/SISTEMA_MANDO/tokens');
-    const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
-    const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
-    const refChatsIndividuales = db.ref('/SISTEMA_MANDO/chatsindividuales');
-    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientesinteractivos');
-    const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
-    const refOnline = db.ref('/SISTEMA_MANDO/online');
-    const refMensajesDominguito = db.ref('/SISTEMA_MANDO/mensajesdominguito');
-    document.addEventListener('DOMContentLoaded', () => {
-    cargarEmpleados();
+// === VARIABLES GLOBALES ===
+let usuarioActivo = "";
+let rangoActivo = "";
+let permisosActivos = {};
+// === LÓGICA DE AUTENTICACIÓN ===
+auth.onAuthStateChanged(user => {
+    const bloqueo = document.getElementById('bloqueo-mando');
+    if (user) {
+        validarUsuario(user);
+    } else {
+        if (bloqueo) bloqueo.style.display = 'flex';
+    }
 });
-    // ============================================================
-    // =============== VARIABLES GLOBALES =========================
-    // ============================================================
+
+function validarUsuario(user) {
+    const emailKey = user.email.replace(/\./g, ',');
     
-    let usuarioActivo = "";
-    let rangoActivo = "";
-    let uidActivo = "";
-    let cacheTareas = {};
-    let listaPacientesCache = [];
-    let pacienteSeleccionado = "";
-    let contactoSeleccionado = null;
-    let listaContactos = [];
-    let estadisticas = { cuds: 0, ausencias: 0, mensajes: 0 };
-    let contactoEscuchando = null;
+    // Si eres tú (Admin), entras sin mirar la base de datos
+    if (user.email === "cristianmarquezcpn@gmail.com") {
+        accesoConcedido(user.email, { rol: "admin", nombre: "Cristian (Director)" });
+        return;
+    }
 
-    // ============================================================
-    // =============== 1. LOGIN CON TOKEN =========================
-    // ============================================================
-   function cargarEmpleados() {
-    refEmpleados.once('value', snap => {
-        let sel = document.getElementById('sel-empleado');
-        if (!sel) return; 
-
-        // 1. Mapa para filtrar duplicados por nombre
-        const empleadosMap = {};
-        let htmlTs = '<option value="">Seleccionar T.S.</option>';
-
-        snap.forEach(child => {
-            const emp = child.val();
-            // Validamos que el objeto tenga nombre (n)
-            if (emp && typeof emp === 'object' && emp.n) {
-                // Si el nombre no está en el mapa, lo agregamos
-                if (!empleadosMap[emp.n]) {
-                    empleadosMap[emp.n] = {
-                        nombre: emp.n,
-                        id: emp.id || child.key,
-                        profesion: emp.profesion || 'Empleado'
-                    };
-                }
-            }
-        });
-
-        // 2. Convertimos el mapa a un array y ordenamos alfabéticamente
-        const empleados = Object.values(empleadosMap);
-        empleados.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-
-        // 3. Construimos el HTML de las opciones de una sola vez
-        let optionsHtml = '<option value="">Seleccione su nombre...</option>';
-        
-        empleados.forEach(emp => {
-            optionsHtml += `<option value="${emp.nombre}" data-id="${emp.id}" data-rol="${emp.profesion}">${emp.nombre} (${emp.profesion})</option>`;
-            
-            const prof = emp.profesion.toUpperCase();
-            if(prof.includes("TS") || prof.includes("TRABAJADORA SOCIAL")) {
-                htmlTs += `<option value="${emp.nombre}">${emp.nombre}</option>`;
-            }
-        });
-
-        // 4. Asignamos el HTML construido al elemento
-        sel.innerHTML = optionsHtml;
-        
-        const selTs = document.getElementById('sel-asignar-ts');
-        if (selTs) selTs.innerHTML = htmlTs;
-
-        // 5. Verificar sesión guardada
-        const sesionGuardada = localStorage.getItem('dominguitosesion');
-        if (sesionGuardada) {
-            try {
-                const datos = JSON.parse(sesionGuardada);
-                const option = sel.querySelector(`option[value="${datos.usuario}"]`);
-                if (option) {
-                    sel.value = datos.usuario;
-                    document.getElementById('token-mando').value = datos.token;
-                    setTimeout(() => loginConToken(), 500);
-                }
-            } catch(e) { console.error("Error al restaurar sesión", e); }
+    // Si es empleado, validamos en la DB
+    refUsuarios.child(emailKey).once('value', snap => {
+        const datos = snap.val();
+        if (datos) {
+            accesoConcedido(user.email, datos);
+        } else {
+            alert("Acceso denegado: El email no está autorizado.");
+            auth.signOut();
         }
     });
 }
-    function loginConToken() {
-        const select = document.getElementById('sel-empleado');
-        const tokenInput = document.getElementById('token-mando');
-        if (!select || !select.value) return alert("Seleccioná tu nombre");
-        
-        const usuario = select.value;
-        const tokenIngresado = tokenInput.value;
-        
-        if (!tokenIngresado || tokenIngresado.length < 4) {
-            return alert("El token debe tener al menos 4 caracteres");
-        }
 
-        refTokens.child(usuario).once('value', snap => {
-            const tokenCorrecto = snap.val();
-            
-            if (tokenCorrecto && tokenCorrecto !== tokenIngresado) {
-                return alert("❌ Token incorrecto. Acceso denegado.");
-            }
-            
-            if (!tokenCorrecto) {
-                if (!confirm("¿Es tu primera vez? Se registrará este token para futuros accesos.")) return;
-                refTokens.child(usuario).set(tokenIngresado);
-            }
-            
-            const option = select.options[select.selectedIndex];
-            usuarioActivo = usuario;
-            rangoActivo = option.getAttribute('data-rol') ? option.getAttribute('data-rol').toUpperCase() : 'EMPLEADO';
-            uidActivo = option.getAttribute('data-id') || usuario;
-            
-            localStorage.setItem('dominguitosesion', JSON.stringify({
-                usuario: usuarioActivo,
-                token: tokenIngresado,
-                rango: rangoActivo
-            }));
-            
-            const bloqueo = document.getElementById('bloqueo-mando');
-            if (bloqueo) bloqueo.style.display = 'none';
-            
-            const userTag = document.getElementById('user-tag');
-            if (userTag) userTag.innerText = `👤 ${usuarioActivo} | ${rangoActivo}`;
-            
-            const panelTs = document.getElementById('panel-asignar-ts');
-            const esAdmin = rangoActivo.includes('ADMIN') || rangoActivo.includes('DIRECTOR') || rangoActivo.includes('COORD');
-            if (panelTs && esAdmin) {
-                panelTs.style.display = 'flex';
-            }
-            
-            const onlineRef = refOnline.child(usuarioActivo);
-            onlineRef.set({ nombre: usuarioActivo, rol: rangoActivo, ultimo: Date.now() });
-            onlineRef.onDisconnect().remove();
-            
-            if (typeof iniciarApp === 'function') iniciarApp();
-            if (typeof cargarDatosPrivados === 'function') cargarDatosPrivados(usuarioActivo);
-            if (typeof mostrarToast === 'function') mostrarToast(`✅ Bienvenido ${usuarioActivo}`);
-        });
-    }
+function accesoConcedido(email, datos) {
+    const bloqueo = document.getElementById('bloqueo-mando');
+    if (bloqueo) bloqueo.style.display = 'none';
+    
+    const userTag = document.getElementById('user-tag');
+    if (userTag) userTag.innerText = `👤 ${datos.nombre || email} | ${datos.rol.toUpperCase()}`;
+    
+    // Registrar presencia
+    const onlineRef = refOnline.child(email.replace(/\./g, ','));
+    onlineRef.set({ nombre: datos.nombre || email, rol: datos.rol, ultimo: Date.now() });
+    onlineRef.onDisconnect().remove();
 
-    function cerrarSesion() {
-        localStorage.removeItem('dominguitosesion');
-        if (usuarioActivo) refOnline.child(usuarioActivo).remove();
-        location.reload();
-    } 
-   
+    if (typeof iniciarApp === 'function') iniciarApp();
+}
+
+function loginGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(e => console.error("Error al loguear:", e));
+}
+
+function cerrarSesion() {
+    auth.signOut().then(() => location.reload());
+}
     // ============================================================
     // =============== 2. INICIAR APLICACIÓN ======================
     // ============================================================
