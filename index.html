@@ -267,7 +267,9 @@
     const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
     const refOnline = db.ref('/SISTEMA_MANDO/online');
     const refMensajesDominguito = db.ref('/SISTEMA_MANDO/mensajesdominguito');
-
+    document.addEventListener('DOMContentLoaded', () => {
+    cargarEmpleados();
+});
     // ============================================================
     // =============== VARIABLES GLOBALES =========================
     // ============================================================
