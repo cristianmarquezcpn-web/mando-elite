@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -163,10 +164,16 @@
 
     <div class="glass-panel">
         <input type="text" id="t-desc" placeholder="Escribí una orden o misión para el equipo...">
+        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
             <input type="date" id="t-vence">
-            <select id="t-prio-val"><option value="BAJA">Normal</option><option value="MEDIA" selected>Importante</option><option value="ALTA">🔥 URGENTE</option></select>
+            <select id="t-prio-val">
+                <option value="BAJA">Normal</option>
+                <option value="MEDIA" selected>Importante</option>
+                <option value="ALTA">🔥 URGENTE</option>
+            </select>
         </div>
+        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
             <select id="t-dest-val">
                 <option value="TODOS">📢 A TODOS</option>
@@ -179,9 +186,16 @@
             </select>
             <input type="text" id="t-drive-val" placeholder="Link (opcional)">
         </div>
+
+        <div style="margin-top:8px;">
+            <input type="file" id="input-archivo-tarea" style="display:none;" onchange="manejarSeleccionArchivo(this)">
+            <button type="button" onclick="document.getElementById('input-archivo-tarea').click()" class="btn-pro" style="width:100%; background:#6366f1; color:white;">
+                📎 ADJUNTAR ARCHIVO
+            </button>
+        </div>
+
         <button class="btn-pro" style="width:100%; margin-top:10px; background: var(--verde);" onclick="crearTarea()">📨 ENVIAR ORDEN</button>
-    </div>
-    
+    </div>    
     <div style="display:flex; gap:10px;">
         <select id="f-est" onchange="renderPizarraLocal()" style="flex:1">
             <option value="ACTIVAS">📌 Órdenes Activas</option>
@@ -275,9 +289,6 @@
 </div>
 
 <script>
-// ============================================================
-// =============== CONFIGURACIÓN FIREBASE =====================
-// ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
     authDomain: "clinicaintegral-5c488.firebaseapp.com",
@@ -290,6 +301,16 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+
+// ============================================================
+// =============== FUNCIÓN DE SANEAMIENTO =====================
+// ============================================================
+function sanitizarKey(key) {
+    if (!key) return "vacio";
+    // Firebase no permite: . # $ [ ] / @
+    // Reemplazamos caracteres prohibidos por guion bajo
+    return key.toString().replace(/[.#$[\]\/@]/g, '_');
+}
 
 // ============================================================
 // =============== REFERENCIAS FIREBASE =======================
@@ -318,6 +339,7 @@ let listaContactos = [];
 let misGrupos = [];
 let cacheTareas = {};
 let listaPacientesCache = [];
+let urlArchivoAdjunto = '';    
 
 // ============================================================
 // =============== AUTENTICACIÓN ==============================
@@ -340,13 +362,13 @@ function loginGoogle() {
 }
 
 function cerrarSesion() {
-    const uidKey = uidActivo.replace(/\./g, ',');
+    const uidKey = sanitizarKey(uidActivo);
     refOnline.child(uidKey).remove();
     auth.signOut().then(() => location.reload());
 }
 
 function validarUsuario(user) {
-    const emailKey = user.email.replace(/\./g, ',');
+    const emailKey = sanitizarKey(user.email);
     uidActivo = user.email;
     usuarioActivo = user.email;
     
@@ -380,7 +402,7 @@ function accesoConcedido(email, datos) {
     if (userTag) userTag.innerText = `👤 ${usuarioActivo} | ${rangoActivo}`;
     
     // Registrar online
-    const uidKey = uidActivo.replace(/\./g, ',');
+    const uidKey = sanitizarKey(uidActivo);
     refOnline.child(uidKey).set({ nombre: usuarioActivo, rol: rangoActivo, ultimo: Date.now() });
     refOnline.child(uidKey).onDisconnect().remove();
     
@@ -456,6 +478,7 @@ function iniciarApp() {
     
     console.log("✅ Aplicación iniciada completamente");
 }
+
 // ============================================================
 // =============== 2. INICIAR DOMINGUITO ======================
 // ============================================================
@@ -530,7 +553,7 @@ function escanearBaseDeDatos() {
                         // SUBIR MENSAJE PRIORIDAD ABSOLUTA A LA PIZARRA
                         const destinatarios = ['T.S.', 'DIRECTORES', 'COORD'];
                         destinatarios.forEach(dest => {
-                            const idTarea = `cud_vencido_${nombre.replace(/[^a-zA-Z0-9]/g, '')}_${dest}`;
+                            const idTarea = `cud_vencido_${sanitizarKey(nombre)}_${sanitizarKey(dest)}`;
                             refPizarra.child(idTarea).set({
                                 desc: `🚨 PRIORIDAD ABSOLUTA: El CUD de ${nombre} está VENCIDO. Debe renovarse de manera urgente.`,
                                 prio: 'ALTA',
@@ -562,8 +585,8 @@ function escanearBaseDeDatos() {
         });
     });
     
-    // 2. Escanear ausencias
-    const refAusencias = db.ref('/seguimientopacientes');
+    // 2. Escanear ausencias (Corregido a seguimiento_pacientes con guion bajo)
+    const refAusencias = db.ref('/seguimiento_pacientes');
     refAusencias.once('value', snap => {
         snap.forEach(child => {
             const nombre = child.key;
@@ -653,7 +676,7 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // =============== 5. DOMINGUITO NOTIFICADOR A T.S. ===========
 // ============================================================
 function dominguitoNotificarTs(paciente, tipo, mensaje) {
-    refAsignaciones.child(paciente).once('value', snap => {
+    refAsignaciones.child(sanitizarKey(paciente)).once('value', snap => {
         const asignacion = snap.val();
         if (!asignacion || !asignacion.ts) {
             console.log(`⚠️ ${paciente} no tiene T.S. asignada`);
@@ -661,11 +684,11 @@ function dominguitoNotificarTs(paciente, tipo, mensaje) {
         }
         
         const tsEmail = asignacion.ts;
-        const tsKey = tsEmail.replace(/\./g, ',');
+        const tsKey = sanitizarKey(tsEmail);
         
-        // Generar ID de chat único (determinista)
+        // Generar ID de chat único (determinista) y seguro
         const participantes = ['dominguito', tsKey].sort();
-        const chatId = `chat${participantes.join('')}`;
+        const chatId = `chat_${participantes.join('_')}`;
         
         // Enviar mensaje privado a la T.S.
         refChatsIndividuales.child(chatId).child('mensajes').push({
@@ -678,7 +701,7 @@ function dominguitoNotificarTs(paciente, tipo, mensaje) {
         });
         
         // Registrar en el expediente del paciente
-        refExpedientes.child(paciente).push({
+        refExpedientes.child(sanitizarKey(paciente)).push({
             autor: '🤖 DOMINGUITO',
             msg: `🔔 Notificación enviada a T.S. ${tsEmail}: ${tipo} - ${mensaje}`,
             ts: Date.now(),
@@ -800,10 +823,11 @@ function seleccionarContacto(nombre, rol, email) {
         refChatsIndividuales.child(contactoEscuchando).child('mensajes').off();
     }
     
-    // Generar ID de chat determinista
-    const idReceptor = email || nombre;
-    const participantes = [uidActivo, idReceptor].sort();
-    contactoEscuchando = `chat${participantes.join('')}`;
+    // Generar ID de chat determinista saneado
+    const idReceptor = sanitizarKey(email || nombre);
+    const idEmisor = sanitizarKey(uidActivo);
+    const participantes = [idEmisor, idReceptor].sort();
+    contactoEscuchando = `chat_${participantes.join('_')}`;
     
     // Escuchar mensajes
     refChatsIndividuales.child(contactoEscuchando).child('mensajes').on('value', snap => {
@@ -843,7 +867,6 @@ function seleccionarContacto(nombre, rol, email) {
         }, 500);
     }
 }
-
 // ============================================================
 // =============== 7. ENVIAR MENSAJE INDIVIDUAL ===============
 // ============================================================
@@ -892,7 +915,7 @@ function procesarComandoDominguito(texto) {
     
     // Comando: CUD
     if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
-        enviarRespuesta("🔍 Escaneando todos los CUDs...\n\n");
+        enviarRespuesta("🔍 Escaneando todos los CUDs...");
         
         const ramas = ['cd', 'cet', 'rehab'];
         let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
@@ -929,11 +952,12 @@ function procesarComandoDominguito(texto) {
         return;
     }
     
-    // Comando: Ausencias
+    // Comando: Ausencias (CORREGIDO)
     if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
-        enviarRespuesta("📉 Verificando ausencias...\n\n");
+        enviarRespuesta("📉 Verificando ausencias...");
         
-        db.ref('/seguimientopacientes').once('value', snap => {
+        // Se cambió a 'seguimiento_pacientes' con guion bajo
+        db.ref('/seguimiento_pacientes').once('value', snap => {
             let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
             let encontrados = false;
             
@@ -943,6 +967,7 @@ function procesarComandoDominguito(texto) {
                 
                 child.forEach(dia => {
                     const val = dia.val();
+                    // Detecta tanto el string 'A' como el objeto {val: 'A'}
                     if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
                 });
                 
@@ -956,8 +981,6 @@ function procesarComandoDominguito(texto) {
         });
         return;
     }
-    
-    // Comando: Ayuda
     if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
         enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n
 • "CUD" - Ver vencimientos de todos los pacientes
@@ -1415,7 +1438,7 @@ function cargarTsDisponibles() {
                 const rolUpper = user.rol.toUpperCase();
                 if (rolUpper.includes('T.S.') || rolUpper.includes('TRABAJADOR SOCIAL') || rolUpper.includes('TS')) {
                     const opt = document.createElement('option');
-                    opt.value = child.key.replace(/,/g, '.');
+                    opt.value = sanitizarKey(child.key);
                     opt.text = `${user.nombre} (${user.email || child.key})`;
                     selTs.add(opt);
                 }
@@ -1432,16 +1455,18 @@ function asignarPacienteATS() {
         return alert("Seleccioná un paciente y una T.S.");
     }
     
+    const pacKey = sanitizarKey(selPac.value);
+    const tsKey = sanitizarKey(selTs.value);
+    
     // Guardar en Firebase
-    refAsignaciones.child(selPac.value).set({
-        ts: selTs.value,
+    refAsignaciones.child(pacKey).set({
+        ts: tsKey,
         asignadoPor: usuarioActivo,
         fecha: Date.now()
     });
     
     // Notificar a la T.S.
-    const tsKey = selTs.value.replace(/\./g, ',');
-    const participantes = [uidActivo, tsKey].sort();
+    const participantes = [sanitizarKey(uidActivo), tsKey].sort();
     const chatId = `chat_${participantes.join('_')}`;
     
     refChatsIndividuales.child(chatId).child('mensajes').push({
@@ -1452,9 +1477,9 @@ function asignarPacienteATS() {
     });
     
     // Registrar en el expediente del paciente
-    refExpedientes.child(selPac.value).push({
+    refExpedientes.child(pacKey).push({
         autor: '🤖 DOMINGUITO',
-        msg: `📌 Paciente asignado a T.S. ${selTs.value} por ${usuarioActivo}`,
+        msg: `📌 Paciente asignado a T.S. ${selTs.options[selTs.selectedIndex].text} por ${usuarioActivo}`,
         ts: Date.now(),
         tipo: 'sistema'
     });
@@ -1497,7 +1522,7 @@ function cargarAsignaciones() {
 
 function quitarAsignacion(paciente) {
     if (confirm(`¿Quitar asignación de ${paciente}?`)) {
-        refAsignaciones.child(paciente).remove();
+        refAsignaciones.child(sanitizarKey(paciente)).remove();
         mostrarToast(`✕ Asignación de ${paciente} eliminada`);
     }
 }
@@ -1506,13 +1531,15 @@ function quitarAsignacion(paciente) {
 // =============== 14. PANEL DE T.S. ==========================
 // ============================================================
 function cargarPacientesDeTs(emailTs) {
+    refAsignaciones.off('value');
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
+        const tsSanitizado = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
             if (asignaciones[paciente].ts === emailTs || 
-                asignaciones[paciente].ts === emailTs.replace(/\./g, ',')) {
+                asignaciones[paciente].ts === tsSanitizado) {
                 misPacientes.push(paciente);
             }
         });
@@ -1539,13 +1566,15 @@ function cargarPanelTs(emailTs) {
     const container = document.getElementById('ts-pendientes');
     if (!container) return;
     
+    refAsignaciones.off('value');
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
+        const tsSanitizado = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
             if (asignaciones[paciente].ts === emailTs || 
-                asignaciones[paciente].ts === emailTs.replace(/\./g, ',')) {
+                asignaciones[paciente].ts === tsSanitizado) {
                 misPacientes.push(paciente);
             }
         });
@@ -1615,10 +1644,12 @@ function cargarExpedientePaciente() {
         return;
     }
     
-    // Limpiar listener previo
-    refExpedientes.child(pacienteSeleccionado).off();
+    const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    refExpedientes.child(pacienteSeleccionado).on('value', snap => {
+    // Limpiar listener previo
+    refExpedientes.child(pacKey).off();
+    
+    refExpedientes.child(pacKey).on('value', snap => {
         const msgs = snap.val() || {};
         
         chatContainer.innerHTML = `
@@ -1632,7 +1663,7 @@ function cargarExpedientePaciente() {
         mensajesArray.forEach(m => {
             let claseMsg = 'msg-them';
             if (m.autor === usuarioActivo) claseMsg = 'msg-me';
-            if (m.autor && m.autor.includes('DOMINGUITO')) claseMsg = 'msg-bot';
+            if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
             if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
             
             const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
@@ -1654,7 +1685,9 @@ function enviarReporteDominguito() {
     if (!pacienteSeleccionado) return alert("Seleccioná un paciente");
     if (!input || !input.value.trim()) return;
 
-    refExpedientes.child(pacienteSeleccionado).push({ 
+    const pacKey = sanitizarKey(pacienteSeleccionado);
+
+    refExpedientes.child(pacKey).push({ 
         autor: usuarioActivo, 
         rol: rangoActivo, 
         msg: input.value.trim(), 
@@ -1686,31 +1719,47 @@ function exportarPDF() {
         alert("Error: Librería de PDF no cargada.");
     }
 }
-
 // ============================================================
 // =============== 16. PIZARRA DE ÓRDENES =====================
 // ============================================================
+// ============================================================
+// =============== 16. PIZARRA DE ÓRDENES =====================
+// ============================================================
+let urlArchivoAdjunto = '';
+
+// --- LÓGICA DE SUBIDA (Tu método) ---
+async function manejarSeleccionArchivo(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    mostrarToast("⏳ Subiendo archivo...");
+    const url = await subirACloudinary(file);
+    
+    if (url) {
+        urlArchivoAdjunto = url;
+        mostrarToast("📎 Archivo adjunto listo");
+    } else {
+        mostrarToast("❌ Error al subir el archivo");
+    }
+}
+
+// --- PIZARRA DE ÓRDENES ---
 function renderPizarraLocal() {
     const container = document.getElementById('lista-tareas');
     if (!container) return;
     
     const fEst = document.getElementById('f-est')?.value || 'ACTIVAS';
     
-    // Convertir a array y ordenar
     const tareasArray = Object.keys(cacheTareas || {}).map(id => ({ 
         id, 
         ...cacheTareas[id] 
     })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     
-    // Filtrar según rol y estado
     const filtradas = tareasArray.filter(t => {
         const esAdmin = rangoActivo === 'ADMIN' || rangoActivo.includes('DIRECTOR');
-        
         if (!esAdmin && t.destino !== 'TODOS' && t.destino !== rangoActivo && t.emisor !== usuarioActivo) return false;
-        
         if (fEst === 'ACTIVAS' && t.estado === 'CONFIRMADO') return false;
         if (fEst === 'CONFIRMADO' && t.estado !== 'CONFIRMADO') return false;
-        
         return true;
     });
     
@@ -1735,17 +1784,24 @@ function renderPizarraLocal() {
                 </span>
             </div>
             <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:#94a3b8;' : ''}">${t.desc}</h3>
-            ${t.link ? `<div style="margin-bottom:8px;"><a href="${t.link}" target="_blank" style="font-size:11px; color:var(--accent);">🔗 Link adjunto</a></div>` : ''}
+            ${t.archivo ? `<div style="margin-bottom:8px;"><a href="${t.archivo}" target="_blank" style="font-size:11px; color:var(--accent);">📄 Ver archivo adjunto</a></div>` : ''}
+            
+            <div id="coments-${t.id}" style="margin:8px 0; background:#f8fafc; padding:5px; border-radius:4px; font-size:10px;">
+                ${t.comentarios ? Object.values(t.comentarios).map(c => `<div><b>${c.autor}:</b> ${c.texto}</div>`).join('') : ''}
+            </div>
+            
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input id="in-com-${t.id}" placeholder="Contestar..." style="flex:1; font-size:10px; padding:4px;">
+                <button onclick="enviarComentario('${t.id}')" style="font-size:10px;">➤</button>
+            </div>
+
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                <button class="btn-pro" style="background:#e2e8f0; color:#333; font-size:10px;" onclick="marcarVisto('${t.id}')">
-                    👁️ MARCAR VISTO
-                </button>
+                <button class="btn-pro" style="background:#e2e8f0; color:#333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
                 <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '#64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
                     ${t.estado === 'CONFIRMADO' ? '↩️ REABRIR' : '✅ COMPLETAR'}
                 </button>
             </div>
         `;
-        
         container.appendChild(card);
     });
 }
@@ -1755,33 +1811,50 @@ function crearTarea() {
     const vence = document.getElementById('t-vence').value;
     const prio = document.getElementById('t-prio-val').value;
     const destino = document.getElementById('t-dest-val').value;
-    const link = document.getElementById('t-drive-val').value.trim();
     
     if (!desc) return alert("Escribí una descripción para la orden");
     
     const tarea = {
-        desc: desc,
-        vence: vence,
-        prio: prio,
-        destino: destino,
-        link: link,
+        desc,
+        vence,
+        prio,
+        destino,
+        archivo: urlArchivoAdjunto || '',
         emisor: usuarioActivo,
         ts: Date.now(),
         estado: 'PENDIENTE',
-        vistos: {}
+        vistos: { [sanitizarKey(usuarioActivo)]: true },
+        comentarios: {}
     };
     
     refPizarra.push(tarea);
     
-    // Limpiar inputs
+    // Resetear
+    urlArchivoAdjunto = '';
     document.getElementById('t-desc').value = '';
     document.getElementById('t-drive-val').value = '';
+    // Si tuvieras un elemento para limpiar el input de archivo manualmente:
+    // document.getElementById('input-archivo-tarea').value = '';
     
     mostrarToast(`📨 Orden enviada a: ${destino}`);
 }
 
+function enviarComentario(id) {
+    const input = document.getElementById(`in-com-${id}`);
+    const msg = input.value.trim();
+    if (!msg) return;
+    
+    refPizarra.child(id).child('comentarios').push({
+        autor: usuarioActivo,
+        texto: msg,
+        ts: Date.now()
+    });
+    input.value = '';
+    mostrarToast("💬 Comentario enviado");
+}
+
 function marcarVisto(id) {
-    refPizarra.child(id).child('vistos').update({ [usuarioActivo]: true });
+    refPizarra.child(id).child('vistos').update({ [sanitizarKey(usuarioActivo)]: true });
     mostrarToast("👁️ Marcado como visto");
 }
 
@@ -1789,7 +1862,6 @@ function cambiarEstadoTarea(id, nuevoEstado) {
     refPizarra.child(id).update({ estado: nuevoEstado });
     mostrarToast(nuevoEstado === 'CONFIRMADO' ? '✅ Tarea completada' : '↩️ Tarea reabierta');
 }
-
 // ============================================================
 // =============== 17. SWITCH DE TABS =========================
 // ============================================================
