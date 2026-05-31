@@ -252,8 +252,12 @@
             }
         });
         selTs.innerHTML = htmlTs;
-    });
-
+    if (localStorage.getItem('mando_usuario')) {
+    const sel = document.getElementById('sel-empleado');
+    sel.value = localStorage.getItem('mando_usuario');
+    sel.disabled = true; // Bloquea el selector para que no cambie de usuario
+}
+});
     // 4. LOGIN INTELIGENTE Y CARGA DE PERFIL
     function loginMando() {
         const select = document.getElementById('sel-empleado');
@@ -566,6 +570,55 @@
         }); 
         document.getElementById('t-desc').value=""; 
     }
+    // NUEVA FUNCIÓN: Validador de Token en Firebase
+function validarToken(nombre, tokenIngresado) {
+    db.ref('tokens/' + nombre).once('value', snap => {
+        const tokenCorrecto = snap.val();
+
+        if (tokenCorrecto && tokenCorrecto === tokenIngresado) {
+            // Éxito: Guardamos en local para no molestar más
+            localStorage.setItem('mando_token', tokenIngresado);
+            localStorage.setItem('mando_usuario', nombre);
+            loginMando(); // Llamamos a tu función original de carga
+        } else if (!tokenCorrecto) {
+            // Si el token no existe, lo creamos (esto es el "auto-registro" que pediste)
+            db.ref('tokens/' + nombre).set(tokenIngresado);
+            alert("Token registrado correctamente por primera vez.");
+            validarToken(nombre, tokenIngresado);
+        } else {
+            alert("Token incorrecto. Acceso denegado.");
+            location.reload();
+        }
+    });
+}
+
+// MODIFICACIÓN DE TU LOGIN ORIGINAL
+function loginMando() {
+    const select = document.getElementById('sel-empleado');
+    if(!select.value) return alert("Selecciona tu nombre");
+
+    const usuario = select.value;
+    const tokenGuardado = localStorage.getItem('mando_token');
+    const usuarioGuardado = localStorage.getItem('mando_usuario');
+
+    // Si ya tiene sesión, entra directo
+    if (usuario === usuarioGuardado && tokenGuardado) {
+        // ... (Aquí pones todo tu código original de loginMando: 
+        // rangoActivo, display de paneles, etc)
+        document.getElementById('bloqueo-mando').style.display = 'none';
+        document.getElementById('user-tag').innerText = `${usuario} | ${rangoActivo}`;
+        iniciarApp();
+        cargarDatosPrivados(usuario);
+        verificarNotificaciones(usuario);
+        return;
+    }
+
+    // Si no tiene sesión, pedir token
+    const tokenPrompt = prompt("Ingrese su TOKEN de acceso personal:");
+    if (tokenPrompt) {
+        validarToken(usuario, tokenPrompt);
+    }
+}
 </script>
 </body>
 </html>
