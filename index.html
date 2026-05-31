@@ -1313,22 +1313,6 @@ function cargarDatosPrivados(nombre) {
         }
     });
 }
-function switchTab(tabIndex) {
-    // Cambiar clases de los botones
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa'));
-    document.getElementById(`tab${tabIndex}`).classList.add('activa');
-    
-    // Cambiar vistas
-    if (tabIndex === 1) {
-        document.getElementById('vista-chats').style.display = 'flex';
-        document.getElementById('vista-expedientes').style.display = 'none';
-    } else {
-        document.getElementById('vista-chats').style.display = 'none';
-        document.getElementById('vista-expedientes').style.display = 'flex';
-    }
-}
-console.log("Sistema DOMINGUITO listo para operar.");
-
 </script>
 </body>
 </html>
