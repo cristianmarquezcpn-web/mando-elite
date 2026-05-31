@@ -252,7 +252,6 @@
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
-
 // === REFERENCIAS ===
 const refUsuarios = db.ref('/usuarios');
 const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
@@ -262,11 +261,23 @@ const refExpedientes = db.ref('/SISTEMA_MANDO/expedientesinteractivos');
 const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
 const refOnline = db.ref('/SISTEMA_MANDO/online');
 const refMensajesDominguito = db.ref('/SISTEMA_MANDO/mensajesdominguito');
+// Agregamos esta vacía para que el código viejo no rompa
+const refEmpleados = db.ref('/SISTEMA_PERSONAL/empleados'); 
 
 // === VARIABLES GLOBALES ===
 let usuarioActivo = "";
 let rangoActivo = "";
 let permisosActivos = {};
+// Variables que causan los errores al no estar definidas:
+let uidActivo = ""; 
+let contactoEscuchando = null;
+let cacheTareas = {};
+let listaPacientesCache = [];
+let pacienteSeleccionado = "";
+let contactoSeleccionado = null;
+let listaContactos = [];
+let estadisticas = { cuds: 0, ausencias: 0, mensajes: 0 };
+
 // === LÓGICA DE AUTENTICACIÓN ===
 auth.onAuthStateChanged(user => {
     const bloqueo = document.getElementById('bloqueo-mando');
