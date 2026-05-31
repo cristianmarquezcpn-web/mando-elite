@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>MANDO ELITE TITANIUM - V6.0</title>
+    <title>DOMINGUITO - Sistema de Comunicación Interna</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -11,75 +11,243 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; --oro: #f59e0b; --dark: #0f172a; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --bg: f0f2f5; --card: ffffff; --primary: 1a2a6c; 
+            --accent: 3b82f6; --urgente: ef4444; --verde: 10b981; 
+            --oro: f59e0b; --dark: 0f172a; --whatsapp: 25D366;
+        }
+         { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
-        @media (max-width: 1000px) { body { flex-direction: column; height: auto; overflow-y: auto; display: block; } .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; } }
-        .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid #334155; }
+        
+        @media (max-width: 1000px) { 
+            body { flex-direction: column; height: auto; overflow-y: auto; display: block; } 
+            .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid e2e8f0; } 
+            .btn-pro, input, select { min-height: 44px; font-size: 14px; }
+            .header { flex-direction: column; gap: 10px; align-items: flex-start; }
+        }
+
+        .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid 334155; }
         .radar-feed { flex: 1; overflow-y: auto; padding: 15px; }
-        .radar-card { background: #1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .radar-card { background: 1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
+        .radar-card:hover { transform: scale(1.02); background: 334155; }
+        
         .col-pizarra { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: var(--bg); }
-        .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .col-comms { width: 350px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-        .tab-btn { flex: 1; padding: 15px 0; border: none; background: #f8fafc; cursor: pointer; font-weight: 800; color: #64748b; border-bottom: 2px solid transparent; }
+        .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid e2e8f0; }
+        lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .prio-ALTA { border-left: 8px solid var(--urgente); }
+        .prio-MEDIA { border-left: 8px solid var(--oro); }
+        
+        .col-comms { width: 400px; background: white; border-left: 1px solid e2e8f0; display: flex; flex-direction: column; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: f8fafc; cursor: pointer; font-weight: 800; color: 64748b; border-bottom: 2px solid transparent; }
         .tab-btn.activa { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
+        
+        .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: f8fafc; }
         .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; max-width: 90%; word-wrap: break-word; }
         .msg-me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 0; }
-        .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
-        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; }
-        #bloqueo-mando { position:fixed; inset:0; background:var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white; }
+        .msg-them { background: white; border: 1px solid e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-bot { background: eff6ff; border: 1px solid var(--accent); color: 1e3a8a; align-self: flex-start; width: 100%; border-radius: 8px; }
+        .msg-domingo { background: linear-gradient(135deg, 1a2a6c, 3b82f6); color: white; align-self: flex-start; border-bottom-left-radius: 0; }
+        
+        .contacto-item { padding: 12px 15px; border-bottom: 1px solid e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .contacto-item:hover { background: f1f5f9; }
+        .contacto-item.activo { background: eff6ff; border-left: 4px solid var(--accent); }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; color: white; }
+        .no-leido { width: 10px; height: 10px; border-radius: 50%; background: var(--urgente); animation: pulse 2s infinite; }
+
+        input, select { background: f8fafc; border: 1px solid e2e8f0; padding: 10px; border-radius: 8px; width: 100%; font-size: 13px; outline: none; }
+        input:focus, select:focus { border-color: var(--accent); }
+        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; }
+        .btn-pro:hover { opacity: 0.9; transform: scale(1.02); }
+        
+        bloqueo-mando { position:fixed; inset:0; background:var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white;}
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--dark); color: white; padding: 15px 25px; border-radius: 12px; z-index: 99999; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
+        
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
+<audio id="snd-radar" src="https://assets.mixkit.co/activestorage/sfx/2870/2870-preview.mp3" preload="auto"></audio>
+<audio id="snd-msg" src="https://assets.mixkit.co/activestorage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
+
+<!-- BLOQUEO DE ACCESO -->
 <div id="bloqueo-mando">
-    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px;">
-        <h2 style="color:var(--accent); margin-bottom: 20px;">ACCESO ELITE</h2>
-        <select id="sel-empleado" style="margin-bottom: 15px; width:100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155;"></select>
-        <input type="password" id="pass-mando" placeholder="Clave (Si aplica)" style="margin-bottom: 15px; width:100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155;">
-        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px;" onclick="loginMando()">ENTRAR A MI PANEL</button>
+    <div style="text-align:center; width: 90%; max-width: 350px; background: 1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <h2 style="color:var(--accent); margin-bottom: 20px;">🔐 ACCESO DOMINGUITO</h2>
+        <select id="sel-empleado" style="margin-bottom: 15px; background: 0f172a; color: white; border-color: 334155;">
+            <option value="">Cargando personal...</option>
+        </select>
+        <input type="password" id="token-mando" placeholder="Tu Token Personal" style="margin-bottom: 15px; background: 0f172a; color: white; border-color: 334155;">
+        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginConToken()">ENTRAR AL SISTEMA</button>
+        <p style="font-size: 11px; color: 94a3b8; margin-top: 15px;">Si es tu primera vez, creá un token de 4 dígitos. Recordalo para próximos accesos.</p>
     </div>
 </div>
 
+<!-- LAYOUT PRINCIPAL -->
 <div class="col-radar">
-    <div style="padding:20px; font-weight:800; font-size: 14px; border-bottom: 1px solid #334155;">👁️ RADAR TÁCTICO</div>
-    <div id="radar-feed" class="radar-feed"></div>
+    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid 334155; display: flex; justify-content: space-between; align-items: center;">
+        <span>👁️ DOMINGUITO</span>
+        <span id="online-count" style="font-size: 11px; color: var(--verde);">● 0 online</span>
+    </div>
+    <div style="display: flex; gap: 10px; padding: 10px 15px;">
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">CUDs</div>
+            <div id="stat-cuds" style="font-size: 20px; font-weight: 900; color: var(--urgente);">0</div>
+        </div>
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">AUSENCIAS</div>
+            <div id="stat-aus" style="font-size: 20px; font-weight: 900; color: var(--oro);">0</div>
+        </div>
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">MENSAJES</div>
+            <div id="stat-msg" style="font-size: 20px; font-weight: 900; color: var(--accent);">0</div>
+        </div>
+    </div>
+    <div id="radar-feed" class="radar-feed">
+        <div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">🔍 Monitoreando...</div>
+    </div>
 </div>
 
 <div class="col-pizarra">
-    <div class="header glass-panel">
-        <h2 id="user-tag" style="margin:0; font-size:16px;">Esperando login...</h2>
-        <button class="btn-pro" onclick="location.reload()">SALIR</button>
+    <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:16px;">📋 PANEL DE CONTROL</h2>
+            <span id="user-tag" style="color:var(--accent); font-size:11px; font-weight: bold;"></span>
+        </div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn-pro" style="background:var(--verde); font-size:10px;" onclick="abrirChatDominguito()">💬 HABLAR CON DOMINGUITO</button>
+            <button class="btn-pro" style="background:64748b; font-size:10px;" onclick="cerrarSesion()">SALIR</button>
+        </div>
     </div>
-    <div id="panel-liquidacion" class="glass-panel" style="display:none;"></div>
+    
+    <div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
+        <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
+        <div id="msj-rrhh" style="background: eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid bfdbfe;">
+            <p style="margin:0; font-size: 14px; color: 1e3a8a;">
+                <b>Estimado/a colaborador/a:</b> Nos ponemos en contacto desde el Departamento de RRHH para informarle que su liquidación del periodo actual ya está disponible. 
+                Le solicitamos tenga a bien emitir y presentar su factura antes del día <b>5 de cada mes</b> para proceder con el pago en tiempo y forma.
+            </p>
+        </div>
+        <div id="tabla-container"></div>
+        <div style="margin-top:15px; font-size: 12px; color: 64748b;">
+            <p><b>Datos de Pago registrados:</b> <span id="datos-pago"></span></p>
+        </div>
+    </div>
+
     <div class="glass-panel">
-        <input type="text" id="t-desc" placeholder="Nueva misión...">
-        <button class="btn-pro" onclick="crearTarea()">LANZAR MISIÓN ✨</button>
+        <input type="text" id="t-desc" placeholder="Escribí una orden o misión para el equipo...">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
+            <input type="date" id="t-vence">
+            <select id="t-prio-val"><option value="BAJA">Normal</option><option value="MEDIA" selected>Importante</option><option value="ALTA">🔥 URGENTE</option></select>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
+            <select id="t-dest-val">
+                <option value="TODOS">📢 A TODOS</option>
+                <option value="DOMINGUITO">🤖 A DOMINGUITO</option>
+                <option value="SECRETARIA">📋 SECRETARÍA</option>
+                <option value="DIRECTORES">👔 DIRECTORES</option>
+                <option value="ADMINISTRACION">💰 ADMIN</option>
+                <option value="COORD">📊 COORD</option>
+                <option value="T.S.">👩‍⚕️ T. SOCIALES</option>
+            </select>
+            <input type="text" id="t-drive-val" placeholder="Link (opcional)">
+        </div>
+        <button class="btn-pro" style="width:100%; margin-top:10px; background: var(--verde);" onclick="crearTarea()">📨 ENVIAR ORDEN</button>
     </div>
+    
+    <div style="display:flex; gap:10px;">
+        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1">
+            <option value="ACTIVAS">📌 Órdenes Activas</option>
+            <option value="CONFIRMADO">✅ Completadas</option>
+            <option value="TODAS">📋 Todas</option>
+        </select>
+    </div>
+    
     <div id="lista-tareas"></div>
 </div>
 
 <div class="col-comms">
     <div style="display: flex;">
-        <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">🧠 EXPEDIENTE</button>
-        <button id="tab2" class="tab-btn" onclick="switchTab(2)">🌐 GLOBAL</button>
+        <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">💬 CHATS</button>
+        <button id="tab2" class="tab-btn" onclick="switchTab(2)">🧠 EXPEDIENTES</button>
     </div>
-    <div id="vista-expediente" style="flex:1; display:flex; flex-direction:column;">
-        <select id="sel-paciente" onchange="cargarExpedientePaciente()"><option value="">Selecciona paciente...</option></select>
-        <div id="chat-dominguito" class="chat-content"></div>
-        <input type="text" id="in-dominguito" placeholder="Reportar..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
+
+    <!-- VISTA CHATS -->
+    <div id="vista-chats" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display: flex; border-bottom: 1px solid e2e8f0;">
+            <input type="text" id="busc-contacto" placeholder="🔍 Buscar contacto..." onkeyup="filtrarContactos()" style="border: none; padding: 15px; border-radius: 0;">
+        </div>
+        <div id="lista-contactos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;">
+            <!-- Se llena con JS -->
+        </div>
+        <div id="chat-individual" class="chat-content" style="flex: 1;">
+            <div style="text-align:center; color:94a3b8; font-size:12px; margin-top:20px;">
+                Seleccioná un contacto para chatear
+            </div>
+        </div>
+        <div id="input-chat-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0; display:none;">
+            <input type="text" id="chat-individual-input" placeholder="Escribí un mensaje..." onkeypress="if(event.key==='Enter') enviarMensajeIndividual()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeIndividual()">➤</button>
+        </div>
     </div>
-    <div id="vista-global" style="display:none; flex-direction:column; flex:1;">
-        <div id="chat-msgs" class="chat-content"></div>
+
+    <!-- VISTA EXPEDIENTES -->
+    <div id="vista-expedientes" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+        <div style="padding: 10px; border-bottom: 1px solid e2e8f0; background: f8fafc;">
+            <input type="text" id="busc-paciente" placeholder="🔍 Buscar paciente..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
+            <select id="sel-paciente" onchange="cargarExpedientePaciente()">
+                <option value="">Seleccioná un paciente...</option>
+            </select>
+        </div>
+        <div id="chat-dominguito" class="chat-content">
+            <div style="text-align:center; color:94a3b8; font-size:11px; margin-top:20px;">
+                Seleccioná un paciente para ver su expediente clínico
+            </div>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0;">
+            <input type="text" id="in-dominguito" placeholder="Agregar novedad al expediente..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">➤</button>
+            <button class="btn-pro" style="background: var(--urgente); width: 40px; font-size: 10px;" onclick="exportarPDF()">📄</button>
+        </div>
+    </div>
+</div>
+
+<!-- CHAT CON DOMINGUITO MODAL -->
+<div id="modal-dominguito" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
+    <div style="width: 90%; max-width: 500px; height: 80vh; background: white; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="padding: 15px 20px; background: var(--dark); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 800;">🤖 DOMINGUITO - Asistente</span>
+            <button onclick="cerrarModalDominguito()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+        </div>
+        <div id="chat-domingo-modal" class="chat-content" style="background: f8f9fa;">
+            <div class="msg msg-domingo">
+                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
+                ¡Hola <span id="nombre-usuario-modal"></span>! Soy Dominguito, tu asistente. 
+                Podés pedirme que:
+                • Verifique CUDs vencidos
+                • Cuente ausencias de pacientes
+                • Envíe mensajes al equipo
+                • Genere reportes
+                • Te recuerde tareas pendientes
+            </div>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0;">
+            <input type="text" id="in-domingo-modal" placeholder="Escribí tu mensaje para Dominguito..." onkeypress="if(event.key==='Enter') enviarADominguito()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarADominguito()">➤</button>
+        </div>
     </div>
 </div>
 
 <script>
+    // ============================================================
+    // =============== CONFIGURACIÓN FIREBASE =====================
+    // ============================================================
+    
     const firebaseConfig = { 
-        apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", 
+        apiKey: "AIzaSyAugXXxbwKFByhDbLZslk2HAUTzrzd8", 
         authDomain: "clinicaintegral-5c488.firebaseapp.com", 
         databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com", 
         projectId: "clinicaintegral-5c488", 
@@ -87,97 +255,174 @@
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(); 
+    const db = firebase.database();
 
-    // Referencias Globales
-    let usuarioActivo = "", rangoActivo = "";
+    // Autenticación anónima para Firebase
+    firebase.auth().signInAnonymously().catch(console.error);
+
+    // ============================================================
+    // =============== REFERENCIAS ================================
+    // ============================================================
     
-    // Auth inicial (Solo asegurar conexión)
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) firebase.auth().signInAnonymously();
-    });
+    const refEmpleados = db.ref('/SISTEMA_PERSONAL/empleados');
+    const refTokens = db.ref('/SISTEMA_MANDO/tokens');
+    const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
+    const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
+    const refChatsIndividuales = db.ref('/SISTEMA_MANDO/chatsindividuales');
+    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientesinteractivos');
+    const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
+    const refOnline = db.ref('/SISTEMA_MANDO/online');
+    const refMensajesDominguito = db.ref('/SISTEMA_MANDO/mensajesdominguito');
 
-    // Cargar empleados al inicio
-    db.ref('/SISTEMA_PERSONAL/empleados').once('value', snap => {
-        const sel = document.getElementById('sel-empleado');
-        snap.forEach(child => {
-            const emp = child.val();
-            if(emp && emp.n) {
-                const opt = document.createElement('option');
-                opt.value = emp.n;
-                opt.text = emp.n;
-                opt.setAttribute('data-rol', emp.profesion || 'Empleado');
-                sel.add(opt);
+    // ============================================================
+    // =============== VARIABLES GLOBALES =========================
+    // ============================================================
+    
+    let usuarioActivo = "";
+    let rangoActivo = "";
+    let uidActivo = "";
+    let cacheTareas = {};
+    let listaPacientesCache = [];
+    let pacienteSeleccionado = "";
+    let contactoSeleccionado = null;
+    let listaContactos = [];
+    let estadisticas = { cuds: 0, ausencias: 0, mensajes: 0 };
+
+    // ============================================================
+    // =============== 1. LOGIN CON TOKEN =========================
+    // ============================================================
+    
+    function cargarEmpleados() {
+        refEmpleados.once('value', snap => {
+            const listaUnica = {};
+            let htmlTs = '<option value="">Seleccionar T.S.</option>';
+
+            snap.forEach(child => {
+                const emp = child.val();
+                if(emp && emp.n) listaUnica[emp.n.trim()] = emp;
+            });
+
+            const empleadosOrdenados = Object.values(listaUnica).sort((a, b) => a.n.localeCompare(b.n));
+            let sel = document.getElementById('sel-empleado');
+            sel.innerHTML = '<option value="">Seleccione su nombre...</option>';
+            
+            empleadosOrdenados.forEach(emp => {
+                sel.innerHTML += `<option value="${emp.n}" data-id="${child.key}" data-rol="${emp.profesion || 'Empleado'}">${emp.n} (${emp.profesion || 'S/D'})</option>`;
+                if(emp.profesion === "TS" || emp.profesion === "T.S." || emp.profesion === "Trabajadora Social") {
+                    htmlTs += `<option value="${emp.n}">${emp.n}</option>`;
+                }
+            });
+            
+            document.getElementById('sel-asignar-ts').innerHTML = htmlTs;
+            
+            // Verificar sesión guardada
+            const sesionGuardada = localStorage.getItem('dominguitosesion');
+            if (sesionGuardada) {
+                const datos = JSON.parse(sesionGuardada);
+                const option = sel.querySelector(`option[value="${datos.usuario}"]`);
+                if (option) {
+                    sel.value = datos.usuario;
+                    document.getElementById('token-mando').value = datos.token;
+                    setTimeout(() => loginConToken(), 500);
+                }
             }
         });
-    });
+    }
 
-    // Lógica de Login/Token
-    function loginMando() {
+    function loginConToken() {
         const select = document.getElementById('sel-empleado');
-        if(!select.value) return alert("Selecciona tu nombre");
-
+        if(!select.value) return alert("Seleccioná tu nombre");
+        
         const usuario = select.value;
-        const option = select.options[select.selectedIndex];
-        usuarioActivo = usuario;
-        rangoActivo = option.getAttribute('data-rol').toUpperCase();
-
-        const tokenGuardado = localStorage.getItem('mando_token');
-        const usuarioGuardado = localStorage.getItem('mando_usuario');
-
-        // Check LocalStorage
-        if (usuario === usuarioGuardado && tokenGuardado) {
-            validarToken(usuario, tokenGuardado, true); // true = auto
-        } else {
-            const tokenPrompt = prompt("Ingrese su TOKEN personal:");
-            if (tokenPrompt) validarToken(usuario, tokenPrompt, false);
+        const tokenIngresado = document.getElementById('token-mando').value;
+        
+        if (!tokenIngresado || tokenIngresado.length < 4) {
+            return alert("El token debe tener al menos 4 caracteres");
         }
-    }
 
-    function validarToken(nombre, token, esAuto) {
-        db.ref('tokens/' + nombre).once('value', snap => {
+        // Verificar token en Firebase
+        refTokens.child(usuario).once('value', snap => {
             const tokenCorrecto = snap.val();
-            if (tokenCorrecto && tokenCorrecto === token) {
-                localStorage.setItem('mando_token', token);
-                localStorage.setItem('mando_usuario', nombre);
-                iniciarSesion();
-            } else if (!tokenCorrecto && !esAuto) {
-                db.ref('tokens/' + nombre).set(token);
-                iniciarSesion();
-            } else {
-                alert("Token incorrecto.");
-                location.reload();
+            
+            if (tokenCorrecto && tokenCorrecto !== tokenIngresado) {
+                alert("❌ Token incorrecto. Acceso denegado.");
+                return;
             }
+            
+            if (!tokenCorrecto) {
+                // Primera vez: registrar token
+                if (!confirm("¿Es tu primera vez? Se registrará este token para futuros accesos.")) return;
+                refTokens.child(usuario).set(tokenIngresado);
+                alert("✅ Token registrado correctamente. Recordalo para próximos accesos.");
+            }
+            
+            // Login exitoso
+            const option = select.options[select.selectedIndex];
+            usuarioActivo = usuario;
+            rangoActivo = option.getAttribute('data-rol').toUpperCase() || 'EMPLEADO';
+            uidActivo = option.getAttribute('data-id') || usuario;
+            
+            // Guardar sesión
+            localStorage.setItem('dominguitosesion', JSON.stringify({
+                usuario: usuarioActivo,
+                token: tokenIngresado,
+                rango: rangoActivo
+            }));
+            
+            document.getElementById('bloqueo-mando').style.display = 'none';
+            document.getElementById('user-tag').innerText = `👤 ${usuarioActivo} | ${rangoActivo}`;
+            
+            // Mostrar paneles según rol
+            const esAdmin = rangoActivo === 'ADMINISTRACION' || rangoActivo.includes('DIRECTOR') || rangoActivo.includes('COORD');
+            if (esAdmin) {
+                document.getElementById('panel-asignar-ts').style.display = 'flex';
+            }
+            
+            // Registrar online
+            const onlineRef = refOnline.child(usuarioActivo);
+            onlineRef.set({ nombre: usuarioActivo, rol: rangoActivo, ultimo: Date.now() });
+            onlineRef.onDisconnect().remove();
+            
+            // Iniciar todo
+            iniciarApp();
+            cargarDatosPrivados(usuarioActivo);
+            mostrarToast(`✅ Bienvenido ${usuarioActivo}`);
         });
     }
 
-    function iniciarSesion() {
-        document.getElementById('bloqueo-mando').style.display = 'none';
-        document.getElementById('user-tag').innerText = `${usuarioActivo} | ${rangoActivo}`;
-        
-        // Arrancar motores (Tu lógica original)
-        iniciarApp(); 
+    function cerrarSesion() {
+        localStorage.removeItem('dominguitosesion');
+        refOnline.child(usuarioActivo).remove();
+        location.reload();
     }
-    // 5. MOTOR PRINCIPAL
+
+    // ============================================================
+    // =============== 2. INICIAR APLICACIÓN ======================
+    // ============================================================
+    
     function iniciarApp() {
-        // Cargar Pizarra
+        // Cargar pizarra
         refPizarra.on('value', snap => {
             cacheTareas = snap.val() || {};
             renderPizarraLocal();
         });
 
-        // Cargar Chat Global con Filtro Jerárquico
+        // Cargar contactos y chats individuales
+        cargarContactos();
+        
+        // Escuchar mensajes individuales entrantes
+        escucharMensajesIndividuales();
+        
+        // Cargar chat global
         refChatGlobal.on('value', snap => {
             document.getElementById('chat-msgs').innerHTML = "";
             snap.forEach(child => {
                 const m = child.val();
-                const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD', 'T.S.', 'TS'].some(r => rangoActivo.includes(r));
-                
-                // Lógica de visibilidad
+                const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD'].some(r => rangoActivo.includes(r));
                 if (m.destino && m.destino !== 'TODOS' && m.destino !== rangoActivo && m.u !== usuarioActivo && !esAdmin) return;
 
-                let claseMsg = m.u === usuarioActivo ? 'msg-me' : 'msg-them';
-                let tagPrivado = m.destino && m.destino !== 'TODOS' ? `<span style="color:var(--oro);">[A: ${m.destino}]</span> ` : '';
+                const claseMsg = m.u === usuarioActivo ? 'msg-me' : 'msg-them';
+                const tagPrivado = m.destino && m.destino !== 'TODOS' ? `<span style="color:var(--oro);">[A: ${m.destino}]</span> ` : '';
 
                 document.getElementById('chat-msgs').innerHTML += `
                     <div class="msg ${claseMsg}">
@@ -186,260 +431,889 @@
                     </div>
                 `;
             });
-            document.getElementById('chat-msgs').scrollTop = 9999;
         });
 
-        // Activar Radar Titanium Universal
+        // Activar radar
         escanearBaseDeDatos();
+        
+        // Contar online
+        refOnline.on('value', snap => {
+            let count = 0;
+            snap.forEach(() => count++);
+            document.getElementById('online-count').textContent = `● ${count} online`;
+        });
+        
+        // Pedir permiso para notificaciones
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
     }
 
-    // =========================================================
-    // MÓDULO RRHH: LIQUIDACIONES PRIVADAS
-    // =========================================================
-    function cargarDatosPrivados(nombre) {
-        document.getElementById('panel-liquidacion').style.display = 'block';
-        
-        db.ref('/liquidaciones').orderByChild('nombre').equalTo(nombre).on('value', snap => {
-            const container = document.getElementById('tabla-container');
-            if(!snap.exists()){
-                container.innerHTML = "<p style='font-size:12px; color:#64748b;'>No hay liquidaciones pendientes este mes.</p>";
-                return;
-            }
-
-            let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">';
-            html += '<tr style="background:#f1f5f9;"><th>Sede/Puesto</th><th>Periodo</th><th>Total a Facturar</th></tr>';
+    // ============================================================
+    // =============== 3. CHATS INDIVIDUALES =====================
+    // ============================================================
+    
+    function cargarContactos() {
+        refEmpleados.once('value', snap => {
+            listaContactos = [];
             
-            let cbu = "", email = "";
             snap.forEach(child => {
-                const l = child.val();
-                html += `<tr>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.puesto || 'General'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.periodo}</td>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:bold;">$${Number(l.total).toLocaleString('es-AR')}</td>
-                </tr>`;
-                if(l.cbu) cbu = l.cbu;
-                if(l.email) email = l.email;
+                const emp = child.val();
+                if (emp && emp.n && emp.n !== usuarioActivo) {
+                    listaContactos.push({
+                        nombre: emp.n,
+                        rol: emp.profesion || 'Empleado',
+                        id: child.key
+                    });
+                }
             });
             
-            html += '</table>';
-            container.innerHTML = html;
-            document.getElementById('datos-pago').innerText = `CBU: ${cbu || "No registrado"} | Email: ${email || "No registrado"}`;
+            // Agregar Dominguito como contacto especial
+            listaContactos.unshift({
+                nombre: "🤖 DOMINGUITO",
+                rol: "Asistente IA",
+                id: "dominguito"
+            });
+            
+            renderizarContactos();
         });
     }
 
-    function verificarNotificaciones(nombre) {
-        db.ref('/liquidaciones').orderByChild('nombre').equalTo(nombre).once('value', snap => {
-            if(snap.exists()) {
-                alert("¡Atención! Tiene una nueva liquidación disponible. Por favor, revise su panel de RRHH y presente su factura antes del día 5.");
+    function renderizarContactos() {
+        const container = document.getElementById('lista-contactos');
+        const colores = ['3b82f6', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+        
+        container.innerHTML = listaContactos.map((c, i) => {
+            const inicial = c.nombre.replace('🤖 ', '').charAt(0).toUpperCase();
+            const color = colores[i % colores.length];
+            const activo = contactoSeleccionado === c.nombre ? 'activo' : '';
+            
+            return `
+                <div class="contacto-item ${activo}" onclick="seleccionarContacto('${c.nombre}', '${c.rol}')">
+                    <div class="avatar" style="background: ${color}">${inicial}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 13px;">${c.nombre}</div>
+                        <div style="font-size: 10px; color: 64748b;">${c.rol}</div>
+                    </div>
+                    <div class="no-leido" id="notif-${c.nombre.replace(/\s/g, '')}" style="display: none;"></div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function filtrarContactos() {
+        const input = document.getElementById('busc-contacto').value.toUpperCase();
+        const items = document.querySelectorAll('.contacto-item');
+        items.forEach(item => {
+            const text = item.textContent.toUpperCase();
+            item.style.display = text.includes(input) ? 'flex' : 'none';
+        });
+    }
+
+   function seleccionarContacto(nombre, rol) {
+    contactoSeleccionado = nombre;
+    
+    // Resaltar contacto activo
+    document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
+    document.querySelectorAll('.contacto-item').forEach(item => {
+        if (item.textContent.includes(nombre)) item.classList.add('activo');
+    });
+    
+    // Ocultar notificación de ese contacto
+    const notifId = `notif-${nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const notif = document.getElementById(notifId);
+    if (notif) notif.style.display = 'none';
+    
+    // Mostrar input de chat
+    document.getElementById('input-chat-area').style.display = 'flex';
+    
+    // Cargar historial del chat
+    const chatContainer = document.getElementById('chat-individual');
+    
+    // Dejar de escuchar el chat anterior para no duplicar
+    if (contactoEscuchando) {
+        refChatsIndividuales.child(contactoEscuchando).off();
+    }
+    
+    // ID único del chat (ordenado alfabéticamente para que sea el mismo para ambos)
+    const participantes = [usuarioActivo, nombre].sort();
+    contactoEscuchando = `chat${participantes.join('')}`;
+    
+    // Escuchar mensajes de este chat
+    refChatsIndividuales.child(contactoEscuchando).child('mensajes').on('value', snap => {
+        chatContainer.innerHTML = `
+            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+                💬 Chat con: <b>${nombre}</b> <span style="color:64748b;">(${rol})</span>
+            </div>`;
+        
+        snap.forEach(child => {
+            const m = child.val();
+            const esMio = m.autor === usuarioActivo;
+            let claseMsg = esMio ? 'msg-me' : 'msg-them';
+            if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-domingo';
+            
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
+                    ${m.texto}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleTimeString()}</div>
+                </div>
+            `;
+        });
+        chatContainer.scrollTop = 9999;
+    });
+    
+    // Si es Dominguito, mostrar mensaje de bienvenida
+    if (nombre === '🤖 DOMINGUITO') {
+        setTimeout(() => {
+            const existeMensaje = chatContainer.querySelector('.msg-domingo');
+            if (!existeMensaje || chatContainer.children.length <= 1) {
+                refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
+                    autor: '🤖 DOMINGUITO',
+                    texto: `¡Hola ${usuarioActivo}! 👋\n\nSoy Dominguito, tu asistente virtual. Podés pedirme:\n\n• "CUD" → Ver certificados vencidos\n• "Ausencias" → Ver pacientes con muchas faltas\n• "Reporte" → Generar resumen del día\n• "Ayuda" → Lista de comandos`,
+                    ts: Date.now(),
+                    leido: false
+                });
             }
+        }, 500);
+    }
+}
+
+// ============================================================
+// =============== ENVIAR MENSAJE INDIVIDUAL ==================
+// ============================================================
+
+function enviarMensajeIndividual() {
+    const input = document.getElementById('chat-individual-input');
+    const texto = input.value.trim();
+    if (!texto || !contactoSeleccionado) return;
+    
+    const participantes = [usuarioActivo, contactoSeleccionado].sort();
+    const chatId = `chat${participantes.join('')}`;
+    
+    // Guardar mensaje
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: usuarioActivo,
+        texto: texto,
+        ts: Date.now(),
+        leido: false
+    });
+    
+    // Guardar último mensaje para vista previa
+    refChatsIndividuales.child(chatId).update({
+        ultimo: { 
+            autor: usuarioActivo, 
+            texto: texto, 
+            ts: Date.now() 
+        },
+        participantes: participantes
+    });
+    
+    // Si es para Dominguito, procesar y responder
+    if (contactoSeleccionado === '🤖 DOMINGUITO') {
+        procesarComandoDominguito(texto);
+    } else {
+        // Notificar al otro usuario
+        const receptor = contactoSeleccionado;
+        refChatsIndividuales.child(chatId).child('notificaciones').child(receptor).set({
+            noLeidos: true,
+            ultimoTexto: texto,
+            de: usuarioActivo,
+            ts: Date.now()
         });
     }
+    
+    input.value = '';
+}
 
-    // =========================================================
-    // MÓDULO TITANIUM: EL RADAR QUE BUSCA DONDE CORRESPONDE
-    // =========================================================
-    function escanearBaseDeDatos() {
-        const selectPac = document.getElementById('sel-paciente');
+// ============================================================
+// =============== PROCESAR COMANDOS DE DOMINGUITO =============
+// ============================================================
 
-        // 1. Escanear CUDs en TODA la base
+function procesarComandoDominguito(texto) {
+    const participantes = [usuarioActivo, '🤖 DOMINGUITO'].sort();
+    const chatId = `chat${participantes.join('')}`;
+    
+    const upper = texto.toUpperCase();
+    let respuesta = "";
+    
+    if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
+        respuesta = "🔍 Escaneando todos los CUDs...\n\n";
+        
         db.ref('/').once('value', snap => {
+            let encontrados = false;
+            
             snap.forEach(rama => {
                 if (rama.child('pacientes').exists()) {
                     rama.child('pacientes').forEach(childPac => {
-                        const nombre = childPac.key;
                         const pac = childPac.val();
-
-                        // Llenar selector sin duplicar
-                        if(!listaPacientesCache.includes(nombre)) {
-                            listaPacientesCache.push(nombre);
-                            let opt = document.createElement('option');
-                            opt.value = nombre; opt.text = nombre;
-                            selectPac.add(opt);
-                        }
-
-                        // Alerta CUD
-                        if(pac.cud) {
+                        if (pac.cud) {
                             const hoy = new Date();
                             const venc = new Date(pac.cud);
-                            const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
-                            if(diff <= 60) { 
-                                renderizarAlerta(nombre, 'CUD', `Vence: ${pac.cud} (${diff} días)`);
+                            const diff = Math.floor((venc - hoy) / (1000  60  60  24));
+                            
+                            if (diff <= 0) {
+                                respuesta += `❌ ${childPac.key}: CUD VENCIDO (${pac.cud})\n`;
+                                encontrados = true;
+                            } else if (diff <= 30) {
+                                respuesta += `⚠️ ${childPac.key}: Vence en ${diff} días (${pac.cud})\n`;
+                                encontrados = true;
                             }
                         }
                     });
                 }
             });
+            
+            if (!encontrados) {
+                respuesta += "✅ No hay CUDs próximos a vencer.";
+            }
+            
+            // Enviar respuesta
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: respuesta,
+                ts: Date.now(),
+                leido: false
+            });
         });
-
-        // 2. Escanear Ausencias
-        db.ref('/seguimiento_pacientes').on('value', snap => {
+        return;
+    }
+    
+    if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
+        respuesta = "📉 Verificando ausencias...\n\n";
+        
+        db.ref('/seguimientopacientes').once('value', snap => {
+            let encontrados = false;
+            
             snap.forEach(child => {
                 const nombre = child.key;
                 let faltas = 0;
-                Object.values(child.val()).forEach(estado => { if(estado === 'A' || estado.val === 'A') faltas++; });
                 
-                if(faltas >= 3) {
-                    renderizarAlerta(nombre, 'AUSENCIAS', `Acumula ${faltas} inasistencias.`);
+                child.forEach(dia => {
+                    const val = dia.val();
+                    if (val === 'A' || (typeof val === 'object' && val.val === 'A')) faltas++;
+                });
+                
+                if (faltas >= 3) {
+                    respuesta += `⚠️ ${nombre}: ${faltas} faltas\n`;
+                    encontrados = true;
                 }
             });
-        });
-    }
-
-    function renderizarAlerta(paciente, tipo, msg) {
-        const feed = document.getElementById('radar-feed');
-        if(feed.innerHTML.includes("Monitoreando")) feed.innerHTML = "";
-        
-        const idUnico = (paciente+tipo).replace(/[^a-zA-Z0-9]/g, '');
-        if(document.getElementById(idUnico)) return;
-
-        const color = tipo === 'CUD' ? 'var(--urgente)' : 'var(--oro)';
-        feed.innerHTML = `
-            <div id="${idUnico}" class="radar-card" style="border-left-color: ${color}">
-                <div style="font-size:10px; font-weight:900; color:${color}">${tipo}</div>
-                <div style="font-size:13px; margin:4px 0; font-weight:800; color:white;">${paciente}</div>
-                <div style="font-size:11px; color:#94a3b8;">${msg}</div>
-            </div>
-        ` + feed.innerHTML;
-        
-        document.getElementById('snd-radar').play().catch(()=>{});
-    }
-
-    // =========================================================
-    // UTILIDADES (BUSCADOR Y TABS)
-    // =========================================================
-    function filtrarPacientes() {
-        let input = document.getElementById('busc-paciente').value.toUpperCase();
-        let sel = document.getElementById('sel-paciente');
-        let options = sel.getElementsByTagName('option');
-        
-        for (let i = 0; i < options.length; i++) {
-            if (options[i].text.toUpperCase().indexOf(input) > -1) options[i].style.display = "";
-            else options[i].style.display = "none";
-        }
-    }
-
-    function switchTab(tab) {
-        document.getElementById('tab1').className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
-        document.getElementById('tab2').className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
-        document.getElementById('vista-expediente').style.display = tab === 1 ? 'flex' : 'none';
-        document.getElementById('vista-global').style.display = tab === 2 ? 'flex' : 'none';
-    }
-
-    // =========================================================
-    // EXPEDIENTES Y DOMINGUITO
-    // =========================================================
-    function asignarTS() {
-        if(!pacienteSeleccionado) return alert("Selecciona un paciente primero");
-        const ts = document.getElementById('sel-asignar-ts').value;
-        if(!ts) return;
-        refAsignaciones.child(pacienteSeleccionado).set(ts);
-        alert(`Paciente asignado a T.S: ${ts}`);
-    }
-
-    function cargarExpedientePaciente() {
-        pacienteSeleccionado = document.getElementById('sel-paciente').value;
-        const chatContainer = document.getElementById('chat-dominguito');
-        
-        if(!pacienteSeleccionado) {
-            chatContainer.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente.</div>`;
-            return;
-        }
-
-        refExpedientes.child(pacienteSeleccionado).on('value', snap => {
-            const msgs = snap.val() || {};
-            chatContainer.innerHTML = `<div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px;">EXPEDIENTE ABIERTO: ${pacienteSeleccionado}</div>`;
             
-            Object.values(msgs).forEach(m => {
-                let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-                if(m.autor === "DOMINGUITO") claseMsg = 'msg-bot';
-                
-                chatContainer.innerHTML += `
-                    <div class="msg ${claseMsg}">
-                        <b style="font-size:9px; display:block; opacity:0.7">${m.autor} (${m.rol})</b>
-                        ${m.msg}
-                    </div>
-                `;
-            });
-            chatContainer.scrollTop = 9999;
-        });
-    }
-
-    function enviarReporteDominguito() {
-        if(!pacienteSeleccionado) return alert("Seleccioná un paciente");
-        const txt = document.getElementById('in-dominguito').value;
-        if(!txt) return;
-
-        refExpedientes.child(pacienteSeleccionado).push({ autor: usuarioActivo, rol: rangoActivo, msg: txt, ts: Date.now() });
-        document.getElementById('in-dominguito').value = '';
-    }
-
-    // =========================================================
-    // CHAT GLOBAL
-    // =========================================================
-    function enviarMsg() {
-        const v = document.getElementById('chat-in').value;
-        const destino = document.getElementById('select-destino').value; 
-        
-        if(v) {
-            refChatGlobal.push({ u: usuarioActivo, t: v, rol: rangoActivo, destino: destino });
-            document.getElementById('chat-in').value=""; 
-        } 
-    }
-
-    // =========================================================
-    // PIZARRA GLOBAL
-    // =========================================================
-    function renderPizarraLocal() {
-        const container = document.getElementById('lista-tareas'); 
-        container.innerHTML = "";
-        const fEst = document.getElementById('f-est').value;
-        
-        Object.keys(cacheTareas).reverse().forEach(id => {
-            const t = cacheTareas[id];
-            
-            if(rangoActivo !== 'ADMINISTRACION' && !rangoActivo.includes('DIRECTOR')) {
-                if(t.destino !== rangoActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return;
+            if (!encontrados) {
+                respuesta += "✅ Todos los pacientes con asistencia normal.";
             }
-            if(fEst === 'ACTIVAS' && t.estado === 'CONFIRMADO') return;
-            if(fEst === 'CONFIRMADO' && t.estado !== 'CONFIRMADO') return;
+            
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: respuesta,
+                ts: Date.now(),
+                leido: false
+            });
+        });
+        return;
+    }
+    
+    if (upper.includes('HOLA') || upper.includes('BUENOS') || upper.includes('BUEN')) {
+        respuesta = `¡Hola ${usuarioActivo}! 👋\n\n`;
+        respuesta += `Soy Dominguito, tu asistente. Podés pedirme:\n\n`;
+        respuesta += `• "CUD" → Ver certificados vencidos\n`;
+        respuesta += `• "Ausencias" → Ver pacientes con muchas faltas\n`;
+        respuesta += `• "Reporte" → Generar reporte del día\n`;
+        respuesta += `• "Ayuda" → Ver comandos disponibles`;
+        
+    } else if (upper.includes('REPORTE') || upper.includes('RESUMEN')) {
+        respuesta = `📊 REPORTE DEL DÍA\n`;
+        respuesta += `━━━━━━━━━━━━━━━━\n`;
+        respuesta += `📅 Fecha: ${new Date().toLocaleDateString()}\n`;
+        respuesta += `🕐 Hora: ${new Date().toLocaleTimeString()}\n`;
+        respuesta += `👤 Usuario: ${usuarioActivo}\n`;
+        respuesta += `━━━━━━━━━━━━━━━━\n\n`;
+        respuesta += `✅ Sistema operando con normalidad.\n`;
+        respuesta += `📋 Revisá el radar para alertas activas.`;
+        
+    } else if (upper.includes('AYUDA') || upper.includes('COMANDO')) {
+        respuesta = `📋 COMANDOS DISPONIBLES\n`;
+        respuesta += `━━━━━━━━━━━━━━━━\n\n`;
+        respuesta += `• "CUD" - Ver CUDs vencidos o próximos a vencer\n`;
+        respuesta += `• "Ausencias" - Ver pacientes con +3 faltas\n`;
+        respuesta += `• "Reporte" - Generar resumen del día\n`;
+        respuesta += `• "Hola" - Saludo inicial\n`;
+        respuesta += `• "Ayuda" - Mostrar esta lista\n\n`;
+        respuesta += `💡 También podés escribir cualquier otra cosa y tomo nota.`;
+        
+    } else {
+        respuesta = `✅ Mensaje recibido y registrado.\n\n`;
+        respuesta += `📝 Anotado: "${texto}"\n\n`;
+        respuesta += `¿Necesitás algo más? Podés consultarme:\n`;
+        respuesta += `• "CUD" - certificados vencidos\n`;
+        respuesta += `• "Ausencias" - inasistencias`;
+    }
+    
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: '🤖 DOMINGUITO',
+        texto: respuesta,
+        ts: Date.now(),
+        leido: false
+    });
+}
 
-            const yaVi = (t.vistos || {})[usuarioActivo];
-            container.innerHTML += `
-                <div class="task-card prio-${t.prio}">
-                    <div style="font-size:9px; color:#64748b; margin-bottom:5px;">VENCE: ${t.vence || 'S/D'} | DE: ${t.emisor}</div>
-                    <h3 style="margin:0 0 10px 0; font-size:14px;">${t.desc}</h3>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                        <button class="btn-pro" style="background:${yaVi?'#f1f5f9':'#fff'}; color:${yaVi?'var(--verde)':'#64748b'}; border:1px solid #ccc;" onclick="marcarVisto('${id}')">${yaVi?'✔ VISTO':'VISTO'}</button>
-                        <button class="btn-pro" style="background:var(--verde);" onclick="cambiarEst('${id}', 'CONFIRMADO')">LISTO</button>
-                    </div>
-                </div>`;
+// ============================================================
+// =============== ESCUCHAR NOTIFICACIONES ENTRANTES ==========
+// ============================================================
+
+function escucharMensajesIndividuales() {
+    refChatsIndividuales.on('childadded', snap => {
+        const chatId = snap.key;
+        
+        // Solo escuchar chats donde el usuario participa
+        if (chatId.includes(usuarioActivo.replace(/[^a-zA-Z0-9]/g, '')) || 
+            chatId.includes(usuarioActivo)) {
+            
+            // Escuchar notificaciones para este usuario
+            refChatsIndividuales.child(chatId).child('notificaciones').child(usuarioActivo).on('value', notifSnap => {
+                const notif = notifSnap.val();
+                if (notif && notif.noLeidos) {
+                    const de = notif.de || 'Alguien';
+                    
+                    // Mostrar punto rojo en el contacto
+                    const notifElement = document.getElementById(`notif-${de.replace(/[^a-zA-Z0-9]/g, '')}`);
+                    if (notifElement && contactoSeleccionado !== de) {
+                        notifElement.style.display = 'block';
+                    }
+                    
+                    // Notificación push
+                    mostrarNotificacion(`💬 ${de}`, notif.ultimoTexto);
+                    
+                    // Sonido
+                    document.getElementById('snd-msg').play().catch(() => {});
+                    
+                    // Auto-marcar como leído después de 5 segundos
+                    setTimeout(() => {
+                        refChatsIndividuales.child(chatId).child('notificaciones').child(usuarioActivo).update({
+                            noLeidos: false
+                        });
+                    }, 5000);
+                }
+            });
+        }
+    });
+    
+    // También escuchar nuevos mensajes en chats existentes
+    refChatsIndividuales.on('childchanged', snap => {
+        const chatId = snap.key;
+        if (chatId.includes(usuarioActivo.replace(/[^a-zA-Z0-9]/g, '')) || 
+            chatId.includes(usuarioActivo)) {
+            
+            const data = snap.val();
+            if (data && data.ultimo && data.ultimo.autor !== usuarioActivo) {
+                const de = data.ultimo.autor;
+                
+                if (contactoSeleccionado !== de) {
+                    const notifElement = document.getElementById(`notif-${de.replace(/[^a-zA-Z0-9]/g, '')}`);
+                    if (notifElement) notifElement.style.display = 'block';
+                    
+                    mostrarNotificacion(`💬 ${de}`, data.ultimo.texto);
+                    document.getElementById('snd-msg').play().catch(() => {});
+                }
+            }
+        }
+    });
+}
+
+// ============================================================
+// =============== NOTIFICACIONES ==============================
+// ============================================================
+
+function mostrarNotificacion(titulo, mensaje) {
+    // Toast en pantalla
+    mostrarToast(`${titulo}: ${mensaje}`);
+    
+    // Notification API del navegador
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(titulo, {
+            body: mensaje,
+            icon: "https://cdn-icons-png.flaticon.com/512/1828/1828640.png"
         });
     }
-    function exportarPDF() {
-    if(!pacienteSeleccionado) return alert("Seleccioná un paciente primero para exportar su expediente.");
+}
+
+function mostrarToast(mensaje) {
+    const toastExistente = document.querySelector('.toast');
+    if (toastExistente) toastExistente.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = mensaje;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
+// ============================================================
+// =============== MODAL DOMINGUITO ============================
+// ============================================================
+
+function abrirChatDominguito() {
+    document.getElementById('modal-dominguito').style.display = 'flex';
+    document.getElementById('nombre-usuario-modal').textContent = usuarioActivo;
+    
+    // Seleccionar automáticamente el contacto Dominguito
+    seleccionarContacto('🤖 DOMINGUITO', 'Asistente IA');
+}
+
+function cerrarModalDominguito() {
+    document.getElementById('modal-dominguito').style.display = 'none';
+}
+
+function enviarADominguito() {
+    const input = document.getElementById('in-domingo-modal');
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    const chatContainer = document.getElementById('chat-domingo-modal');
+    
+    // Mensaje del usuario
+    chatContainer.innerHTML += `
+        <div class="msg msg-me">
+            <b style="font-size:9px; display:block; opacity:0.7">${usuarioActivo}</b>
+            ${texto}
+            <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
+        </div>
+    `;
+    
+    // Guardar en Firebase
+    const participantes = [usuarioActivo, '🤖 DOMINGUITO'].sort();
+    const chatId = `chat${participantes.join('')}`;
+    
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: usuarioActivo,
+        texto: texto,
+        ts: Date.now(),
+        leido: false
+    });
+    
+    // Respuesta automática
+    setTimeout(() => {
+        procesarComandoDominguito(texto);
+        
+        // También mostrar en el modal
+        setTimeout(() => {
+            refChatsIndividuales.child(chatId).child('mensajes').limitToLast(1).once('value', snap => {
+                snap.forEach(child => {
+                    const m = child.val();
+                    if (m.autor === '🤖 DOMINGUITO') {
+                        chatContainer.innerHTML += `
+                            <div class="msg msg-domingo">
+                                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
+                                ${m.texto}
+                                <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleTimeString()}</div>
+                            </div>
+                        `;
+                        chatContainer.scrollTop = 9999;
+                    }
+                });
+            });
+        }, 2000);
+    }, 1000);
+    
+    input.value = '';
+    chatContainer.scrollTop = 9999;
+}
+
+// ============================================================
+// =============== SWITCH DE TABS ==============================
+// ============================================================
+
+function switchTab(tab) {
+    document.getElementById('tab1').className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
+    document.getElementById('tab2').className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
+    document.getElementById('vista-chats').style.display = tab === 1 ? 'flex' : 'none';
+    document.getElementById('vista-expedientes').style.display = tab === 2 ? 'flex' : 'none';
+}
+
+// ============================================================
+// =============== EXPEDIENTES PACIENTES =======================
+// ============================================================
+
+function filtrarPacientes() {
+    let input = document.getElementById('busc-paciente').value.toUpperCase();
+    let sel = document.getElementById('sel-paciente');
+    let options = sel.getElementsByTagName('option');
+    
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].text.toUpperCase().indexOf(input) > -1) {
+            options[i].style.display = "";
+        } else {
+            options[i].style.display = "none";
+        }
+    }
+}
+
+function cargarExpedientePaciente() {
+    pacienteSeleccionado = document.getElementById('sel-paciente').value;
+    const chatContainer = document.getElementById('chat-dominguito');
+    
+    if(!pacienteSeleccionado) {
+        chatContainer.innerHTML = `<div style="text-align:center; color:94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente.</div>`;
+        return;
+    }
+
+    refExpedientes.child(pacienteSeleccionado).on('value', snap => {
+        const msgs = snap.val() || {};
+        chatContainer.innerHTML = `<div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+            📋 EXPEDIENTE: <b>${pacienteSeleccionado}</b>
+        </div>`;
+        
+        const mensajesArray = Object.values(msgs).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        
+        mensajesArray.forEach(m => {
+            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+            if(m.autor === "DOMINGUITO" || m.autor === "🤖 DOMINGUITO") claseMsg = 'msg-bot';
+            
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor} (${m.rol || 'Usuario'})</b>
+                    ${m.msg || m.texto}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleString()}</div>
+                </div>
+            `;
+        });
+        chatContainer.scrollTop = 9999;
+    });
+}
+
+function enviarReporteDominguito() {
+    if(!pacienteSeleccionado) return alert("Seleccioná un paciente");
+    const txt = document.getElementById('in-dominguito').value;
+    if(!txt) return;
+
+    refExpedientes.child(pacienteSeleccionado).push({ 
+        autor: usuarioActivo, 
+        rol: rangoActivo, 
+        msg: txt, 
+        ts: Date.now() 
+    });
+    document.getElementById('in-dominguito').value = '';
+    
+    // Notificar a Dominguito
+    mostrarToast("✅ Novedad registrada en el expediente");
+}
+
+function asignarTS() {
+    if(!pacienteSeleccionado) return alert("Seleccioná un paciente primero");
+    const ts = document.getElementById('sel-asignar-ts').value;
+    if(!ts) return;
+    refAsignaciones.child(pacienteSeleccionado).set(ts);
+    alert(`✅ Paciente ${pacienteSeleccionado} asignado a: ${ts}`);
+}
+
+function exportarPDF() {
+    if(!pacienteSeleccionado) return alert("Seleccioná un paciente primero");
+    
     const elemento = document.getElementById('chat-dominguito');
     const opciones = {
-        margin: 10,
-        filename: `Expediente_Clinico_${pacienteSeleccionado}.pdf`,
+        margin: [10, 10, 10, 10],
+        filename: `Expediente${pacienteSeleccionado}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            logging: false
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait' 
+        }
     };
+    
+    mostrarToast("📄 Generando PDF...");
     html2pdf().set(opciones).from(elemento).save();
 }
 
-    function marcarVisto(id) { refPizarra.child(`${id}/vistos/${usuarioActivo}`).set(true); }
-    function cambiarEst(id, est) { if(confirm("¿Finalizar misión?")) refPizarra.child(id).update({ estado: est }); }
-    function crearTarea() { 
-        const d = document.getElementById('t-desc').value; 
-        if(!d) return; 
-        refPizarra.push({ 
-            desc: d, vence: document.getElementById('t-vence').value || 'S/D', prio: document.getElementById('t-prio-val').value, 
-            destino: document.getElementById('t-dest-val').value, emisor: usuarioActivo, estado: 'PENDIENTE'
-        }); 
-        document.getElementById('t-desc').value=""; 
-    }
+// ============================================================
+// =============== RADAR TÁCTICO ==============================
+// ============================================================
 
+function escanearBaseDeDatos() {
+    const selectPac = document.getElementById('sel-paciente');
+    let contadorCuds = 0;
+    let contadorAus = 0;
+
+    // Limpiar radar
+    document.getElementById('radar-feed').innerHTML = '<div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">🔍 Escaneando base de datos...</div>';
+
+    // Escanear TODA la base de datos en busca de pacientes
+    db.ref('/').once('value', snap => {
+        let pacientesEncontrados = 0;
+        
+        snap.forEach(rama => {
+            if (rama.child('pacientes').exists()) {
+                rama.child('pacientes').forEach(childPac => {
+                    const nombre = childPac.key;
+                    const pac = childPac.val();
+                    pacientesEncontrados++;
+
+                    // Agregar al selector sin duplicar
+                    if(!listaPacientesCache.includes(nombre)) {
+                        listaPacientesCache.push(nombre);
+                        let opt = document.createElement('option');
+                        opt.value = nombre; 
+                        opt.text = nombre;
+                        selectPac.add(opt);
+                    }
+
+                    // Verificar CUD
+                    if(pac.cud) {
+                        const hoy = new Date();
+                        const venc = new Date(pac.cud);
+                        const diff = Math.floor((venc - hoy) / (1000  60  60  24));
+                        
+                        if(diff <= 0) { 
+                            contadorCuds++;
+                            renderizarAlerta(nombre, '🚨 CUD VENCIDO', `Vencido el ${pac.cud} (hace ${Math.abs(diff)} días)`);
+                        } else if(diff <= 30) {
+                            contadorCuds++;
+                            renderizarAlerta(nombre, '⚠️ CUD PRÓXIMO', `Vence: ${pac.cud} (${diff} días)`);
+                        } else if(diff <= 60) {
+                            contadorCuds++;
+                            renderizarAlerta(nombre, '👁️ CUD A VENCER', `Vence: ${pac.cud} (${diff} días)`);
+                        }
+                    }
+                });
+            }
+        });
+        
+        document.getElementById('stat-cuds').textContent = contadorCuds;
+        
+        if (pacientesEncontrados === 0) {
+            document.getElementById('radar-feed').innerHTML = '<div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">⚠️ No se encontraron pacientes en la base de datos</div>';
+        }
+    });
+
+    // Escanear ausencias
+    db.ref('/seguimientopacientes').on('value', snap => {
+        contadorAus = 0;
+        
+        snap.forEach(child => {
+            const nombre = child.key;
+            let faltas = 0;
+            
+            child.forEach(dia => {
+                const val = dia.val();
+                if(val === 'A' || (typeof val === 'object' && val && val.val === 'A')) faltas++;
+            });
+            
+            if(faltas >= 3) {
+                contadorAus++;
+                let nivel = faltas >= 5 ? '🚨' : faltas >= 3 ? '⚠️' : '👁️';
+                renderizarAlerta(nombre, `${nivel} AUSENCIAS`, `Acumula ${faltas} inasistencias.`);
+            }
+        });
+        
+        document.getElementById('stat-aus').textContent = contadorAus;
+    });
+    
+    console.log("🔍 Radar escaneando...");
+}
+
+function renderizarAlerta(paciente, tipo, msg) {
+    const feed = document.getElementById('radar-feed');
+    
+    // Limpiar mensaje inicial
+    const inicial = feed.querySelector('div[style="Monitoreando"], div[style="Escaneando"], div[style="No se encontraron"]');
+    if (inicial) feed.innerHTML = "";
+    
+    const idUnico = (paciente + tipo).replace(/[^a-zA-Z0-9]/g, '');
+    if(document.getElementById(idUnico)) return;
+
+    // Color según el tipo
+    let color = 'var(--urgente)';
+    if (tipo.includes('PRÓXIMO') || tipo.includes('A VENCER')) color = 'var(--oro)';
+    if (tipo.includes('AUSENCIAS')) {
+        if (tipo.includes('🚨')) color = 'var(--urgente)';
+        else if (tipo.includes('⚠️')) color = 'var(--oro)';
+        else color = 'var(--accent)';
+    }
+    
+    feed.innerHTML = `
+        <div id="${idUnico}" class="radar-card" style="border-left-color: ${color}" onclick="seleccionarContacto('${paciente}', 'Paciente')">
+            <div style="font-size:10px; font-weight:900; color:${color}">${tipo}</div>
+            <div style="font-size:13px; margin:4px 0; font-weight:800; color:white;">${paciente}</div>
+            <div style="font-size:11px; color:94a3b8;">${msg}</div>
+        </div>
+    ` + feed.innerHTML;
+    
+    // Sonido solo para alertas graves
+    if (tipo.includes('VENCIDO') || tipo.includes('🚨')) {
+        document.getElementById('snd-radar').play().catch(() => {});
+    }
+}
+
+// ============================================================
+// =============== PIZARRA DE ÓRDENES =========================
+// ============================================================
+
+function renderPizarraLocal() {
+    const container = document.getElementById('lista-tareas'); 
+    if (!container) return;
+    
+    container.innerHTML = "";
+    const fEst = document.getElementById('f-est').value;
+    
+    // Convertir a array y ordenar por fecha
+    const tareasArray = Object.keys(cacheTareas).map(id => ({ 
+        id, 
+        ...cacheTareas[id] 
+    })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    
+    // Filtrar según visibilidad
+    const filtradas = tareasArray.filter(t => {
+        // Solo admin/directores/coordinadores ven todo
+        const esAutorizado = rangoActivo === 'ADMINISTRACION' || 
+                            rangoActivo.includes('DIRECTOR') || 
+                            rangoActivo.includes('COORD');
+        
+        if (!esAutorizado) {
+            if(t.destino !== rangoActivo && t.destino !== 'TODOS' && t.emisor !== usuarioActivo) return false;
+        }
+        
+        // Filtro de estado
+        if(fEst === 'ACTIVAS' && t.estado === 'CONFIRMADO') return false;
+        if(fEst === 'CONFIRMADO' && t.estado !== 'CONFIRMADO') return false;
+        
+        return true;
+    });
+    
+    if (filtradas.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
+        return;
+    }
+    
+    filtradas.forEach(t => {
+        const yaVi = (t.vistos || {})[usuarioActivo];
+        const esParaMi = t.destino === 'TODOS' || t.destino === rangoActivo || t.emisor === usuarioActivo;
+        
+        container.innerHTML += `
+            <div class="task-card prio-${t.prio}" style="${t.estado === 'CONFIRMADO' ? 'opacity:0.6;' : ''}">
+                <div style="font-size:9px; color:64748b; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>📅 ${t.vence || 'Sin fecha'} | 👤 ${t.emisor}</span>
+                    <span style="display:flex; gap:5px; align-items:center;">
+                        <span style="background:${t.prio === 'ALTA' ? 'var(--urgente)' : t.prio === 'MEDIA' ? 'var(--oro)' : '94a3b8'}; 
+                                   color:white; padding:2px 8px; border-radius:10px; font-size:8px;">
+                            ${t.prio}
+                        </span>
+                        <span style="background:${t.destino === 'TODOS' ? 'var(--verde)' : 'var(--accent)'}; 
+                                   color:white; padding:2px 8px; border-radius:10px; font-size:8px;">
+                            ${t.destino}
+                        </span>
+                    </span>
+                </div>
+                <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through;' : ''}">${t.desc}</h3>
+                ${t.link ? `<div style="margin-bottom:8px;"><a href="${t.link}" target="blank" style="font-size:11px; color:var(--accent);">🔗 Link adjunto</a></div>` : ''}
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <button class="btn-pro" style="background:${yaVi ? 'f1f5f9' : 'fff'}; 
+                                                   color:${yaVi ? 'var(--verde)' : '64748b'}; 
+                                                   border:1px solid ccc; font-size:10px;" 
+                            onclick="marcarVisto('${t.id}')">
+                        ${yaVi ? '✅ VISTO' : '👁️ MARCAR VISTO'}
+                    </button>
+                    <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '64748b' : 'var(--verde)'}; 
+                                                   font-size:10px;" 
+                            onclick="cambiarEst('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
+                        ${t.estado === 'CONFIRMADO' ? '↩️ REABRIR' : '✅ COMPLETAR'}
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function marcarVisto(id) { 
+    refPizarra.child(`${id}/vistos/${usuarioActivo}`).set(true); 
+    mostrarToast("✅ Marcado como visto");
+}
+
+function cambiarEst(id, est) { 
+    refPizarra.child(id).update({ estado: est }); 
+    mostrarToast(est === 'CONFIRMADO' ? "✅ Misión completada" : "↩️ Misión reabierta");
+}
+
+function crearTarea() { 
+    const d = document.getElementById('t-desc').value; 
+    if(!d) return alert("Escribí una descripción para la orden"); 
+    
+    refPizarra.push({ 
+        desc: d, 
+        vence: document.getElementById('t-vence').value || 'Sin fecha', 
+        prio: document.getElementById('t-prio-val').value, 
+        destino: document.getElementById('t-dest-val').value, 
+        link: document.getElementById('t-drive-val').value || '',
+        emisor: usuarioActivo, 
+        estado: 'PENDIENTE',
+        ts: Date.now()
+    }); 
+    
+    document.getElementById('t-desc').value = ""; 
+    document.getElementById('t-drive-val').value = "";
+    
+    mostrarToast("📨 Orden enviada al equipo");
+    
+    // Si es para Dominguito, procesar
+    if (document.getElementById('t-dest-val').value === 'DOMINGUITO') {
+        setTimeout(() => procesarComandoDominguito(d), 500);
+    }
+}
+// ============================================================
+// =============== RRHH / LIQUIDACIONES =======================
+// ============================================================
+
+function cargarDatosPrivados(nombre) {
+    document.getElementById('panel-liquidacion').style.display = 'block';
+    
+    db.ref('/liquidaciones').orderByChild('nombre').equalTo(nombre).on('value', snap => {
+        const container = document.getElementById('tabla-container');
+        if(!snap.exists()){
+            container.innerHTML = "<p style='font-size:12px; color:64748b;'>No hay liquidaciones pendientes este mes.</p>";
+            return;
+        }
+
+        let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">';
+        html += '<tr style="background:f1f5f9;"><th>Sede/Puesto</th><th>Periodo</th><th>Total a Facturar</th></tr>';
+        
+        let cbu = "", email = "";
+        snap.forEach(child => {
+            const l = child.val();
+            html += `<tr>
+                <td style="padding:8px; border-bottom:1px solid e2e8f0;">${l.puesto || 'General'}</td>
+                <td style="padding:8px; border-bottom:1px solid e2e8f0;">${l.periodo}</td>
+                <td style="padding:8px; border-bottom:1px solid e2e8f0; font-weight:bold;">$${Number(l.total).toLocaleString('es-AR')}</td>
+            </tr>`;
+            if(l.cbu) cbu = l.cbu;
+            if(l.email) email = l.email;
+        });
+        
+        html += '</table>';
+        container.innerHTML = html;
+
+        // Agregar sección de datos de contacto si existen
+        if (cbu || email) {
+            container.innerHTML += `
+                <div style="margin-top:15px; padding:10px; background:#f8fafc; border-radius:6px; font-size:11px; border:1px solid #e2e8f0;">
+                    ${cbu ? `<div style="margin-bottom:4px;">🏦 <b>CBU/Alias:</b> ${cbu}</div>` : ''}
+                    ${email ? `<div>📧 <b>Email:</b> ${email}</div>` : ''}
+                </div>
+            `;
+        }
+    });
+}
+console.log("Sistema DOMINGUITO listo para operar.");
+};
 </script>
 </body>
 </html>
