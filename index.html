@@ -13,129 +13,52 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         :root { --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; --oro: #f59e0b; --dark: #0f172a; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
-        
-        @media (max-width: 1000px) { 
-        body { flex-direction: column; height: auto; overflow-y: auto; display: block; } 
-        .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; } 
-        .col-radar { max-height: max-content; }
-        /* Ajustes táctiles para celular */
-        .btn-pro, input, select { min-height: 44px; font-size: 14px; }
-        .header { flex-direction: column; gap: 10px; align-items: flex-start; }
-        }
-
-        /* COL 1: RADAR */
+        @media (max-width: 1000px) { body { flex-direction: column; height: auto; overflow-y: auto; display: block; } .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; } }
         .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid #334155; }
         .radar-feed { flex: 1; overflow-y: auto; padding: 15px; }
         .radar-card { background: #1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        
-        /* COL 2: PIZARRA */
         .col-pizarra { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: var(--bg); }
         .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .prio-ALTA { border-left: 8px solid var(--urgente); }
-        .prio-MEDIA { border-left: 8px solid var(--oro); }
-        
-        /* COL 3: DOMINGUITO & EXPEDIENTES */
         .col-comms { width: 350px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
         .tab-btn { flex: 1; padding: 15px 0; border: none; background: #f8fafc; cursor: pointer; font-weight: 800; color: #64748b; border-bottom: 2px solid transparent; }
         .tab-btn.activa { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
-        
         .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
         .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; max-width: 90%; word-wrap: break-word; }
         .msg-me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 0; }
         .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
-        .msg-bot { background: #eff6ff; border: 1px solid var(--accent); color: #1e3a8a; align-self: flex-start; width: 100%; border-radius: 8px; }
-
-        input, select { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; width: 100%; font-size: 13px; outline: none; }
-        input:focus, select:focus { border-color: var(--accent); }
-        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; }
-        
-        #bloqueo-mando { position:fixed; inset:0; background:var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white;}
+        .btn-pro { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; }
+        #bloqueo-mando { position:fixed; inset:0; background:var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white; }
     </style>
 </head>
 <body>
 
-<audio id="snd-radar" src="https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3" preload="auto"></audio>
-
 <div id="bloqueo-mando">
-    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px;">
         <h2 style="color:var(--accent); margin-bottom: 20px;">ACCESO ELITE</h2>
-        <select id="sel-empleado" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-            <option value="">Cargando personal...</option>
-        </select>
-        <input type="password" id="pass-mando" placeholder="Clave (Solo Admin/Directores)" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginMando()">ENTRAR A MI PANEL</button>
+        <select id="sel-empleado" style="margin-bottom: 15px; width:100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155;"></select>
+        <input type="password" id="pass-mando" placeholder="Clave (Si aplica)" style="margin-bottom: 15px; width:100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155;">
+        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px;" onclick="loginMando()">ENTRAR A MI PANEL</button>
     </div>
 </div>
 
 <div class="col-radar">
-    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155;">
-        👁️ RADAR TÁCTICO
-    </div>
-    <div style="display: flex; gap: 10px; margin-top: 15px; padding: 0 15px;">
-    <div style="flex: 1; background: #334155; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #475569;">
-        <div style="font-size: 10px; color: #94a3b8; font-weight: bold;">CUDs ALERTA</div>
-        <div id="stat-cuds" style="font-size: 22px; font-weight: 900; color: var(--urgente);">0</div>
-    </div>
-    <div style="flex: 1; background: #334155; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #475569;">
-        <div style="font-size: 10px; color: #94a3b8; font-weight: bold;">AUSENCIAS</div>
-        <div id="stat-aus" style="font-size: 22px; font-weight: 900; color: var(--oro);">0</div>
-    </div>
-    </div>
-    <div id="radar-feed" class="radar-feed">
-        <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">Monitoreando bases de datos...</div>
-    </div>
+    <div style="padding:20px; font-weight:800; font-size: 14px; border-bottom: 1px solid #334155;">👁️ RADAR TÁCTICO</div>
+    <div id="radar-feed" class="radar-feed"></div>
 </div>
 
 <div class="col-pizarra">
-    <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <h2 style="margin:0; font-size:16px;">Misiones Elite</h2>
-            <span id="user-tag" style="color:var(--accent); font-size:11px; font-weight: bold;"></span>
-        </div>
-        <div style="display:flex; gap:5px;">
-            <button id="btn-caja" class="btn-pro" style="display:none; background:var(--verde); font-size:10px;" onclick="window.location.href='rendicion.html'">CAJA</button>
-            <button class="btn-pro" style="background:#64748b; font-size:10px;" onclick="location.reload()">SALIR</button>
-        </div>
+    <div class="header glass-panel">
+        <h2 id="user-tag" style="margin:0; font-size:16px;">Esperando login...</h2>
+        <button class="btn-pro" onclick="location.reload()">SALIR</button>
     </div>
-    
-    <div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
-        <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
-        
-        <div id="msj-rrhh" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
-            <p style="margin:0; font-size: 14px; color: #1e3a8a;">
-                <b>Estimado/a colaborador/a:</b> Nos ponemos en contacto desde el Departamento de RRHH para informarle que su liquidación del periodo actual ya está disponible. 
-                Le solicitamos tenga a bien emitir y presentar su factura antes del día <b>5 de cada mes</b> para proceder con el pago en tiempo y forma.
-            </p>
-        </div>
-
-        <div id="tabla-container"></div>
-        
-        <div style="margin-top:15px; font-size: 12px; color: #64748b;">
-            <p><b>Datos de Pago registrados:</b> <span id="datos-pago"></span></p>
-        </div>
-    </div>
-
+    <div id="panel-liquidacion" class="glass-panel" style="display:none;"></div>
     <div class="glass-panel">
-        <input type="text" id="t-desc" placeholder="Describir nueva misión o instrucción...">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
-            <input type="date" id="t-vence">
-            <select id="t-prio-val"><option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">URGENTE 🔥</option></select>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
-            <select id="t-dest-val"><option value="TODOS">TODOS</option><option value="SECRETARIA">SECRETARÍA</option><option value="DIRECTORES">DIRECTORES</option><option value="ADMINISTRACION">ADMIN</option><option value="COORD">COORD</option><option value="T.S.">T. SOCIALES</option></select>
-            <input type="text" id="t-drive-val" placeholder="Link Drive (Opcional)">
-        </div>
-        <button class="btn-pro" style="width:100%; margin-top:10px;" onclick="crearTarea()">LANZAR MISIÓN ✨</button>
+        <input type="text" id="t-desc" placeholder="Nueva misión...">
+        <button class="btn-pro" onclick="crearTarea()">LANZAR MISIÓN ✨</button>
     </div>
-    
-    <div style="display:flex; gap:10px;">
-        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1"><option value="ACTIVAS">Misiones Activas</option><option value="CONFIRMADO">Historial</option></select>
-    </div>
-    
     <div id="lista-tareas"></div>
 </div>
 
@@ -143,48 +66,18 @@
     <div style="display: flex;">
         <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">🧠 EXPEDIENTE</button>
         <button id="tab2" class="tab-btn" onclick="switchTab(2)">🌐 GLOBAL</button>
-        <button class="btn-pro" style="background: #475569; font-size: 10px; margin-left: auto; height: 35px;" onclick="exportarPDF()">📄 DESCARGAR PDF</button>
     </div>
-
-    <div id="vista-expediente" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-        <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-            <input type="text" id="busc-paciente" placeholder="🔍 Buscar chico por nombre..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
-            
-            <select id="sel-paciente" onchange="cargarExpedientePaciente()">
-                <option value="">Selecciona un paciente a reportar...</option>
-            </select>
-            <div id="panel-asignar-ts" style="display: none; margin-top: 5px; gap: 5px;">
-                <select id="sel-asignar-ts" style="font-size: 10px; padding: 5px;"></select>
-                <button class="btn-pro" style="padding: 5px; font-size: 10px;" onclick="asignarTS()">VINCULAR T.S.</button>
-            </div>
-        </div>
-        <div id="chat-dominguito" class="chat-content">
-            <div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">
-                Seleccioná un paciente. Todo lo que escribas acá será leído por Dominguito (Python) para actualizar su ficha técnica.
-            </div>
-        </div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
-            <input type="text" id="in-dominguito" placeholder="Reportar novedad clínica..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
-            <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">></button>
-        </div>
+    <div id="vista-expediente" style="flex:1; display:flex; flex-direction:column;">
+        <select id="sel-paciente" onchange="cargarExpedientePaciente()"><option value="">Selecciona paciente...</option></select>
+        <div id="chat-dominguito" class="chat-content"></div>
+        <input type="text" id="in-dominguito" placeholder="Reportar..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
     </div>
-
-    <div id="vista-global" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+    <div id="vista-global" style="display:none; flex-direction:column; flex:1;">
         <div id="chat-msgs" class="chat-content"></div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
-            <select id="select-destino" style="width: 110px; padding: 5px; font-size: 11px;">
-                <option value="TODOS">A TODOS</option>
-                <option value="DIRECTORES">A DIRECTORES</option>
-                <option value="T.S.">A T. SOCIALES</option>
-                <option value="ADMINISTRACION">A ADMIN</option>
-            </select>
-            <input type="text" id="chat-in" placeholder="Mensaje..." onkeypress="if(event.key==='Enter') enviarMsg()">
-            <button class="btn-pro" style="width: 40px;" onclick="enviarMsg()">></button>
-        </div>
     </div>
 </div>
+
 <script>
-    // 1. Definir la configuración PRIMERO y arriba de todo
     const firebaseConfig = { 
         apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8", 
         authDomain: "clinicaintegral-5c488.firebaseapp.com", 
@@ -193,102 +86,78 @@
         appId: "1:184090967634:web:09715937b33ea48288698b" 
     };
 
-    // 2. Inicializar Firebase usando esa configuración
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-
-    // 3. Definir la base de datos
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database(); 
 
-    // 4. Autenticación Inteligente
+    // Referencias Globales
+    let usuarioActivo = "", rangoActivo = "";
+    
+    // Auth inicial (Solo asegurar conexión)
     firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            console.log("Sistema Mando: Sesión activa/detectada.");
-            escanearBaseDeDatos();
-            cargarInterfaz();
-        } else {
-            firebase.auth().signInAnonymously()
-                .then(() => {
-                    console.log("Sistema Mando: Autenticado como anónimo.");
-                    escanearBaseDeDatos();
-                    cargarInterfaz();
-                })
-                .catch((error) => {
-                    console.error("Error al autenticar:", error.message);
-                });
-        }
+        if (!user) firebase.auth().signInAnonymously();
     });
 
-    // 2. REFERENCIAS
-    const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
-    const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
-    const refExpedientes = db.ref('/SISTEMA_MANDO/expedientes_interactivos'); 
-    const refAsignaciones = db.ref('/SISTEMA_MANDO/asignaciones_ts');
-
-    let usuarioActivo = "", rangoActivo = "", cacheTareas = {};
-    let listaPacientesCache = [];
-    let pacienteSeleccionado = "";
-
-    // 3. INICIO: CARGAR EMPLEADOS SIN DUPLICADOS
+    // Cargar empleados al inicio
     db.ref('/SISTEMA_PERSONAL/empleados').once('value', snap => {
-        const listaUnica = {};
-        let selTs = document.getElementById('sel-asignar-ts');
-        let htmlTs = '<option value="">Seleccionar T.S.</option>';
-
+        const sel = document.getElementById('sel-empleado');
         snap.forEach(child => {
             const emp = child.val();
-            if(emp && emp.n) listaUnica[emp.n.trim()] = emp;
-        });
-
-        const empleadosOrdenados = Object.values(listaUnica).sort((a, b) => a.n.localeCompare(b.n));
-        let sel = document.getElementById('sel-empleado');
-        sel.innerHTML = '<option value="">Seleccione su nombre...</option>';
-        
-        empleadosOrdenados.forEach(emp => {
-            sel.innerHTML += `<option value="${emp.n}" data-rol="${emp.profesion || 'Empleado'}">${emp.n} (${emp.profesion || 'S/D'})</option>`;
-            if(emp.profesion === "TS" || emp.profesion === "T.S." || emp.profesion === "Trabajadora Social") {
-                htmlTs += `<option value="${emp.n}">${emp.n}</option>`;
+            if(emp && emp.n) {
+                const opt = document.createElement('option');
+                opt.value = emp.n;
+                opt.text = emp.n;
+                opt.setAttribute('data-rol', emp.profesion || 'Empleado');
+                sel.add(opt);
             }
         });
-        selTs.innerHTML = htmlTs;
-    if (localStorage.getItem('mando_usuario')) {
-    const sel = document.getElementById('sel-empleado');
-    sel.value = localStorage.getItem('mando_usuario');
-    sel.disabled = true; // Bloquea el selector para que no cambie de usuario
-}
-});
-    // 4. LOGIN INTELIGENTE Y CARGA DE PERFIL
+    });
+
+    // Lógica de Login/Token
     function loginMando() {
         const select = document.getElementById('sel-empleado');
         if(!select.value) return alert("Selecciona tu nombre");
-        
+
+        const usuario = select.value;
         const option = select.options[select.selectedIndex];
-        usuarioActivo = option.value;
+        usuarioActivo = usuario;
         rangoActivo = option.getAttribute('data-rol').toUpperCase();
-        const pass = document.getElementById('pass-mando').value;
 
-        // Permisos Especiales
-        if(usuarioActivo.includes("SALINAS LEONARDO") && pass === "1986") {
-            rangoActivo = "ADMINISTRACION";
-        } else if (rangoActivo.includes("DIRECTOR") && pass !== "1515") {
-            return alert("Clave de Director incorrecta");
+        const tokenGuardado = localStorage.getItem('mando_token');
+        const usuarioGuardado = localStorage.getItem('mando_usuario');
+
+        // Check LocalStorage
+        if (usuario === usuarioGuardado && tokenGuardado) {
+            validarToken(usuario, tokenGuardado, true); // true = auto
+        } else {
+            const tokenPrompt = prompt("Ingrese su TOKEN personal:");
+            if (tokenPrompt) validarToken(usuario, tokenPrompt, false);
         }
+    }
 
+    function validarToken(nombre, token, esAuto) {
+        db.ref('tokens/' + nombre).once('value', snap => {
+            const tokenCorrecto = snap.val();
+            if (tokenCorrecto && tokenCorrecto === token) {
+                localStorage.setItem('mando_token', token);
+                localStorage.setItem('mando_usuario', nombre);
+                iniciarSesion();
+            } else if (!tokenCorrecto && !esAuto) {
+                db.ref('tokens/' + nombre).set(token);
+                iniciarSesion();
+            } else {
+                alert("Token incorrecto.");
+                location.reload();
+            }
+        });
+    }
+
+    function iniciarSesion() {
         document.getElementById('bloqueo-mando').style.display = 'none';
         document.getElementById('user-tag').innerText = `${usuarioActivo} | ${rangoActivo}`;
         
-        if(rangoActivo === 'ADMINISTRACION' || rangoActivo.includes('COORD') || rangoActivo.includes('DIRECTOR')) {
-            document.getElementById('panel-asignar-ts').style.display = 'flex';
-            document.getElementById('btn-caja').style.display = 'block';
-        }
-
-        // Arrancamos motores
-        iniciarApp();
-        cargarDatosPrivados(usuarioActivo);
-        verificarNotificaciones(usuarioActivo);
+        // Arrancar motores (Tu lógica original)
+        iniciarApp(); 
     }
-
     // 5. MOTOR PRINCIPAL
     function iniciarApp() {
         // Cargar Pizarra
@@ -570,55 +439,7 @@
         }); 
         document.getElementById('t-desc').value=""; 
     }
-    // NUEVA FUNCIÓN: Validador de Token en Firebase
-function validarToken(nombre, tokenIngresado) {
-    db.ref('tokens/' + nombre).once('value', snap => {
-        const tokenCorrecto = snap.val();
 
-        if (tokenCorrecto && tokenCorrecto === tokenIngresado) {
-            // Éxito: Guardamos en local para no molestar más
-            localStorage.setItem('mando_token', tokenIngresado);
-            localStorage.setItem('mando_usuario', nombre);
-            loginMando(); // Llamamos a tu función original de carga
-        } else if (!tokenCorrecto) {
-            // Si el token no existe, lo creamos (esto es el "auto-registro" que pediste)
-            db.ref('tokens/' + nombre).set(tokenIngresado);
-            alert("Token registrado correctamente por primera vez.");
-            validarToken(nombre, tokenIngresado);
-        } else {
-            alert("Token incorrecto. Acceso denegado.");
-            location.reload();
-        }
-    });
-}
-
-// MODIFICACIÓN DE TU LOGIN ORIGINAL
-function loginMando() {
-    const select = document.getElementById('sel-empleado');
-    if(!select.value) return alert("Selecciona tu nombre");
-
-    const usuario = select.value;
-    const tokenGuardado = localStorage.getItem('mando_token');
-    const usuarioGuardado = localStorage.getItem('mando_usuario');
-
-    // Si ya tiene sesión, entra directo
-    if (usuario === usuarioGuardado && tokenGuardado) {
-        // ... (Aquí pones todo tu código original de loginMando: 
-        // rangoActivo, display de paneles, etc)
-        document.getElementById('bloqueo-mando').style.display = 'none';
-        document.getElementById('user-tag').innerText = `${usuario} | ${rangoActivo}`;
-        iniciarApp();
-        cargarDatosPrivados(usuario);
-        verificarNotificaciones(usuario);
-        return;
-    }
-
-    // Si no tiene sesión, pedir token
-    const tokenPrompt = prompt("Ingrese su TOKEN de acceso personal:");
-    if (tokenPrompt) {
-        validarToken(usuario, tokenPrompt);
-    }
-}
 </script>
 </body>
 </html>
