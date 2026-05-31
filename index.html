@@ -779,35 +779,32 @@ function cargarContactos() {
         email: "dominguito"
     });
 
-   db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
-    snapEmpleados.forEach(child => {
-        const emp = child.val();
-        if (emp && emp.n && emp.n !== usuarioActivo) {
-            if (!listaContactos.find(c => c.nombre === emp.n)) {
-                
-                // AQUÍ APLICAS EL TRADUCTOR:
-                // Prioriza 'profesion', si no existe busca 'rol', y si no, 'Empleado'.
-                const rolReal = emp.profesion || emp.rol || 'Empleado';
-                
-                listaContactos.push({
-                    nombre: emp.n,
-                    rol: rolReal, // <--- El resto del sistema ahora ve el dato correcto
-                    email: emp.m
-                });
+    // 2. Carga de empleados (SISTEMA NUEVO)
+    db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
+        snapEmpleados.forEach(child => {
+            const emp = child.val();
+            if (emp && emp.n && emp.n !== usuarioActivo) {
+                if (!listaContactos.find(c => c.nombre === emp.n)) {
+                    
+                    // Traductor de campo
+                    const rolReal = emp.profesion || emp.rol || 'Empleado';
+                    
+                    listaContactos.push({
+                        nombre: emp.n,
+                        rol: rolReal,
+                        email: emp.m
+                    });
+                }
             }
-        }
-    });
-
-            // 3. Renderizar todo junto una sola vez
-            renderizarContactos();
-            console.log(`Total de contactos cargados: ${listaContactos.length}`);
-
-            // --- AQUÍ ES DONDE VA EL EVENTO ---
-            // Solo cuando las dos cargas terminaron, avisamos
-            const eventoCargaLista = new CustomEvent('listaContactosLista', { detail: listaContactos });
-            window.dispatchEvent(eventoCargaLista);
         });
-    });
+
+        // 3. Renderizar y disparar evento
+        renderizarContactos();
+        console.log(`Total de contactos cargados: ${listaContactos.length}`);
+
+        const eventoCargaLista = new CustomEvent('listaContactosLista', { detail: listaContactos });
+        window.dispatchEvent(eventoCargaLista);
+    }); // <--- Este cierra correctamente el .once('value', ...)
 }
 function renderizarContactos() {
     const container = document.getElementById('lista-contactos');
