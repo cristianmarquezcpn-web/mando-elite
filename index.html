@@ -779,35 +779,24 @@ function cargarContactos() {
         email: "dominguito"
     });
 
-    // --- CARGA DE USUARIOS (SISTEMA VIEJO) ---
-    refUsuarios.once('value', snapUsuarios => {
-        snapUsuarios.forEach(child => {
-            const user = child.val();
-            if (user && user.nombre && user.nombre !== usuarioActivo) {
-                if (!listaContactos.find(c => c.nombre === user.nombre)) {
-                    listaContactos.push({
-                        nombre: user.nombre,
-                        rol: user.rol || 'Empleado',
-                        email: child.key.replace(/_/g, '.')
-                    });
-                }
+   db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
+    snapEmpleados.forEach(child => {
+        const emp = child.val();
+        if (emp && emp.n && emp.n !== usuarioActivo) {
+            if (!listaContactos.find(c => c.nombre === emp.n)) {
+                
+                // AQUÍ APLICAS EL TRADUCTOR:
+                // Prioriza 'profesion', si no existe busca 'rol', y si no, 'Empleado'.
+                const rolReal = emp.profesion || emp.rol || 'Empleado';
+                
+                listaContactos.push({
+                    nombre: emp.n,
+                    rol: rolReal, // <--- El resto del sistema ahora ve el dato correcto
+                    email: emp.m
+                });
             }
-        });
-
-        // --- CARGA DE EMPLEADOS (SISTEMA NUEVO) ---
-        db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
-            snapEmpleados.forEach(child => {
-                const emp = child.val();
-                if (emp && emp.n && emp.n !== usuarioActivo) {
-                    if (!listaContactos.find(c => c.nombre === emp.n)) {
-                        listaContactos.push({
-                            nombre: emp.n,
-                            rol: emp.rol || 'Empleado',
-                            email: emp.m
-                        });
-                    }
-                }
-            });
+        }
+    });
 
             // 3. Renderizar todo junto una sola vez
             renderizarContactos();
