@@ -1871,12 +1871,99 @@ function switchTab(tab) {
     if (vistaExpedientes) vistaExpedientes.style.display = tab === 3 ? 'flex' : 'none';
 }
 // ============================================================
-// =============== 18. DOMINGUITO SEGUIDOR ====================
+// =============== RRHH / LIQUIDACIONES =======================
 // ============================================================
 
-// ---------------------------------------------------------------
-// FUNCIÓN DE BÚSQUEDA DINÁMICA DE EQUIPO (Reemplaza a la plantilla fija)
-// ---------------------------------------------------------------
+// 1. Función para cargar el panel (se llama al abrir el panel o tras la notificación)
+function cargarDatosPrivados(nombre) {
+    const panel = document.getElementById('panel-liquidacion');
+    const container = document.getElementById('tabla-container');
+    if (panel) panel.style.display = 'block';
+    if (!container) return;
+
+    // Cargar Liquidaciones desde 'liquidacionescongeladas'
+    db.ref('/liquidacionescongeladas').orderByChild('nombre').equalTo(nombre).on('value', snap => {
+        if (!snap.exists()) {
+            container.innerHTML = "<p style='font-size:12px; color:#64748b;'>No hay liquidaciones pendientes este mes.</p>";
+        } else {
+            let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom: 20px;">';
+            html += '<tr style="background:#f1f5f9;"><th>Sede/Puesto</th><th>Periodo</th><th>Total</th></tr>';
+            
+            let cbu = "", email = "";
+            snap.forEach(child => {
+                const l = child.val();
+                html += `<tr>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.puesto || 'General'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${l.periodo}</td>
+                    <td style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:bold;">$${Number(l.total || 0).toLocaleString('es-AR')}</td>
+                </tr>`;
+                if(l.cbu) cbu = l.cbu;
+                if(l.email) email = l.email;
+            });
+            html += '</table>';
+            container.innerHTML = html;
+
+            // Datos contacto
+            if (cbu || email) {
+                container.innerHTML += `<div style="margin-bottom:15px; padding:10px; background:#f8fafc; border-radius:6px; font-size:11px; border:1px solid #e2e8f0;">
+                    ${cbu ? `<div style="margin-bottom:4px;">🏦 <b>CBU/Alias:</b> ${cbu}</div>` : ''}
+                    ${email ? `<div>📧 <b>Email:</b> ${email}</div>` : ''}
+                </div>`;
+            }
+        }
+
+        // Cargar Facturas Pendientes desde 'factura_estado'
+        db.ref('/factura_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
+            let facturasHtml = '';
+            let hayDeuda = false;
+
+            snapFact.forEach(child => {
+                const f = child.val();
+                if (f.estado === 'PENDIENTE') {
+                    if (!hayDeuda) {
+                        facturasHtml = '<div style="margin-top:10px; border-top: 1px solid #e2e8f0; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
+                        hayDeuda = true;
+                    }
+                    facturasHtml += `<li style="font-size:11px;">${f.descripcion || 'Factura sin descripción'} - <b>$${Number(f.monto || 0).toLocaleString('es-AR')}</b></li>`;
+                }
+            });
+
+            if (hayDeuda) {
+                facturasHtml += '</ul></div>';
+                container.innerHTML += facturasHtml;
+            }
+        });
+    });
+}
+
+// 2. Vigilante en tiempo real (Notificador)
+// Llama a esta función al iniciar sesión: iniciarEscuchaLiquidaciones(usuarioActivo)
+function iniciarEscuchaLiquidaciones(nombreUsuario) {
+    db.ref('/liquidacionescongeladas')
+      .orderByChild('nombre')
+      .equalTo(nombreUsuario)
+      .limitToLast(1)
+      .on('child_added', snap => {
+        const nuevaLiq = snap.val();
+        
+        // Disparar notificación visual
+        mostrarNotificacion(
+            "💰 Nueva Liquidación", 
+            `Hola ${nombreUsuario}, tienes una liquidación por $${Number(nuevaLiq.total).toLocaleString('es-AR')} disponible.`
+        );
+        
+        // Si el panel está abierto, refrescamos la tabla automáticamente
+        const panel = document.getElementById('panel-liquidacion');
+        if (panel && panel.style.display === 'block') {
+            cargarDatosPrivados(nombreUsuario);
+        }
+    });
+}
+console.log("🚀 Sistema de gestión y vigilantes de liquidación iniciados correctamente.");
+
+// ============================================================
+// =============== 18. DOMINGUITO SEGUIDOR ====================
+// ============================================================
 function obtenerEquipoPorModalidadYTurno(modalidad, turno) {
     return new Promise((resolve) => {
         refUsuarios.once('value', snap => {
