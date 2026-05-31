@@ -213,9 +213,7 @@ firebase.auth().signInAnonymously()
     // 3. Recién AHORA, cuando ya tenemos permiso, ejecutamos tus funciones
     escanearBaseDeDatos(); 
     cargarInterfaz();
-  .catch((error) => {
-    console.error("Error al autenticar:", error.message);
-  });
+  
     // 2. REFERENCIAS
     const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
     const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
