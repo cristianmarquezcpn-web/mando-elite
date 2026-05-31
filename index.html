@@ -283,65 +283,72 @@
     let contactoSeleccionado = null;
     let listaContactos = [];
     let estadisticas = { cuds: 0, ausencias: 0, mensajes: 0 };
+    let contactoEscuchando = null;
 
     // ============================================================
     // =============== 1. LOGIN CON TOKEN =========================
     // ============================================================
    function cargarEmpleados() {
-        refEmpleados.once('value', snap => {
-            let htmlTs = '<option value="">Seleccionar T.S.</option>';
-            let sel = document.getElementById('sel-empleado');
-            if (!sel) return; 
+    refEmpleados.once('value', snap => {
+        let sel = document.getElementById('sel-empleado');
+        if (!sel) return; 
 
-            sel.innerHTML = '<option value="">Seleccione su nombre...</option>';
-            
-            const empleados = [];
+        // 1. Mapa para filtrar duplicados por nombre
+        const empleadosMap = {};
+        let htmlTs = '<option value="">Seleccionar T.S.</option>';
 
-            snap.forEach(child => {
-                const emp = child.val();
-                // Validamos que el objeto sea válido
-                if (emp && typeof emp === 'object') {
-                    empleados.push({
-                        nombre: emp.n || "Sin Nombre",
-                        // Priorizamos el ID guardado en el objeto, si no, usamos la key del nodo
+        snap.forEach(child => {
+            const emp = child.val();
+            // Validamos que el objeto tenga nombre (n)
+            if (emp && typeof emp === 'object' && emp.n) {
+                // Si el nombre no está en el mapa, lo agregamos
+                if (!empleadosMap[emp.n]) {
+                    empleadosMap[emp.n] = {
+                        nombre: emp.n,
                         id: emp.id || child.key,
                         profesion: emp.profesion || 'Empleado'
-                    });
+                    };
                 }
-            });
-
-            // Ordenamos alfabéticamente
-            empleados.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-
-            // Renderizamos
-            empleados.forEach(emp => {
-                sel.innerHTML += `<option value="${emp.nombre}" data-id="${emp.id}" data-rol="${emp.profesion}">${emp.nombre} (${emp.profesion})</option>`;
-                
-                const prof = emp.profesion.toUpperCase();
-                if(prof.includes("TS") || prof.includes("TRABAJADORA SOCIAL")) {
-                    htmlTs += `<option value="${emp.nombre}">${emp.nombre}</option>`;
-                }
-            });
-            
-            const selTs = document.getElementById('sel-asignar-ts');
-            if (selTs) selTs.innerHTML = htmlTs;
-
-            // Verificar sesión guardada
-            const sesionGuardada = localStorage.getItem('dominguitosesion');
-            if (sesionGuardada) {
-                try {
-                    const datos = JSON.parse(sesionGuardada);
-                    const option = sel.querySelector(`option[value="${datos.usuario}"]`);
-                    if (option) {
-                        sel.value = datos.usuario;
-                        document.getElementById('token-mando').value = datos.token;
-                        setTimeout(() => loginConToken(), 500);
-                    }
-                } catch(e) { console.error("Error al restaurar sesión", e); }
             }
         });
-    }
 
+        // 2. Convertimos el mapa a un array y ordenamos alfabéticamente
+        const empleados = Object.values(empleadosMap);
+        empleados.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+
+        // 3. Construimos el HTML de las opciones de una sola vez
+        let optionsHtml = '<option value="">Seleccione su nombre...</option>';
+        
+        empleados.forEach(emp => {
+            optionsHtml += `<option value="${emp.nombre}" data-id="${emp.id}" data-rol="${emp.profesion}">${emp.nombre} (${emp.profesion})</option>`;
+            
+            const prof = emp.profesion.toUpperCase();
+            if(prof.includes("TS") || prof.includes("TRABAJADORA SOCIAL")) {
+                htmlTs += `<option value="${emp.nombre}">${emp.nombre}</option>`;
+            }
+        });
+
+        // 4. Asignamos el HTML construido al elemento
+        sel.innerHTML = optionsHtml;
+        
+        const selTs = document.getElementById('sel-asignar-ts');
+        if (selTs) selTs.innerHTML = htmlTs;
+
+        // 5. Verificar sesión guardada
+        const sesionGuardada = localStorage.getItem('dominguitosesion');
+        if (sesionGuardada) {
+            try {
+                const datos = JSON.parse(sesionGuardada);
+                const option = sel.querySelector(`option[value="${datos.usuario}"]`);
+                if (option) {
+                    sel.value = datos.usuario;
+                    document.getElementById('token-mando').value = datos.token;
+                    setTimeout(() => loginConToken(), 500);
+                }
+            } catch(e) { console.error("Error al restaurar sesión", e); }
+        }
+    });
+}
     function loginConToken() {
         const select = document.getElementById('sel-empleado');
         const tokenInput = document.getElementById('token-mando');
@@ -408,59 +415,63 @@
     // ============================================================
     // =============== 2. INICIAR APLICACIÓN ======================
     // ============================================================
-  function iniciarApp() {
-        // Cargar pizarra
-        refPizarra.on('value', snap => {
-            cacheTareas = snap.val() || {};
-            if (typeof renderPizarraLocal === 'function') renderPizarraLocal();
+ function iniciarApp() {
+    // 1. Cargar pizarra (Público, no debería dar error)
+    refPizarra.on('value', snap => {
+        cacheTareas = snap.val() || {};
+        if (typeof renderPizarraLocal === 'function') renderPizarraLocal();
+    });
+
+    // 2. Cargar contactos y chats
+    cargarContactos();
+    escucharMensajesIndividuales();
+    
+    // 3. Cargar chat global (Solo carga si existe el contenedor)
+    refChatGlobal.on('value', snap => {
+        const container = document.getElementById('chat-msgs');
+        if (!container) return;
+
+        let htmlBuffer = "";
+        snap.forEach(child => {
+            const m = child.val();
+            if (!m) return;
+
+            const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD'].some(r => rangoActivo.includes(r));
+            if (m.destino && m.destino !== 'TODOS' && m.destino !== rangoActivo && m.u !== usuarioActivo && !esAdmin) return;
+
+            const claseMsg = m.u === usuarioActivo ? 'msg-me' : 'msg-them';
+            const tagPrivado = m.destino && m.destino !== 'TODOS' ? `<span style="color:var(--oro);">[A: ${m.destino}]</span> ` : '';
+
+            htmlBuffer += `
+                <div class="msg ${claseMsg}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.u || 'Anónimo'} (${m.rol || 'N/A'})</b>
+                    ${tagPrivado}${m.t || ''}
+                </div>
+            `;
         });
+        container.innerHTML = htmlBuffer;
+    });
 
-        // Cargar contactos y chats individuales
-        cargarContactos();
-        escucharMensajesIndividuales();
-        
-        // Cargar chat global
-        refChatGlobal.on('value', snap => {
-            const container = document.getElementById('chat-msgs');
-            if (!container) return;
-
-            let htmlBuffer = "";
-            snap.forEach(child => {
-                const m = child.val();
-                if (!m) return;
-
-                const esAdmin = ['DIRECTOR', 'DIRECTORA', 'ADMINISTRACION', 'COORD'].some(r => rangoActivo.includes(r));
-                if (m.destino && m.destino !== 'TODOS' && m.destino !== rangoActivo && m.u !== usuarioActivo && !esAdmin) return;
-
-                const claseMsg = m.u === usuarioActivo ? 'msg-me' : 'msg-them';
-                const tagPrivado = m.destino && m.destino !== 'TODOS' ? `<span style="color:var(--oro);">[A: ${m.destino}]</span> ` : '';
-
-                htmlBuffer += `
-                    <div class="msg ${claseMsg}">
-                        <b style="font-size:9px; display:block; opacity:0.7">${m.u || 'Anónimo'} (${m.rol || 'N/A'})</b>
-                        ${tagPrivado}${m.t || ''}
-                    </div>
-                `;
-            });
-            container.innerHTML = htmlBuffer;
-        });
-
-        // Activar radar
+    // 4. Activar radar (Aquí está el problema de los permisos)
+    // Vamos a verificar si la función existe y envolverla
+    if (typeof escanearBaseDeDatos === 'function') {
+        // Si sabes qué rutas privadas intenta leer escanearBaseDeDatos,
+        // agrégale un condicional ahí adentro.
         escanearBaseDeDatos();
-        
-        // Contar online
-        refOnline.on('value', snap => {
-            const count = snap.numChildren();
-            const onlineTag = document.getElementById('online-count');
-            if (onlineTag) onlineTag.textContent = `● ${count} online`;
-        });
-        
-        // Pedir permiso para notificaciones
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
-    }  
-  
+    }
+    
+    // 5. Contar online
+    refOnline.on('value', snap => {
+        const count = snap.numChildren();
+        const onlineTag = document.getElementById('online-count');
+        if (onlineTag) onlineTag.textContent = `● ${count} online`;
+    });
+    
+    // 6. Notificaciones
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+}
 
     // ============================================================
     // =============== 3. CHATS INDIVIDUALES =====================
