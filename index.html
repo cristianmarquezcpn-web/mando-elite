@@ -1483,24 +1483,24 @@ function cargarTsDisponibles() {
     // Limpiamos el selector
     selTs.innerHTML = '<option value="">Seleccionar T.S...</option>';
 
-    // Buscamos únicamente en el nuevo sistema
+    // Buscamos en el nuevo sistema
     db.ref('SISTEMA_PERSONAL/empleados').once('value', snap => {
         snap.forEach(child => {
             const emp = child.val();
             
-            // Verificamos que tenga datos de rol
-            if (emp && emp.rol) {
-                const rolUpper = emp.rol.toUpperCase();
+            // Verificamos que tenga datos de 'profesion'
+            if (emp && emp.profesion) {
+                const profUpper = emp.profesion.toUpperCase();
                 
-                // Filtro para detectar T.S.
-                if (rolUpper.includes('T.S.') || rolUpper.includes('TRABAJADOR SOCIAL') || rolUpper.includes('TS')) {
+                // Filtro para detectar T.S. basándonos en el campo 'profesion'
+                if (profUpper.includes('T.S.') || profUpper.includes('TRABAJADOR SOCIAL') || profUpper.includes('TS')) {
                     const opt = document.createElement('option');
                     
                     // Definimos el ID (usamos el mail 'emp.m' si existe, si no, la key)
                     const idParaValor = emp.m || child.key;
                     
                     opt.value = sanitizarKey(idParaValor);
-                    opt.text = `${emp.n || 'Sin nombre'} (${emp.rol})`;
+                    opt.text = `${emp.n || 'Sin nombre'} (${emp.profesion})`;
                     selTs.add(opt);
                 }
             }
