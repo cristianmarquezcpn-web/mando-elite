@@ -74,166 +74,227 @@
 <audio id="snd-msg" src="https://assets.mixkit.co/activestorage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
 
 <div id="bloqueo-mando">
-    <div style="text-align:center; width: 90%; max-width: 350px; background: #1e293b; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-        <h2 style="color:var(--accent); margin-bottom: 20px;">🔐 ACCESO DOMINGUITO</h2>
-        <select id="sel-empleado" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-            <option value="">Cargando personal...</option>
-        </select>
-        <input type="password" id="token-mando" placeholder="Tu Token Personal" style="margin-bottom: 15px; background: #0f172a; color: white; border-color: #334155;">
-        <button class="btn-pro" style="width:100%; background: var(--verde); padding: 15px; font-size: 14px;" onclick="loginConToken()">ENTRAR AL SISTEMA</button>
-        <p style="font-size: 11px; color: #94a3b8; margin-top: 15px;">Si es tu primera vez, creá un token de 4 dígitos. Recordalo para próximos accesos.</p>
-    </div>
+    <h2 style="font-size: 28px; margin: 0;">🔐 DOMINGUITO</h2>
+    <p style="color: #94a3b8; margin: 0;">Sistema de Comunicación Interna</p>
+    <button onclick="loginGoogle()" style="padding: 16px 32px; background: #4285f4; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(66,133,244,0.4); transition: 0.2s;">
+        🟢 Entrar con Google
+    </button>
+    <div style="font-size: 12px; color: #64748b;">Solo personal autorizado</div>
 </div>
 
 <div class="col-radar">
-    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
-        <span>👁️ DOMINGUITO</span>
-        <span id="online-count" style="font-size: 11px; color: var(--verde);">● 0 online</span>
-    </div>
-    <div style="display: flex; gap: 10px; padding: 10px 15px;">
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">CUDs</div>
-            <div id="stat-cuds" style="font-size: 20px; font-weight: 900; color: var(--urgente);">0</div>
-        </div>
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">AUSENCIAS</div>
-            <div id="stat-aus" style="font-size: 20px; font-weight: 900; color: var(--oro);">0</div>
-        </div>
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">MENSAJES</div>
-            <div id="stat-msg" style="font-size: 20px; font-weight: 900; color: var(--accent);">0</div>
-        </div>
-    </div>
-    <div id="radar-feed" class="radar-feed">
-        <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Monitoreando...</div>
-    </div>
+    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+        <span>👁️ DOMINGUITO</span>
+        <span id="online-count" style="font-size: 11px; color: var(--verde);">● 0 online</span>
+    </div>
+    <div style="display: flex; gap: 10px; padding: 10px 15px;">
+        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">🚨 CUDs</div>
+            <div id="stat-cuds" style="font-size: 20px; font-weight: 900; color: var(--urgente);">0</div>
+        </div>
+        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">📉 AUSENCIAS</div>
+            <div id="stat-aus" style="font-size: 20px; font-weight: 900; color: var(--oro);">0</div>
+        </div>
+        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">💬 MSGS</div>
+            <div id="stat-msg" style="font-size: 20px; font-weight: 900; color: var(--accent);">0</div>
+        </div>
+    </div>
+    <div id="radar-feed" class="radar-feed">
+        <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Iniciando vigilancia...</div>
+    </div>
 </div>
 
+<div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary); position: relative;">
+    <!-- Botón de cierre integrado -->
+    <button onclick="cerrarPanelLiquidacion()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; cursor: pointer; font-size: 18px; color: #64748b;">✖</button>
+    
+    <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
+    
+    <div id="msj-rrhh" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
+        <p style="margin:0; font-size: 14px; color: #1e3a8a;">
+            <b>Estimado/a colaborador/a:</b> Nos ponemos en contacto desde el Departamento de RRHH para informarle que su liquidación del periodo actual ya está disponible. 
+            Le solicitamos tenga a bien emitir y presentar su factura antes del día <b>5 de cada mes</b> para proceder con el pago en tiempo y forma.
+        </p>
+    </div>
+    
+    <div id="tabla-container"></div>
+    
+    <div style="margin-top:15px; font-size: 12px; color: #64748b;">
+        <p><b>Datos de Pago registrados:</b> <span id="datos-pago"></span></p>
+    </div>
+</div>    
+    
 <div class="col-pizarra">
-    <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <h2 style="margin:0; font-size:16px;">📋 PANEL DE CONTROL</h2>
-            <span id="user-tag" style="color:var(--accent); font-size:11px; font-weight: bold;"></span>
-        </div>
-        <div style="display:flex; gap:5px;">
-            <button class="btn-pro" style="background:var(--verde); font-size:10px;" onclick="abrirChatDominguito()">💬 HABLAR CON DOMINGUITO</button>
-            <button class="btn-pro" style="background:#64748b; font-size:10px;" onclick="cerrarSesion()">SALIR</button>
-        </div>
-    </div>
-    
-    <div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
-        <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
-        <div id="msj-rrhh" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
-            <p style="margin:0; font-size: 14px; color: #1e3a8a;">
-                <b>Estimado/a colaborador/a:</b> Nos ponemos en contacto desde el Departamento de RRHH para informarle que su liquidación del periodo actual ya está disponible. 
-                Le solicitamos tenga a bien emitir y presentar su factura antes del día <b>5 de cada mes</b> para proceder con el pago en tiempo y forma.
-            </p>
-        </div>
-        <div id="tabla-container"></div>
-        <div style="margin-top:15px; font-size: 12px; color: #64748b;">
-            <p><b>Datos de Pago registrados:</b> <span id="datos-pago"></span></p>
-        </div>
-    </div>
+    <div class="header glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:16px;">📋 PANEL DE CONTROL</h2>
+            <span id="user-tag" style="color:var(--accent); font-size:11px; font-weight: bold;"></span>
+        </div>
+        <div style="display:flex; gap:5px; flex-wrap: wrap;">
+            <button class="btn-pro" style="background:var(--verde); font-size:10px;" onclick="abrirChatDominguito()">💬 DOMINGUITO</button>
+            <button class="btn-pro" style="background:#64748b; font-size:10px;" onclick="cerrarSesion()">🚪 SALIR</button>
+        </div>
+    </div>
 
-    <div class="glass-panel">
-        <input type="text" id="t-desc" placeholder="Escribí una orden o misión para el equipo...">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
-            <input type="date" id="t-vence">
-            <select id="t-prio-val"><option value="BAJA">Normal</option><option value="MEDIA" selected>Importante</option><option value="ALTA">🔥 URGENTE</option></select>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
-            <select id="t-dest-val">
-                <option value="TODOS">📢 A TODOS</option>
-                <option value="DOMINGUITO">🤖 A DOMINGUITO</option>
-                <option value="SECRETARIA">📋 SECRETARÍA</option>
-                <option value="DIRECTORES">👔 DIRECTORES</option>
-                <option value="ADMINISTRACION">💰 ADMIN</option>
-                <option value="COORD">📊 COORD</option>
-                <option value="T.S.">👩‍⚕️ T. SOCIALES</option>
-            </select>
-            <input type="text" id="t-drive-val" placeholder="Link (opcional)">
-        </div>
-        <button class="btn-pro" style="width:100%; margin-top:10px; background: var(--verde);" onclick="crearTarea()">📨 ENVIAR ORDEN</button>
-    </div>
-    
-    <div style="display:flex; gap:10px;">
-        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1">
-            <option value="ACTIVAS">📌 Órdenes Activas</option>
-            <option value="CONFIRMADO">✅ Completadas</option>
-            <option value="TODAS">📋 Todas</option>
-        </select>
-    </div>
-    
-    <div id="lista-tareas"></div>
+    <div class="glass-panel" id="panel-ts" style="display:none; border-top: 5px solid var(--ts-color);">
+        <h3 style="margin-top:0; color: var(--ts-color);">👩‍⚕️ MI TABLERO - T.S.</h3>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
+            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:#94a3b8;">PACIENTES</div>
+                <div id="stat-mispacientes" style="font-size:24px; font-weight:900; color:var(--ts-color);">0</div>
+            </div>
+            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:#94a3b8;">CUDs A VENCER</div>
+                <div id="stat-miscuds" style="font-size:24px; font-weight:900; color:var(--oro);">0</div>
+            </div>
+            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:#94a3b8;">ALERTAS HOY</div>
+                <div id="stat-misalertas" style="font-size:24px; font-weight:900; color:var(--urgente);">0</div>
+            </div>
+        </div>
+        <div id="ts-pendientes" style="max-height:200px; overflow-y:auto;">
+            <div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;">Cargando pacientes asignados...</div>
+        </div>
+    </div>
+
+    <div class="glass-panel" id="panel-asignacion" style="display:none; border-top: 5px solid var(--ts-color);">
+        <h3 style="margin-top:0; color: var(--ts-color);">📋 ASIGNACIÓN DE T.S.</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <select id="sel-paciente-asignar"><option value="">Seleccionar paciente...</option></select>
+            <select id="sel-ts-asignar"><option value="">Seleccionar T.S...</option></select>
+        </div>
+        <button class="btn-pro" style="width:100%; margin-top:10px; background:var(--ts-color);" onclick="asignarPacienteATS()">📌 ASIGNAR PACIENTE A T.S.</button>
+        <div id="tabla-asignaciones" style="margin-top:15px; max-height:300px; overflow-y:auto;"></div>
+    </div>
+
+    <div class="glass-panel">
+        <input type="text" id="t-desc" placeholder="Escribí una orden o misión para el equipo...">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
+            <input type="date" id="t-vence">
+            <select id="t-prio-val">
+                <option value="BAJA">Normal</option>
+                <option value="MEDIA" selected>Importante</option>
+                <option value="ALTA">🔥 URGENTE</option>
+            </select>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
+            <select id="t-dest-val">
+                <option value="TODOS">📢 A TODOS</option>
+                <option value="DOMINGUITO">🤖 A DOMINGUITO</option>
+                <option value="SECRETARIA">📋 SECRETARÍA</option>
+                <option value="DIRECTORES">👔 DIRECTORES</option>
+                <option value="ADMINISTRACION">💰 ADMIN</option>
+                <option value="COORD">📊 COORD</option>
+                <option value="T.S.">👩‍⚕️ T. SOCIALES</option>
+            </select>
+            <input type="text" id="t-drive-val" placeholder="Link (opcional)">
+        </div>
+
+        <div style="margin-top:8px;">
+            <input type="file" id="input-archivo-tarea" style="display:none;" onchange="manejarSeleccionArchivo(this)">
+            <button type="button" onclick="document.getElementById('input-archivo-tarea').click()" class="btn-pro" style="width:100%; background:#6366f1; color:white;">
+                📎 ADJUNTAR ARCHIVO
+            </button>
+        </div>
+
+        <button class="btn-pro" style="width:100%; margin-top:10px; background: var(--verde);" onclick="crearTarea()">📨 ENVIAR ORDEN</button>
+    </div>    
+    <div style="display:flex; gap:10px;">
+        <select id="f-est" onchange="renderPizarraLocal()" style="flex:1">
+            <option value="ACTIVAS">📌 Órdenes Activas</option>
+            <option value="CONFIRMADO">✅ Completadas</option>
+            <option value="TODAS">📋 Todas</option>
+        </select>
+    </div>
+    
+    <div id="lista-tareas"></div>
 </div>
 
 <div class="col-comms">
-    <div style="display: flex;">
-        <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">💬 CHATS</button>
-        <button id="tab2" class="tab-btn" onclick="switchTab(2)">🧠 EXPEDIENTES</button>
-    </div>
+    <div style="display: flex;">
+        <button id="tab1" class="tab-btn activa" onclick="switchTab(1)">💬 CHATS</button>
+        <button id="tab2" class="tab-btn" onclick="switchTab(2)">👥 GRUPOS</button>
+        <button id="tab3" class="tab-btn" onclick="switchTab(3)">🧠 EXPEDIENTES</button>
+    </div>
 
-    <div id="vista-chats" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-        <div style="display: flex; border-bottom: 1px solid #e2e8f0;">
-            <input type="text" id="busc-contacto" placeholder="🔍 Buscar contacto..." onkeyup="filtrarContactos()" style="border: none; padding: 15px; border-radius: 0;">
-        </div>
-        <div id="lista-contactos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;">
-            </div>
-        <div id="chat-individual" class="chat-content" style="flex: 1;">
-            <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">
-                Seleccioná un contacto para chatear
-            </div>
-        </div>
-        <div id="input-chat-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0; display:none;">
-            <input type="text" id="chat-individual-input" placeholder="Escribí un mensaje..." onkeypress="if(event.key==='Enter') enviarMensajeIndividual()">
-            <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeIndividual()">➤</button>
-        </div>
-    </div>
+    <div id="vista-chats" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display: flex; border-bottom: 1px solid #e2e8f0;">
+            <input type="text" id="busc-contacto" placeholder="🔍 Buscar contacto..." onkeyup="filtrarContactos()" style="border: none; padding: 15px; border-radius: 0;">
+        </div>
+        <div id="lista-contactos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;"></div>
+        <div id="chat-individual" class="chat-content" style="flex: 1;">
+            <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un contacto para chatear</div>
+        </div>
+        <div id="input-chat-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0; display:none;">
+            <input type="text" id="chat-individual-input" placeholder="Escribí un mensaje..." onkeypress="if(event.key==='Enter') enviarMensajeIndividual()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeIndividual()">➤</button>
+        </div>
+    </div>
 
-    <div id="vista-expedientes" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
-        <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-            <input type="text" id="busc-paciente" placeholder="🔍 Buscar paciente..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
-            <select id="sel-paciente" onchange="cargarExpedientePaciente()">
-                <option value="">Seleccioná un paciente...</option>
-            </select>
-        </div>
-        <div id="chat-dominguito" class="chat-content">
-            <div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">
-                Seleccioná un paciente para ver su expediente clínico
-            </div>
-        </div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
-            <input type="text" id="in-dominguito" placeholder="Agregar novedad al expediente..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
-            <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">➤</button>
-            <button class="btn-pro" style="background: var(--urgente); width: 40px; font-size: 10px;" onclick="exportarPDF()">📄</button>
-        </div>
-    </div>
+    <div id="vista-grupos" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+        <div style="padding:10px; border-bottom: 1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:600; font-size:13px;">👥 Mis Grupos</span>
+            <button class="btn-pro" style="background:var(--ts-color); font-size:10px;" onclick="mostrarModalCrearGrupo()">+ NUEVO GRUPO</button>
+        </div>
+        <div id="lista-grupos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;">
+            <div style="text-align:center; padding:20px; color:#64748b; font-size:12px;">Cargando grupos...</div>
+        </div>
+        <div id="chat-grupo" class="chat-content" style="flex: 1;">
+            <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo para chatear</div>
+        </div>
+        <div id="input-grupo-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0; display:none;">
+            <input type="text" id="chat-grupo-input" placeholder="Escribí un mensaje al grupo..." onkeypress="if(event.key==='Enter') enviarMensajeGrupo()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeGrupo()">➤</button>
+        </div>
+    </div>
+
+    <div id="vista-expedientes" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+        <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <input type="text" id="busc-paciente" placeholder="🔍 Buscar paciente..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
+            <select id="sel-paciente" onchange="cargarExpedientePaciente()">
+                <option value="">Seleccioná un paciente...</option>
+            </select>
+        </div>
+        <div id="chat-dominguito" class="chat-content">
+            <div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente para ver su expediente clínico</div>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+            <input type="text" id="in-dominguito" placeholder="Agregar novedad al expediente..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">➤</button>
+            <button class="btn-pro" style="background: var(--urgente); width: 40px; font-size: 10px;" onclick="exportarPDF()">📄</button>
+        </div>
+    </div>
 </div>
 
 <div id="modal-dominguito" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
-    <div style="width: 90%; max-width: 500px; height: 80vh; background: white; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-        <div style="padding: 15px 20px; background: var(--dark); color: white; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-weight: 800;">🤖 DOMINGUITO - Asistente</span>
-            <button onclick="cerrarModalDominguito()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
-        </div>
-        <div id="chat-domingo-modal" class="chat-content" style="background: #f8f9fa;">
-            <div class="msg msg-domingo">
-                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
-                ¡Hola <span id="nombre-usuario-modal"></span>! Soy Dominguito, tu asistente. 
-                Podés pedirme que:
-                • Verifique CUDs vencidos
-                • Cuente ausencias de pacientes
-                • Envíe mensajes al equipo
-                • Genere reportes
-                • Te recuerde tareas pendientes
-            </div>
-        </div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
-            <input type="text" id="in-domingo-modal" placeholder="Escribí tu mensaje para Dominguito..." onkeypress="if(event.key==='Enter') enviarADominguito()">
-            <button class="btn-pro" style="width: 50px;" onclick="enviarADominguito()">➤</button>
-        </div>
-    </div>
+    <div style="width: 90%; max-width: 500px; height: 80vh; background: white; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="padding: 15px 20px; background: var(--dark); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 800;">🤖 DOMINGUITO - Asistente</span>
+            <button onclick="cerrarModalDominguito()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+        </div>
+        <div id="chat-domingo-modal" class="chat-content" style="background: #f8f9fa;">
+            <div class="msg msg-domingo">
+                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
+                ¡Hola! Soy Dominguito, tu asistente. 
+                Podés pedirme que:
+                • Verifique CUDs vencidos
+                • Cuente ausencias de pacientes
+                • Envíe mensajes al equipo
+                • Genere reportes
+                • Te recuerde tareas pendientes
+            </div>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+            <input type="text" id="in-domingo-modal" placeholder="Escribí tu mensaje para Dominguito..." onkeypress="if(event.key==='Enter') enviarADominguito()">
+            <button class="btn-pro" style="width: 50px;" onclick="enviarADominguito()">➤</button>
+        </div>
+    </div>
 </div>
+
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
