@@ -945,8 +945,28 @@ function enviarMensajeIndividual() {
 // ============================================================
 // =============== 8. PROCESAR COMANDOS DE DOMINGUITO =========
 // ============================================================
+// ============================================================
+// DICCIONARIO DE CONSULTORIOS (Para la sede Rehab)
+// ============================================================
+const MAPA_CONSULTORIOS = {
+    "1": "Psicopedagogía 1", 
+    "2": "Psicopedagogía 2", 
+    "3": "Psicopedagogía 3",
+    "4": "Psicopedagogía 4", 
+    "5": "Kinesiología", 
+    "6": "Fonoaudiología",
+    "7": "Psicología 1", 
+    "8": "Psicología 2", 
+    "9": "Terapia Ocupacional 1", 
+    "10": "Terapia Ocupacional 2"
+};
+
+// ============================================================
+// FUNCIÓN PRINCIPAL DOMINGUITO
+// ============================================================
 function procesarComandoDominguito(texto) {
     const upper = texto.toUpperCase();
+    const nombreInput = texto.trim(); // Nombre limpio para la nueva búsqueda
     const chatContainer = document.getElementById('chat-individual');
     
     const enviarRespuesta = (msg) => {
@@ -957,6 +977,32 @@ function procesarComandoDominguito(texto) {
             tipo: 'sistema'
         });
     };
+
+    // ------------------------------------------------------------
+    // NUEVO: 1. BÚSQUEDA AUTOMÁTICA POR NOMBRE DIRECTO EN CACHÉ
+    // ------------------------------------------------------------
+    if (typeof cachePacientes !== 'undefined') {
+        const nombreEncontrado = Object.keys(cachePacientes).find(n => 
+            n.toUpperCase() === nombreInput.toUpperCase()
+        );
+
+        if (nombreEncontrado) {
+            const ramas = ['cd', 'cet', 'rehab'];
+            ramas.forEach(rama => {
+                db.ref(`/${rama}/pacientes/${nombreEncontrado}`).once('value', snap => {
+                    const pac = snap.val();
+                    if (pac) {
+                        mostrarFichaCompleta(pac, rama, nombreEncontrado, enviarRespuesta);
+                    }
+                });
+            });
+            return; // Cortamos acá, ya respondió con la ficha nueva
+        }
+    }
+    
+    // ------------------------------------------------------------
+    // COMANDOS ORIGINALES (Intactos)
+    // ------------------------------------------------------------
     
     // Comando: CUD
     if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
@@ -1026,12 +1072,15 @@ function procesarComandoDominguito(texto) {
         });
         return;
     }
+
+    // Comando: Ayuda
     if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
         enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n
+• [Escribir Nombre] - Ver ficha clínica completa filtrada
 • "CUD" - Ver vencimientos de todos los pacientes
 • "Ausencias" - Pacientes con +5 faltas en el mes
 • "Reporte" - Resumen del día
-• "Paciente [nombre]" - Info de un paciente específico
+• "Paciente [nombre]" - Info resumida clásica
 • "Tareas" - Mis tareas pendientes
 • "Ayuda" - Esta lista`);
         return;
@@ -1043,7 +1092,7 @@ function procesarComandoDominguito(texto) {
         return;
     }
     
-    // Comando: Paciente específico
+    // Comando: Paciente específico (Mantenido intacto)
     if (upper.includes('PACIENTE')) {
         const nombrePac = texto.replace(/paciente\s/i, '').trim();
         if (nombrePac) {
@@ -1078,6 +1127,63 @@ function procesarComandoDominguito(texto) {
     
     // Respuesta por defecto
     enviarRespuesta(`✅ Mensaje registrado: "${texto}".\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`);
+}
+
+// ============================================================
+// NUEVA FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
+// ============================================================
+function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
+    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n\n`;
+
+    // Filtros de campos que no queremos mostrar
+    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistf_link', 'cuddoc_link', 'cuddoc'];
+    const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
+
+    // 1. Datos Identificatorios
+    info += `👤 IDENTIDAD:\n`;
+    orden.forEach(c => { 
+        if (pac[c]) info += `• ${c.toUpperCase()}: ${pac[c]}\n`; 
+    });
+
+    // 2. Gestión y Turnos
+    info += `\n📅 GESTIÓN:\n`;
+    if (pac.cud) info += `• CUD: ${pac.cud}\n`;
+    if (pac.turno) info += `• Turno principal: ${pac.turno}\n`;
+    
+    // Lógica especial para desglosar turnos de REHAB usando MAPA_CONSULTORIOS
+    if (pac.turnos && typeof pac.turnos === 'object') {
+        Object.entries(pac.turnos).forEach(([dia, horarios]) => {
+            info += `\n[${dia.toUpperCase()}]\n`;
+            Object.entries(horarios).forEach(([hora, valor]) => {
+                // Separamos "13:00-1" en "13:00" y "1"
+                const partes = hora.split('-');
+                const time = partes[0];
+                const consId = partes[1];
+                
+                // Buscamos en el diccionario, si no existe ponemos el número crudo
+                const consultorio = consId && MAPA_CONSULTORIOS[consId] ? MAPA_CONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
+                
+                info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
+            });
+        });
+    }
+
+    // 3. Clínica (Resto de los campos)
+    info += `\n🏥 CLÍNICA:\n`;
+    Object.entries(pac).forEach(([key, value]) => {
+        const lowerKey = key.toLowerCase();
+        // Si no está en ignorar, no es un objeto, no está en identidad, y no es 'turnos'
+        if (!ignorar.some(i => lowerKey.includes(i)) && 
+            typeof value !== 'object' && 
+            !orden.includes(lowerKey) &&
+            key !== 'turnos' && key !== 'cud' && key !== 'turno') {
+            
+            const label = key.charAt(0).toUpperCase() + key.slice(1);
+            info += `• ${label}: ${value}\n`;
+        }
+    });
+
+    enviarRespuesta(info);
 }
 // ============================================================
 // =============== 9. ESCUCHAR NOTIFICACIONES =================
@@ -2206,6 +2312,38 @@ async function obtenerDatosPaciente(nombrePaciente) {
 // Notificar dinámicamente al equipo del paciente
 // ---------------------------------------------------------------
 async function notificarEquipoPaciente(datosPaciente, titulo, mensaje, nivel) {
+    // 1. Obtener todos tus empleados desde Firebase
+    const snapshot = await refEmpleados.once('value');
+    const empleados = [];
+    snapshot.forEach(child => {
+        empleados.push({ id: child.key, ...child.val() });
+    });
+
+    // 2. Lógica inteligente de filtrado
+    return empleados.filter(e => {
+        const codigoEmpleado = (e.c || "").toUpperCase();
+        const modBusqueda = modalidad.toUpperCase();
+        const turnoBusqueda = (turno || "").toUpperCase();
+
+        // Caso CD: Solo existe mañana, así que si buscás CD, lo encuentra siempre
+        if (modBusqueda === "CD") {
+            return codigoEmpleado === "CD";
+        }
+
+        // Caso CET: Tiene turnos (MANANA, TARDE, VESP)
+        if (modBusqueda === "CET") {
+            // Buscamos que coincida CET y el turno (ej: CET_MANANA)
+            return codigoEmpleado === `CET_${turnoBusqueda}`;
+        }
+
+        // Caso REHAB: Tiene esquema LV, LMXJV, etc.
+        if (modBusqueda === "REHAB") {
+            return codigoEmpleado === "REHAB";
+        }
+
+        return false;
+    });
+}
     const { nombre, modalidad, turno, profesionales, tsAsignada } = datosPaciente;
 
     // 1️⃣ Buscar dinámicamente quiénes son los profesionales activos para esta regla
@@ -2243,14 +2381,25 @@ ${listaNombresEquipo}
     });
 
     // 3️⃣ Notificar además al canal grupal de la modalidad si existe
-    const grupoModalidad = `grupo_${modalidad.toLowerCase()}_${turno.toLowerCase()}`;
-    refGrupos.child(grupoModalidad).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `🔔 ${titulo}\n\nPaciente: ${nombre}\n${mensaje}`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        paciente: nombre
-    });
+    // 3️⃣ Notificar además al canal grupal de la modalidad si existe
+    // Buscamos en nuestra lista 'misGrupos' (la que ya carga el sistema)
+    const grupoDestino = misGrupos.find(g => 
+        g.nombre.toLowerCase().includes(modalidad.toLowerCase()) && 
+        g.nombre.toLowerCase().includes(turno.toLowerCase())
+    );
+
+    if (grupoDestino) {
+        // Si encontramos el grupo, usamos su ID real (ej: -O8j7ahsd786as7d)
+        refGrupos.child(grupoDestino.id).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `🔔 ${titulo}\n\nPaciente: ${nombre}\n${mensaje}`,
+            ts: Date.now(),
+            tipo: 'sistema',
+            paciente: nombre
+        });
+    } else {
+        console.log(`⚠️ No se encontró un grupo llamado ${modalidad} ${turno} para notificar.`);
+    }
 
     // 4️⃣ Registrar la bitácora en el expediente general del paciente
     refExpedientes.child(nombre).push({
