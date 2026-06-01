@@ -2759,6 +2759,13 @@ function cargarCachePacientes() {
 // Detectar pacientes en un texto
 // ---------------------------------------------------------------
 function detectarPacientesEnTexto(texto) {
+    // --- DEBUG: ESTO NOS DIRÁ LA VERDAD ---
+    console.log("🔍 Texto recibido:", texto);
+    console.log("📦 Claves en caché:", Object.keys(cachePacientes));
+  
+
+    const resultados = [];
+    const lineas = texto.split('\n').filter(l => l.trim());
     const resultados = [];
     const lineas = texto.split('\n').filter(l => l.trim());
     
