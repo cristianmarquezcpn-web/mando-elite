@@ -969,12 +969,9 @@ const MAPA_CONSULTORIOS = {
 // ============================================================
 function procesarComandoDominguito(texto) {
     const chatContainer = document.getElementById('chat-individual');
-    
-    // --- PASO 1: LIMPIEZA ---
-    const nombreInput = limpiarNombre(texto).toUpperCase();
     const upper = texto.toUpperCase();
 
-    // --- FUNCIÓN DE RESPUESTA (Definida para estar disponible en todo el scope) ---
+    // Función auxiliar para enviar respuestas
     const enviarRespuesta = (msg) => {
         refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -984,27 +981,28 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-    // --- PASO 2: BÚSQUEDA DIRECTA (Caché optimizado) ---
+    // --- PASO 2: BÚSQUEDA DIRECTA EN CACHÉ (CORREGIDA) ---
     if (typeof cachePacientes !== 'undefined') {
-        const nombreEncontrado = Object.keys(cachePacientes).find(n => 
-            limpiarNombre(n).toUpperCase() === nombreInput
+        // 1. Preparamos el nombre que escribió el usuario para comparar
+        const inputLimpio = limpiarNombre(texto).toUpperCase(); 
+
+        // 2. Buscamos el nombre exacto en las llaves del caché usando la limpieza
+        const nombreReal = Object.keys(cachePacientes).find(n => 
+            limpiarNombre(n).toUpperCase() === inputLimpio
         );
 
-        if (nombreEncontrado) {
-            // Enviamos respuesta al chat avisando que estamos buscando
+        if (nombreReal) {
+            // Avisamos en el chat que estamos buscando
             chatContainer.innerHTML += `
                 <div class="msg msg-domingo">
                     <b style="font-size:9px;">🤖 DOMINGUITO</b>
-                    Buscando ficha de ${nombreEncontrado}...
+                    Buscando ficha de ${nombreReal}...
                 </div>`;
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // Llamada a tu lógica de ficha
-            const pac = cachePacientes[nombreEncontrado];
-            const ramas = ['cd', 'cet', 'rehab'];
-            
-            // Mantenemos tu llamada original
-            mostrarFichaCompleta(pac, pac.modalidad || 'Sin modalidad', nombreEncontrado, enviarRespuesta);
+            const pac = cachePacientes[nombreReal];
+            // Llamamos a tu ficha usando el nombreReal (que es el nombre exacto que Firebase tiene)
+            mostrarFichaCompleta(pac, pac.modalidad || 'Sin modalidad', nombreReal, enviarRespuesta);
             return; 
         }
     }
@@ -2212,14 +2210,25 @@ function dominguitoEscucharMensajes() {
 // Extraer paciente del contexto del chat
 // ---------------------------------------------------------------
 function extraerPacienteDeContexto(mensajes, chatId) {
-    for (let i = mensajes.length - 1; i >= 0; i--) {
-        const m = mensajes[i];
-        if (m.autor === '🤖 DOMINGUITO' && m.texto) {
-            const match = m.texto.match(/paciente:\s([^\n]+)/i);
-            if (match) return match[1].trim();
+    // 1. Intentamos buscar en el historial del chat usando el caché
+    if (typeof cachePacientes !== 'undefined') {
+        const nombresEnCache = Object.keys(cachePacientes);
+        
+        // Recorremos los mensajes desde el más reciente al más antiguo
+        for (let i = mensajes.length - 1; i >= 0; i--) {
+            const m = mensajes[i];
+            if (!m.texto) continue;
+            
+            // Buscamos si alguno de los nombres del caché aparece en el mensaje
+            const nombreHallado = nombresEnCache.find(n => 
+                m.texto.toUpperCase().includes(limpiarNombre(n).toUpperCase())
+            );
+            
+            if (nombreHallado) return nombreHallado;
         }
     }
 
+    // 2. Si no lo encontramos en el historial, intentamos el método original (fallback)
     const alertas = document.querySelectorAll('.radar-card');
     for (const alerta of alertas) {
         const match = alerta.textContent.match(/PACIENTE:\s([^\n]+)/i);
