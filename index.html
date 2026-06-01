@@ -532,7 +532,21 @@ function iniciarApp() {
     
     console.log("✅ Aplicación iniciada completamente");
 }
-
+function limpiarNombre(texto) {
+    // Lista de palabras que el sistema debe ignorar antes del nombre
+    const palabrasBasura = [
+        "informacion de", "información de", "paciente", "buscar a", "buscá a", 
+        "buscame a", "datos de", "ficha de"
+    ];
+    
+    let nombreLimpio = texto.toLowerCase();
+    palabrasBasura.forEach(p => {
+        nombreLimpio = nombreLimpio.replace(p, "").trim();
+    });
+    
+    // Quita signos de puntuación extra al inicio si quedaron
+    return nombreLimpio.replace(/^[:\s\-]+/, "").trim();
+}
 // ============================================================
 // =============== 2. INICIAR DOMINGUITO ======================
 // ============================================================
@@ -552,121 +566,110 @@ function iniciarDominguito() {
 function escanearBaseDeDatos() {
     const feed = document.getElementById('radar-feed');
     const selectPac = document.getElementById('sel-paciente');
+    const selAsig = document.getElementById('sel-paciente-asignar');
     let contadorCuds = 0;
     let contadorAus = 0;
-    
-    // Lista de ramas de pacientes
     const ramas = ['cd', 'cet', 'rehab'];
-    
+    const hoy = new Date().toISOString().split('T')[0];
+
     if (feed) feed.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Escaneando pacientes...</div>';
-    
-    // 1. Escanear CUDs
+
     let ramasCompletadas = 0;
-    
+
+    // 1. Escaneo de CUDs
     ramas.forEach(ramaNombre => {
-        const ref = db.ref(`/${ramaNombre}/pacientes`);
-        ref.once('value', snap => {
+        db.ref(`/${ramaNombre}/pacientes`).once('value', snap => {
             snap.forEach(childPac => {
                 const nombre = childPac.key;
                 const pac = childPac.val();
-                
-                // Agregar al selector de pacientes (solo si no está ya)
+
+                // Lógica de caché y selectores
                 if (!listaPacientesCache.includes(nombre)) {
                     listaPacientesCache.push(nombre);
                     if (selectPac) {
                         const opt = document.createElement('option');
-                        opt.value = nombre;
-                        opt.text = nombre;
+                        opt.value = nombre; opt.text = nombre;
                         selectPac.add(opt);
                     }
-                    
-                    // También agregar al selector de asignación
-                    const selAsig = document.getElementById('sel-paciente-asignar');
                     if (selAsig) {
                         const opt = document.createElement('option');
-                        opt.value = nombre;
-                        opt.text = nombre;
+                        opt.value = nombre; opt.text = nombre;
                         selAsig.add(opt);
                     }
                 }
-                
-                // Verificar CUD
+
                 if (pac && pac.cud) {
-                    const hoy = new Date();
                     const venc = new Date(pac.cud);
-                    const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
-                    
+                    const diff = Math.floor((venc - new Date()) / (1000 * 60 * 60 * 24));
+
                     if (diff <= 0) {
                         contadorCuds++;
                         const msg = `Vencido el ${pac.cud} (hace ${Math.abs(diff)} días)`;
                         renderizarAlerta(nombre, '🚨 CUD VENCIDO', msg, 'urgente');
                         
-                        // Notificar a la T.S. asignada
-                        dominguitoNotificarTs(nombre, '🚨 CUD VENCIDO', msg);
-                        
-                        // SUBIR MENSAJE PRIORIDAD ABSOLUTA A LA PIZARRA
-                        const destinatarios = ['T.S.', 'DIRECTORES', 'COORD'];
-                        destinatarios.forEach(dest => {
-                            const idTarea = `cud_vencido_${sanitizarKey(nombre)}_${sanitizarKey(dest)}`;
-                            refPizarra.child(idTarea).set({
-                                desc: `🚨 PRIORIDAD ABSOLUTA: El CUD de ${nombre} está VENCIDO. Debe renovarse de manera urgente.`,
-                                prio: 'ALTA',
-                                destinatario: dest,
-                                autor: '🤖 DOMINGUITO',
-                                estado: 'ACTIVAS',
-                                fecha: new Date().toISOString(),
-                                vence: new Date().toISOString().split('T')[0],
-                                ts: Date.now()
-                            });
+                        // Anti-spam directo
+                        if (localStorage.getItem(`notif_cud_vencido_${sanitizarKey(nombre)}`) !== hoy) {
+                            dominguitoNotificarTs(nombre, '🚨 CUD VENCIDO', msg);
+                            localStorage.setItem(`notif_cud_vencido_${sanitizarKey(nombre)}`, hoy);
+                        }
+
+                        // Pizarra
+                        const idTarea = `cud_vencido_${sanitizarKey(nombre)}`;
+                        refPizarra.child(idTarea).once('value', snapshot => {
+                            if (!snapshot.exists()) {
+                                ['T.S.', 'DIRECTORES', 'COORD'].forEach(dest => {
+                                    refPizarra.child(`${idTarea}_${sanitizarKey(dest)}`).set({
+                                        desc: `🚨 PRIORIDAD ABSOLUTA: El CUD de ${nombre} está VENCIDO.`,
+                                        prio: 'ALTA', destinatario: dest, autor: '🤖 DOMINGUITO',
+                                        estado: 'ACTIVAS', fecha: new Date().toISOString(), ts: Date.now()
+                                    });
+                                });
+                            }
                         });
-                        
                     } else if (diff <= 90) {
                         contadorCuds++;
                         const msg = `Vence: ${pac.cud} (${diff} días)`;
                         renderizarAlerta(nombre, '⚠️ CUD PRÓXIMO', msg, 'alerta');
                         
-                        // Notificar a los 90 días
-                        dominguitoNotificarTs(nombre, '⚠️ CUD PRÓXIMO A VENCER', msg);
+                        if (localStorage.getItem(`notif_cud_prox_${sanitizarKey(nombre)}`) !== hoy) {
+                            dominguitoNotificarTs(nombre, '⚠️ CUD PRÓXIMO A VENCER', msg);
+                            localStorage.setItem(`notif_cud_prox_${sanitizarKey(nombre)}`, hoy);
+                        }
                     }
                 }
             });
-            
+
             ramasCompletadas++;
-            if (ramasCompletadas === ramas.length) {
-                const statCuds = document.getElementById('stat-cuds');
-                if (statCuds) statCuds.textContent = contadorCuds;
+            if (ramasCompletadas === ramas.length && document.getElementById('stat-cuds')) {
+                document.getElementById('stat-cuds').textContent = contadorCuds;
             }
         });
     });
-    
-    // 2. Escanear ausencias (Corregido a seguimiento_pacientes con guion bajo)
-    const refAusencias = db.ref('/seguimiento_pacientes');
-    refAusencias.once('value', snap => {
+
+    // 2. Escaneo de ausencias
+    db.ref('/seguimiento_pacientes').once('value', snap => {
         snap.forEach(child => {
             const nombre = child.key;
             let faltas = 0;
-            
             child.forEach(dia => {
                 const val = dia.val();
-                if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) {
-                    faltas++;
-                }
+                if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
             });
-            
-            // Notificar solo si llega a 5 faltas
+
             if (faltas >= 5) {
                 contadorAus++;
                 const msg = `Acumula ${faltas} inasistencias.`;
                 renderizarAlerta(nombre, '🚨 AUSENCIAS', msg, 'urgente');
-                dominguitoNotificarTs(nombre, '📉 ALERTA DE AUSENCIAS', msg);
+                
+                if (localStorage.getItem(`notif_ausencia_${sanitizarKey(nombre)}`) !== hoy) {
+                    dominguitoNotificarTs(nombre, '📉 ALERTA DE AUSENCIAS', msg);
+                    localStorage.setItem(`notif_ausencia_${sanitizarKey(nombre)}`, hoy);
+                }
             }
         });
-        
-        const statAus = document.getElementById('stat-aus');
-        if (statAus) statAus.textContent = contadorAus;
+        if (document.getElementById('stat-aus')) document.getElementById('stat-aus').textContent = contadorAus;
     });
 }
-
 // ============================================================
 // =============== 4. RENDERIZAR ALERTA EN RADAR ==============
 // ============================================================
@@ -965,10 +968,13 @@ const MAPA_CONSULTORIOS = {
 // FUNCIÓN PRINCIPAL DOMINGUITO
 // ============================================================
 function procesarComandoDominguito(texto) {
-    const upper = texto.toUpperCase();
-    const nombreInput = texto.trim(); // Nombre limpio para la nueva búsqueda
     const chatContainer = document.getElementById('chat-individual');
     
+    // --- PASO 1: LIMPIEZA ---
+    const nombreInput = limpiarNombre(texto).toUpperCase();
+    const upper = texto.toUpperCase();
+
+    // --- FUNCIÓN DE RESPUESTA (Definida para estar disponible en todo el scope) ---
     const enviarRespuesta = (msg) => {
         refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -978,36 +984,36 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-    // ------------------------------------------------------------
-    // NUEVO: 1. BÚSQUEDA AUTOMÁTICA POR NOMBRE DIRECTO EN CACHÉ
-    // ------------------------------------------------------------
+    // --- PASO 2: BÚSQUEDA DIRECTA (Caché optimizado) ---
     if (typeof cachePacientes !== 'undefined') {
         const nombreEncontrado = Object.keys(cachePacientes).find(n => 
-            n.toUpperCase() === nombreInput.toUpperCase()
+            limpiarNombre(n).toUpperCase() === nombreInput
         );
 
         if (nombreEncontrado) {
+            // Enviamos respuesta al chat avisando que estamos buscando
+            chatContainer.innerHTML += `
+                <div class="msg msg-domingo">
+                    <b style="font-size:9px;">🤖 DOMINGUITO</b>
+                    Buscando ficha de ${nombreEncontrado}...
+                </div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Llamada a tu lógica de ficha
+            const pac = cachePacientes[nombreEncontrado];
             const ramas = ['cd', 'cet', 'rehab'];
-            ramas.forEach(rama => {
-                db.ref(`/${rama}/pacientes/${nombreEncontrado}`).once('value', snap => {
-                    const pac = snap.val();
-                    if (pac) {
-                        mostrarFichaCompleta(pac, rama, nombreEncontrado, enviarRespuesta);
-                    }
-                });
-            });
-            return; // Cortamos acá, ya respondió con la ficha nueva
+            
+            // Mantenemos tu llamada original
+            mostrarFichaCompleta(pac, pac.modalidad || 'Sin modalidad', nombreEncontrado, enviarRespuesta);
+            return; 
         }
     }
-    
-    // ------------------------------------------------------------
-    // COMANDOS ORIGINALES (Intactos)
-    // ------------------------------------------------------------
+
+    // --- PASO 3: COMANDOS ORIGINALES ---
     
     // Comando: CUD
     if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
         enviarRespuesta("🔍 Escaneando todos los CUDs...");
-        
         const ramas = ['cd', 'cet', 'rehab'];
         let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
         let total = 0;
@@ -1021,18 +1027,12 @@ function procesarComandoDominguito(texto) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
-                        
                         total++;
-                        if (diff <= 0) {
-                            respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
-                        } else if (diff <= 90) {
-                            respuesta += `⚠️ ${child.key}: Vence en ${diff} días\n`;
-                        } else {
-                            respuesta += `✅ ${child.key}: Vigente (${diff} días restantes)\n`;
-                        }
+                        if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
+                        else if (diff <= 90) respuesta += `⚠️ ${child.key}: Vence en ${diff} días\n`;
+                        else respuesta += `✅ ${child.key}: Vigente (${diff} días restantes)\n`;
                     }
                 });
-                
                 completado++;
                 if (completado === ramas.length) {
                     if (total === 0) respuesta += "✅ No se encontraron CUDs registrados.";
@@ -1043,31 +1043,24 @@ function procesarComandoDominguito(texto) {
         return;
     }
     
-    // Comando: Ausencias (CORREGIDO)
+    // Comando: Ausencias
     if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
         enviarRespuesta("📉 Verificando ausencias...");
-        
-        // Se cambió a 'seguimiento_pacientes' con guion bajo
         db.ref('/seguimiento_pacientes').once('value', snap => {
             let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
             let encontrados = false;
-            
             snap.forEach(child => {
                 const nombre = child.key;
                 let faltas = 0;
-                
                 child.forEach(dia => {
                     const val = dia.val();
-                    // Detecta tanto el string 'A' como el objeto {val: 'A'}
                     if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
                 });
-                
                 if (faltas >= 5) {
                     encontrados = true;
                     respuesta += `🚨 ${nombre}: ${faltas} faltas\n`;
                 }
             });
-            
             enviarRespuesta(encontrados ? respuesta : respuesta + "✅ Todos los pacientes con asistencia normal.");
         });
         return;
@@ -1075,14 +1068,7 @@ function procesarComandoDominguito(texto) {
 
     // Comando: Ayuda
     if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
-        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n
-• [Escribir Nombre] - Ver ficha clínica completa filtrada
-• "CUD" - Ver vencimientos de todos los pacientes
-• "Ausencias" - Pacientes con +5 faltas en el mes
-• "Reporte" - Resumen del día
-• "Paciente [nombre]" - Info resumida clásica
-• "Tareas" - Mis tareas pendientes
-• "Ayuda" - Esta lista`);
+        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa filtrada\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida clásica\n• "Tareas" - Mis tareas pendientes\n• "Ayuda" - Esta lista`);
         return;
     }
     
@@ -1092,29 +1078,25 @@ function procesarComandoDominguito(texto) {
         return;
     }
     
-    // Comando: Paciente específico (Mantenido intacto)
+    // Comando: Paciente específico
     if (upper.includes('PACIENTE')) {
         const nombrePac = texto.replace(/paciente\s/i, '').trim();
         if (nombrePac) {
             const ramas = ['cd', 'cet', 'rehab'];
             let encontrado = false;
             let completado = 0;
-            
             enviarRespuesta(`🔍 Buscando información de "${nombrePac}"...`);
-            
             ramas.forEach(rama => {
                 db.ref(`/${rama}/pacientes/${nombrePac}`).once('value', snap => {
                     const pac = snap.val();
                     if (pac) {
                         encontrado = true;
-                        let info = `📋 PACIENTE: ${nombrePac}\n━━━━━━━━━━━━━━\n`;
-                        info += `📍 Sede: ${rama.toUpperCase()}\n`;
+                        let info = `📋 PACIENTE: ${nombrePac}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
                         if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
                         if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
                         if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
                         enviarRespuesta(info);
                     }
-                    
                     completado++;
                     if (completado === ramas.length && !encontrado) {
                         enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
