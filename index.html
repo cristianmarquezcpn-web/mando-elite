@@ -2762,10 +2762,8 @@ function detectarPacientesEnTexto(texto) {
     // --- DEBUG: ESTO NOS DIRÁ LA VERDAD ---
     console.log("🔍 Texto recibido:", texto);
     console.log("📦 Claves en caché:", Object.keys(cachePacientes));
-  
+    // --------------------------------------
 
-    const resultados = [];
-    const lineas = texto.split('\n').filter(l => l.trim());
     const resultados = [];
     const lineas = texto.split('\n').filter(l => l.trim());
     
@@ -2774,6 +2772,7 @@ function detectarPacientesEnTexto(texto) {
         
         // Buscar coincidencias de nombre
         for (const [nombreLower, datos] of Object.entries(cachePacientes)) {
+            // Usamos .includes para detectar si el nombre está dentro de la línea
             if (lineaLower.includes(nombreLower)) {
                 resultados.push({
                     nombre: datos.nombre,
@@ -2785,14 +2784,13 @@ function detectarPacientesEnTexto(texto) {
                     justificado: CLAVESDIARIO.justificado.some(p => lineaLower.includes(p)),
                     timestamp: Date.now()
                 });
-                break;
+                break; // Si encontramos al paciente, pasamos a la siguiente línea
             }
         }
     });
     
     return resultados;
 }
-
 // ---------------------------------------------------------------
 // Clasificar el tipo de novedad
 // ---------------------------------------------------------------
