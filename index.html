@@ -80,15 +80,18 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
         .modal-content { background: white; border-radius: 20px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
 
-        /* Ajuste específico para superponer el panel de RRHH sin romper el Flexbox */
+        /* MODIFICACIÓN DE ALTA PRIORIDAD: Centrado absoluto flotante e inmune a Flexbox */
         #panel-liquidacion {
-            position: absolute !important;
-            top: 20px;
-            left: 20px;
-            width: calc(100% - 40px);
-            max-height: 90vh;
-            z-index: 9999;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 90% !important;
+            max-width: 600px !important;
+            max-height: 85vh !important;
+            z-index: 99999 !important;
             overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
         }
     </style>
 </head>
@@ -99,7 +102,7 @@
 
 <div id="bloqueo-mando">
     <h2 style="font-size: 28px; margin: 0;">🔐 DOMINGUITO</h2>
-    <p style="color: #94a3b8; margin: 0;">Sistema de Comunicación Interna</p>
+    <p style="color: #94a3b8; margin: 0;">Sistema de Communication Interna</p>
     <button onclick="loginGoogle()" style="padding: 16px 32px; background: #4285f4; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(66,133,244,0.4); transition: 0.2s;">
         🟢 Entrar con Google
     </button>
@@ -130,7 +133,6 @@
     </div>
 </div>
 
-<!-- Se eliminó position: relative; del style en línea para que tome el position: absolute del CSS -->
 <div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
     <button onclick="cerrarPanelLiquidacion()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; cursor: pointer; font-size: 18px; color: #64748b;">✖</button>
 
