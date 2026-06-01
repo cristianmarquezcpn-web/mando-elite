@@ -981,32 +981,25 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-    // --- PASO 2: BÚSQUEDA DIRECTA EN CACHÉ (CORREGIDA) ---
-    if (typeof cachePacientes !== 'undefined') {
-        // 1. Preparamos el nombre que escribió el usuario para comparar
-        const inputLimpio = limpiarNombre(texto).toUpperCase(); 
+   // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
+if (typeof cachePacientes !== 'undefined') {
+    const inputLimpio = texto.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-        // 2. Buscamos el nombre exacto en las llaves del caché usando la limpieza
-        const nombreReal = Object.keys(cachePacientes).find(n => 
-            limpiarNombre(n).toUpperCase() === inputLimpio
-        );
+    // Buscamos el nombre que contenga lo que el usuario escribió
+    const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
+        const nombreCacheLimpio = llave.replace(/[^a-z0-9]/g, '');
+        return nombreCacheLimpio.includes(inputLimpio) || inputLimpio.includes(nombreCacheLimpio);
+    });
 
-        if (nombreReal) {
-            // Avisamos en el chat que estamos buscando
-            chatContainer.innerHTML += `
-                <div class="msg msg-domingo">
-                    <b style="font-size:9px;">🤖 DOMINGUITO</b>
-                    Buscando ficha de ${nombreReal}...
-                </div>`;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            const pac = cachePacientes[nombreReal];
-            // Llamamos a tu ficha usando el nombreReal (que es el nombre exacto que Firebase tiene)
-            mostrarFichaCompleta(pac, pac.modalidad || 'Sin modalidad', nombreReal, enviarRespuesta);
-            return; 
-        }
+    if (llaveEncontrada) {
+        const pac = cachePacientes[llaveEncontrada];
+        console.log("✅ Dominguito encontró al paciente:", pac.id);
+        
+        // Usamos pac.modalidad (que se guardó en tu función cargarCachePacientes)
+        mostrarFichaCompleta(pac, pac.modalidad, pac.id, enviarRespuesta);
+        return; 
     }
-
+}
     // --- PASO 3: COMANDOS ORIGINALES ---
     
     // Comando: CUD
@@ -2210,25 +2203,29 @@ function dominguitoEscucharMensajes() {
 // Extraer paciente del contexto del chat
 // ---------------------------------------------------------------
 function extraerPacienteDeContexto(mensajes, chatId) {
-    // 1. Intentamos buscar en el historial del chat usando el caché
     if (typeof cachePacientes !== 'undefined') {
+        // Obtenemos todos los nombres (llaves) que tienes en tu caché
         const nombresEnCache = Object.keys(cachePacientes);
         
-        // Recorremos los mensajes desde el más reciente al más antiguo
+        // Recorremos los mensajes
         for (let i = mensajes.length - 1; i >= 0; i--) {
             const m = mensajes[i];
             if (!m.texto) continue;
+
+            // Limpiamos el texto del mensaje para que sea fácil de comparar
+            const textoLimpioMensaje = limpiarNombre(m.texto).toUpperCase();
             
-            // Buscamos si alguno de los nombres del caché aparece en el mensaje
-            const nombreHallado = nombresEnCache.find(n => 
-                m.texto.toUpperCase().includes(limpiarNombre(n).toUpperCase())
-            );
+            // Buscamos cuál de los nombres del caché "vive" dentro del texto del mensaje
+            const nombreHallado = nombresEnCache.find(n => {
+                const nombreLimpio = limpiarNombre(n).toUpperCase();
+                return textoLimpioMensaje.includes(nombreLimpio);
+            });
             
             if (nombreHallado) return nombreHallado;
         }
     }
 
-    // 2. Si no lo encontramos en el historial, intentamos el método original (fallback)
+    // Fallback original
     const alertas = document.querySelectorAll('.radar-card');
     for (const alerta of alertas) {
         const match = alerta.textContent.match(/PACIENTE:\s([^\n]+)/i);
@@ -2237,7 +2234,6 @@ function extraerPacienteDeContexto(mensajes, chatId) {
 
     return 'Paciente no identificado';
 }
-
 // ---------------------------------------------------------------
 // Helper: verificar palabras clave
 // ---------------------------------------------------------------
