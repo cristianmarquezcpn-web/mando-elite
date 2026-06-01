@@ -80,7 +80,7 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
         .modal-content { background: white; border-radius: 20px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
 
-        /* MODIFICACIÓN DE ALTA PRIORIDAD: Centrado absoluto flotante e inmune a Flexbox */
+        /* Panel flotante de RRHH corregido */
         #panel-liquidacion {
             position: fixed !important;
             top: 50% !important;
@@ -102,7 +102,7 @@
 
 <div id="bloqueo-mando">
     <h2 style="font-size: 28px; margin: 0;">🔐 DOMINGUITO</h2>
-    <p style="color: #94a3b8; margin: 0;">Sistema de Communication Interna</p>
+    <p style="color: #94a3b8; margin: 0;">Sistema de Comunicación Interna</p>
     <button onclick="loginGoogle()" style="padding: 16px 32px; background: #4285f4; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(66,133,244,0.4); transition: 0.2s;">
         🟢 Entrar con Google
     </button>
@@ -133,7 +133,8 @@
     </div>
 </div>
 
-<div id="panel-liquidacion" class="glass-panel" style="display:none; border-top: 5px solid var(--primary);">
+<!-- CORRECCIÓN CLAVE: display: block; para pruebas directas -->
+<div id="panel-liquidacion" class="glass-panel" style="display: block; border-top: 5px solid var(--primary);">
     <button onclick="cerrarPanelLiquidacion()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; cursor: pointer; font-size: 18px; color: #64748b;">✖</button>
 
     <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
@@ -320,7 +321,6 @@
         </div>
     </div>
 </div>
-
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
