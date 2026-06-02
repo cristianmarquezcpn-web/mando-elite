@@ -2184,33 +2184,6 @@ const CLAVESDIARIO = {
     derivacion: ['derivar', 'derivación', 'pase a', 'trasladar', 'cambio de', 'nuevo profesional', 'derivado', 'interconsulta'],
     alta: ['alta', 'egreso', 'finalizó', 'terminó tratamiento', 'completó', 'alta médica', 'egresó']
 };
-
-// ---------------------------------------------------------------
-// CACHÉ DE PACIENTES (cargar al inicio)
-// ---------------------------------------------------------------
-let cachePacientes = {};
-
-function cargarCachePacientes() {
-    const ramas = ['cd', 'cet', 'rehab', 'saei'];
-    const promesas = ramas.map(rama => 
-        db.ref(`/${rama}/pacientes`).once('value', snap => {
-            snap.forEach(child => {
-                const pac = child.val();
-                if (pac && pac.nombre) {
-                    cachePacientes[pac.nombre.toLowerCase()] = {
-                        ...pac,
-                        id: child.key,
-                        modalidad: rama.toUpperCase()
-                    };
-                }
-            });
-        })
-    );
-    return Promise.all(promesas).then(() => {
-        console.log(`✅ ${Object.keys(cachePacientes).length} pacientes en caché`);
-    });
-}
-
 // ---------------------------------------------------------------
 // BUSCADOR FLEXIBLE (tolera tildes, espacios, apellido primero)
 // ---------------------------------------------------------------
