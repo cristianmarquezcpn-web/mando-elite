@@ -2177,6 +2177,17 @@ function confirmarLecturaLiquidacion() {
     document.getElementById('confirmar-lectura-container').style.display = 'none';
     alert("✅ Confirmado");
 }
+function cerrarPanelLiquidacion() {
+    const panel = document.getElementById('panel-liquidacion');
+    const container = document.getElementById('tabla-container');
+    const spanDatos = document.getElementById('datos-pago');
+    
+    if (panel) panel.style.display = 'none';
+    if (container) container.innerHTML = '';
+    if (spanDatos) spanDatos.innerText = '';
+    
+    console.log("Panel RRHH cerrado.");
+}    
 // ---------------------------------------------------------------
 // MAPA DE CONSULTORIOS (para Rehab)
 // ---------------------------------------------------------------
