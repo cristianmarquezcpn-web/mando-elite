@@ -1158,59 +1158,63 @@ function procesarComandoDominguito(texto) {
 // FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
 // ============================================================
 function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
-    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
+    // Definimos una función interna para armar el mensaje y enviarlo
+    const generarInfo = (pacienteConTurnos) => {
+        let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
 
-    // Filtros de campos que no queremos mostrar
-    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
-    const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
+        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
+        const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
 
-    // 1. Datos Identificatorios
-    info += `👤 IDENTIDAD:\n`;
-    orden.forEach(c => { 
-        if (pac[c]) info += `• ${c.toUpperCase()}: ${pac[c]}\n`; 
-    });
+        info += `👤 IDENTIDAD:\n`;
+        orden.forEach(c => { if (pacienteConTurnos[c]) info += `• ${c.toUpperCase()}: ${pacienteConTurnos[c]}\n`; });
 
-    // 2. Gestión y Turnos
-    info += `\n📅 GESTIÓN:\n`;
-    if (pac.cud) info += `• CUD: ${pac.cud}\n`;
-    if (pac.turno) info += `• Turno principal: ${pac.turno}\n`;
-    
-    // Mapa de consultorios
-    const MAPACONSULTORIOS = {
-        "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
-        "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
-        "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
-        "10": "Terapia Ocupacional 2"
-    };
-    
-    // Desglosar turnos de REHAB
-    if (pac.turnos && typeof pac.turnos === 'object') {
-        Object.entries(pac.turnos).forEach(([dia, horarios]) => {
-            info += `\n[${dia.toUpperCase()}]\n`;
-            Object.entries(horarios).forEach(([hora, valor]) => {
-                const partes = hora.split('-');
-                const time = partes[0];
-                const consId = partes[1];
-                const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
-                info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
+        info += `\n📅 GESTIÓN:\n`;
+        if (pacienteConTurnos.cud) info += `• CUD: ${pacienteConTurnos.cud}\n`;
+        if (pacienteConTurnos.turno) info += `• Turno principal: ${pacienteConTurnos.turno}\n`;
+        
+        const MAPACONSULTORIOS = {
+            "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
+            "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
+            "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
+            "10": "Terapia Ocupacional 2"
+        };
+        
+        if (pacienteConTurnos.turnos && typeof pacienteConTurnos.turnos === 'object') {
+            Object.entries(pacienteConTurnos.turnos).forEach(([dia, horarios]) => {
+                info += `\n[${dia.toUpperCase()}]\n`;
+                Object.entries(horarios).forEach(([hora, valor]) => {
+                    const partes = hora.split('-');
+                    const time = partes[0];
+                    const consId = partes[1];
+                    const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
+                    info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
+                });
             });
-        });
-    }
-
-    // 3. Clínica (Resto de los campos)
-    info += `\n🏥 CLÍNICA:\n`;
-    Object.entries(pac).forEach(([key, value]) => {
-        const lowerKey = key.toLowerCase();
-        if (!ignorar.some(i => lowerKey.includes(i)) && 
-            typeof value !== 'object' && 
-            !orden.includes(lowerKey) &&
-            key !== 'turnos' && key !== 'cud' && key !== 'turno') {
-            const label = key.charAt(0).toUpperCase() + key.slice(1);
-            info += `• ${label}: ${value}\n`;
         }
-    });
 
-    enviarRespuesta(info);
+        info += `\n🏥 CLÍNICA:\n`;
+        Object.entries(pacienteConTurnos).forEach(([key, value]) => {
+            const lowerKey = key.toLowerCase();
+            if (!ignorar.some(i => lowerKey.includes(i)) && 
+                typeof value !== 'object' && 
+                !orden.includes(lowerKey) &&
+                key !== 'turnos' && key !== 'cud' && key !== 'turno') {
+                const label = key.charAt(0).toUpperCase() + key.slice(1);
+                info += `• ${label}: ${value}\n`;
+            }
+        });
+        enviarRespuesta(info);
+    };
+
+    // Lógica para buscar turnos si es REHAB
+    if (rama && rama.toLowerCase() === 'rehab') {
+        db.ref(`/rehab/turnos/${nombrePac}`).once('value').then(snap => {
+            pac.turnos = snap.val();
+            generarInfo(pac); // Ejecutamos después de obtener los datos
+        });
+    } else {
+        generarInfo(pac); // Ejecutamos directo
+    }
 }
 // ============================================================
 // =============== 9. ESCUCHAR NOTIFICACIONES =================
