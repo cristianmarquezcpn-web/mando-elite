@@ -1031,16 +1031,20 @@ function procesarComandoDominguito(texto) {
         if (llaveEncontrada) {
             const pac = cachePacientes[llaveEncontrada];
             const rama = pac.modalidad;
+            
+            // Verificación: ¿Estamos buscando en la ruta correcta?
+            const ruta = `/rehab/turnos/${llaveEncontrada}`;
+            console.log("🔍 Dominguito buscando en ruta:", ruta);
 
-            // --- AQUÍ ESTÁ EL CAMBIO PARA REHAB ---
             if (rama && rama.toLowerCase() === 'rehab') {
-                // Buscamos los turnos específicamente en la rama de REHAB
-                db.ref(`/rehab/turnos/${llaveEncontrada}`).once('value', snap => {
-                    pac.turnos = snap.val(); // Inyectamos los turnos al objeto antes de mostrar
+                db.ref(ruta).once('value', snap => {
+                    const datos = snap.val();
+                    console.log("📦 Datos encontrados en Firebase para", llaveEncontrada, ":", datos);
+                    
+                    pac.turnos = datos; 
                     mostrarFichaCompleta(pac, rama, llaveEncontrada, enviarRespuesta);
                 });
             } else {
-                // Si es otra rama, mostramos directo como siempre
                 mostrarFichaCompleta(pac, rama, llaveEncontrada, enviarRespuesta);
             }
             return; 
