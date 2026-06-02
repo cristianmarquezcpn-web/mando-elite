@@ -134,7 +134,7 @@
 </div>
 
 <!-- CORRECCIÓN CLAVE: display: block; para pruebas directas -->
-<div id="panel-liquidacion" class="glass-panel" style="display: block; border-top: 5px solid var(--primary);">
+<div id="panel-liquidacion" class="glass-panel" style="display: none; border-top: 5px solid var(--primary);">
     <button onclick="cerrarPanelLiquidacion()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; cursor: pointer; font-size: 18px; color: #64748b;">✖</button>
 
     <h3 style="margin-top:0;">💼 GESTIÓN DE PAGOS - RRHH</h3>
@@ -2123,633 +2123,37 @@ function iniciarEscuchaLiquidaciones(nombreUsuario) {
 }
 
 console.log("🚀 Sistema de RRHH y vigilantes de liquidación activos.");
-// ============================================================
-// =============== 18. DOMINGUITO SEGUIDOR ====================
-// ============================================================
-function obtenerEquipoPorModalidadYTurno(modalidad, turno) {
-    return new Promise((resolve) => {
-        refUsuarios.once('value', snap => {
-            const equipo = [];
-            const modUpper = (modalidad || '').toUpperCase();
-            const turnUpper = (turno || '').toUpperCase();
-
-            snap.forEach(child => {
-                const user = child.val();
-                if (user && user.rol) {
-                    const rolUpper = user.rol.toUpperCase();
-                    const userTurnoUpper = (user.turno || '').toUpperCase();
-                    const emailKey = child.key.replace(/,/g, '.');
-
-                    // Regla dinámica: Coincide si el rol contiene la modalidad (ej: "ORIENTADOR CD") 
-                    // y el turno coincide, O si es un rol jerárquico global (DIRECTOR / ADMIN)
-                    if (
-                        (rolUpper.includes(modUpper) && (userTurnoUpper === turnUpper || rolUpper.includes(turnUpper))) ||
-                        rolUpper.includes('DIRECTOR') ||
-                        rolUpper.includes('ADMIN')
-                    ) {
-                        equipo.push({
-                            email: emailKey,
-                            nombre: user.nombre || emailKey,
-                            rol: user.rol
-                        });
-                    }
-                }
-            });
-            resolve(equipo);
-        });
-    });
-}
-
 // ---------------------------------------------------------------
-// Función principal: Dominguito escucha TODOS los mensajes
+// MAPA DE CONSULTORIOS (para Rehab)
 // ---------------------------------------------------------------
-function dominguitoEscucharMensajes() {
-    console.log("👂 DOMINGUITO modo escucha dinámico activado...");
-
-    refChatsIndividuales.on('child_added', snap => {
-        const chatId = snap.key;
-        if (!chatId.includes('dominguito')) return; // Solo chats con Dominguito
-
-        const data = snap.val();
-        if (!data || !data.mensajes) return;
-
-        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', snapMsg => {
-            const msg = snapMsg.val();
-            if (!msg) return;
-            if (msg.autor === '🤖 DOMINGUITO') return; // No procesarse a sí mismo
-            if (msg.autor === usuarioActivo) return; // No procesar al que envió
-
-            const texto = (msg.texto || '').toLowerCase().trim();
-            if (!texto || texto.length < 3) return;
-
-            // Extraer nombre del paciente del contexto del chat
-            const ultimosMensajes = [];
-            refChatsIndividuales.child(chatId).child('mensajes').limitToLast(10).once('value', snapHist => {
-                snapHist.forEach(child => {
-                    let mVal = child.val();
-                    if (mVal) ultimosMensajes.push(mVal);
-                });
-
-                const pacienteDetectado = extraerPacienteDeContexto(ultimosMensajes, chatId);
-                
-                // Clasificar la respuesta por palabras clave
-                if (contienePalabras(texto, ['turno', 'saqué', 'reservé', 'agendé', 'pedí', 'junta', 'evaluador'])) {
-                    procesarRespuestaCUD(pacienteDetectado, msg.texto, chatId);
-                } 
-                else if (contienePalabras(texto, ['enfermo', 'bronquitis', 'fiebre', 'médico', 'licencia', 'covid', 'certificado', 'justifica', 'operación', 'cirugía', 'reposo'])) {
-                    procesarRespuestaAusencia(pacienteDetectado, msg.texto, chatId, true);
-                }
-                else if (contienePalabras(texto, ['pendiente', 'todavía', 'esperando', 'no sé', 'no tengo', 'después', 'más tarde'])) {
-                    procesarRespuestaPendiente(pacienteDetectado, msg.texto, chatId);
-                }
-                else if (contienePalabras(texto, ['resolvió', 'renovó', 'tramitó', 'entregó', 'ya está', 'listo', 'terminé', 'finalizó'])) {
-                    procesarRespuestaResuelto(pacienteDetectado, msg.texto, chatId);
-                }
-                else {
-                    registrarRespuestaGenerica(pacienteDetectado, msg.texto, chatId);
-                }
-            });
-        });
-    });
-}
-
-// ---------------------------------------------------------------
-// Extraer paciente del contexto del chat
-// ---------------------------------------------------------------
-function extraerPacienteDeContexto(mensajes, chatId) {
-    if (typeof cachePacientes !== 'undefined') {
-        // Obtenemos todos los nombres (llaves) que tienes en tu caché
-        const nombresEnCache = Object.keys(cachePacientes);
-        
-        // Recorremos los mensajes
-        for (let i = mensajes.length - 1; i >= 0; i--) {
-            const m = mensajes[i];
-            if (!m.texto) continue;
-
-            // Limpiamos el texto del mensaje para que sea fácil de comparar
-            const textoLimpioMensaje = limpiarNombre(m.texto).toUpperCase();
-            
-            // Buscamos cuál de los nombres del caché "vive" dentro del texto del mensaje
-            const nombreHallado = nombresEnCache.find(n => {
-                const nombreLimpio = limpiarNombre(n).toUpperCase();
-                return textoLimpioMensaje.includes(nombreLimpio);
-            });
-            
-            if (nombreHallado) return nombreHallado;
-        }
-    }
-
-    // Fallback original
-    const alertas = document.querySelectorAll('.radar-card');
-    for (const alerta of alertas) {
-        const match = alerta.textContent.match(/PACIENTE:\s([^\n]+)/i);
-        if (match) return match[1].trim();
-    }
-
-    return 'Paciente no identificado';
-}
-// ---------------------------------------------------------------
-// Helper: verificar palabras clave
-// ---------------------------------------------------------------
-function contienePalabras(texto, palabras) {
-    return palabras.some(p => texto.includes(p.toLowerCase()));
-}
-async function obtenerDatosPaciente(nombrePaciente) {
-    const ramas = ['cd', 'cet', 'rehab', 'saei'];
-
-    try {
-        // 1. Ejecutar las 4 consultas en paralelo (mucho más rápido)
-        const promesas = ramas.map(rama => 
-            db.ref(`/${rama}/pacientes/${nombrePaciente}`).once('value')
-        );
-        
-        const resultados = await Promise.all(promesas);
-
-        // 2. Buscar el primer snapshot que tenga datos (que exista)
-        const snapEncontrado = resultados.find(snap => snap.exists());
-        
-        let resultado = null;
-
-        if (snapEncontrado) {
-            const pac = snapEncontrado.val();
-            // Identificamos de qué rama vino basándonos en el path del snapshot
-            const nombreRama = snapEncontrado.ref.parent.parent.key; 
-            
-            resultado = {
-                nombre: nombrePaciente,
-                modalidad: nombreRama.toUpperCase(),
-                turno: pac.turno || 'MAÑANA',
-                profesionales: pac.profesional || pac.profesionales || 'No asignado',
-                tsAsignada: null
-            };
-        } else {
-            // Fallback si no existe en ninguna rama
-            resultado = {
-                nombre: nombrePaciente,
-                modalidad: 'DESCONOCIDA',
-                turno: 'DESCONOCIDO',
-                profesionales: 'No asignado',
-                tsAsignada: null
-            };
-        }
-
-        // 3. Obtener la asignación (esto depende del resultado, así que va secuencial al final)
-        const snapAsig = await refAsignaciones.child(nombrePaciente).once('value');
-        const asig = snapAsig.val();
-        
-        if (asig) {
-            resultado.tsAsignada = asig.ts;
-        }
-
-        return resultado;
-
-    } catch (error) {
-        console.error("Error al buscar paciente:", error);
-        return null; // O maneja el error según tu preferencia
-    }
-}
-
-// ---------------------------------------------------------------
-// Notificar dinámicamente al equipo del paciente
-// ---------------------------------------------------------------
-async function notificarEquipoPaciente(datosPaciente, titulo, mensaje, nivel) {
-    // 1. Obtener todos tus empleados desde Firebase
-    const snapshot = await refEmpleados.once('value');
-    const empleados = [];
-    snapshot.forEach(child => {
-        empleados.push({ id: child.key, ...child.val() });
-    });
-
-    // 2. Función interna para obtener el equipo dinámico
-    async function obtenerEquipoPorModalidadYTurno(modalidad, turno) {
-        return empleados.filter(e => {
-            const codigoEmpleado = (e.c || "").toUpperCase();
-            const modBusqueda = modalidad.toUpperCase();
-            const turnoBusqueda = (turno || "").toUpperCase();
-
-            if (modBusqueda === "CD") return codigoEmpleado === "CD";
-            if (modBusqueda === "CET") return codigoEmpleado === `CET_${turnoBusqueda}`;
-            if (modBusqueda === "REHAB") return codigoEmpleado === "REHAB";
-            return false;
-        });
-    }
-
-    const { nombre, modalidad, turno, profesionales } = datosPaciente;
-
-    // 1️⃣ Buscar dinámicamente el equipo
-    const equipoDinamico = await obtenerEquipoPorModalidadYTurno(modalidad, turno);
-
-    let listaNombresEquipo = equipoDinamico.map(e => `• ${e.nombre} (${e.rol})`).join('\n');
-    if (!listaNombresEquipo) listaNombresEquipo = '• Sin profesionales asignados en este turno';
-
-    // Construir la cabecera
-    const CABECERA = `📋 PACIENTE: ${nombre}
-📍 ${modalidad} - Turno ${turno}
-👨‍⚕️ Especialista: ${profesionales}
-👥 Equipo de Guardia Detectado:
-${listaNombresEquipo}
-`;
-
-    const mensajeCompleto = `${CABECERA}\n${titulo}\n\n${mensaje}\n\n🕐 ${new Date().toLocaleString()}`;
-
-    // 2️⃣ Enviar notificaciones individuales
-    equipoDinamico.forEach(persona => {
-        if (!persona.email) return;
-        const personaKey = persona.email.replace(/\./g, ',');
-        const participantes = ['dominguito', personaKey].sort();
-        const chatId = `chat_${participantes.join('_')}`;
-
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: mensajeCompleto,
-            ts: Date.now(),
-            tipo: 'alerta',
-            paciente: nombre,
-            requiereAccion: true,
-            nivel: nivel || 'informativo'
-        });
-    });
-
-    // 3️⃣ Notificar canal grupal
-    const grupoDestino = misGrupos.find(g => 
-        g.nombre.toLowerCase().includes(modalidad.toLowerCase()) && 
-        g.nombre.toLowerCase().includes(turno.toLowerCase())
-    );
-
-    if (grupoDestino) {
-        refGrupos.child(grupoDestino.id).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🔔 ${titulo}\n\nPaciente: ${nombre}\n${mensaje}`,
-            ts: Date.now(),
-            tipo: 'sistema',
-            paciente: nombre
-        });
-    }
-
-    // 4️⃣ Registrar bitácora
-    refExpedientes.child(nombre).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📢 Notificación enviada a personal de ${modalidad} (${turno}).\n\n${titulo}: ${mensaje}`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    console.log(`✅ Equipo de ${nombre} notificado de forma dinámica (${nivel})`);
-}
-
-// ============================================================
-// =============== 18a. PROCESAR RESPUESTA CUD ================
-// ============================================================
-async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente me estás hablando? Decime el nombre para registrar tu gestión.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    const datosPaciente = await obtenerDatosPaciente(paciente);
-    if (!datosPaciente) return;
-
-    refExpedientes.child(paciente).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. reportó gestión de CUD:\n"${textoRespuesta}"\n⏰ Pendiente de confirmación de renovación.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'ENGESTION'
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = '4px solid #f59e0b';
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:#f59e0b;">⚠️ CUD EN GESTIÓN</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">🔄 Turno gestionado - Pendiente de renovación</div>
-            <div style="font-size:9px; color:#f59e0b; margin-top:5px;">⏰ Recordatorio automático en 7 días</div>
-        `;
-    }
-
-    notificarEquipoPaciente(
-        datosPaciente,
-        '🔄 CUD EN GESTIÓN',
-        `La T.S. gestionó el turno para renovación de CUD.\n\n🗣️ Respuesta: "${textoRespuesta}"\n\n⚠️ El paciente sigue sin CUD vigente hasta que se confirme la renovación física del documento.`,
-        'informativo'
-    );
-
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Tu gestión sobre ${paciente} quedó registrada.\n\n📌 Estado actual: ⏳ Pendiente de renovación.\n\n👥 Notifiqué automáticamente a todo el equipo del turno correspondiente.\n\n🔔 Te voy a consultar de nuevo en 7 días para confirmar si ya se resolvió.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    const fechaRecordatorio = Date.now() + (7 * 24 * 60 * 60 * 1000);
-    db.ref('/SISTEMAMANDO/recordatorios').push({
-        paciente: paciente,
-        tipo: 'CUD',
-        fecha: fechaRecordatorio,
-        mensaje: `⏰ Hace 7 días se gestionó el CUD de ${paciente}. ¿Ya se renovó el documento?`,
-        creado: Date.now(),
-        chatId: chatId
-    });
-
-    mostrarToast(`✅ Dominguito registró gestión de CUD de ${paciente}`);
-}
-
-// ============================================================
-// =============== 18b. PROCESAR RESPUESTA AUSENCIA ===========
-// ============================================================
-async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justificado) {
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente me hablás? Necesito el nombre exacto para asentar la novedad.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    const datosPaciente = await obtenerDatosPaciente(paciente);
-    if (!datosPaciente) return;
-
-    refExpedientes.child(paciente).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 Reporte de ausencias:\n"${textoRespuesta}"\n${justificado ? '✅ Ausencias justificadas clínicamente.' : '⚠️ Ausencias reportadas sin justificativo.'}`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        justificado: justificado
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = `4px solid ${justificado ? '#10b981' : '#f59e0b'}`;
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:${justificado ? '#10b981' : '#f59e0b'};">${justificado ? '✅ AUSENCIAS JUSTIFICADAS' : '⚠️ AUSENCIAS INFORMADAS'}</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">${textoRespuesta}</div>
-        `;
-    }
-
-    notificarEquipoPaciente(
-        datosPaciente,
-        justificado ? '✅ AUSENCIAS JUSTIFICADAS' : '⚠️ AUSENCIAS REPORTADAS',
-        `La T.S. informó sobre las inasistencias:\n"${textoRespuesta}"\n\n${justificado ? '🟢 Justificado por razones de salud.' : '🟡 Sin justificación - Requiere seguimiento activo de sala.'}\n\nPor favor, registrar en el parte diario de asistencia de la fecha.`,
-        justificado ? 'informativo' : 'alerta'
-    );
-
-    const respuesta = justificado 
-        ? `✅ Registrado. Ausencias de ${paciente} justificadas.\n\n👥 Notifiqué al equipo del turno de sala para que asienten la novedad.\n\n🔔 Si el reposo se extiende por más de 15 días, avisame para congelar o reprogramar el transporte.`
-        : `✅ Guardado en el expediente clínico de ${paciente}.\n\n⚠️ Recordá que para cerrar la alerta de radar de forma definitiva necesitaremos que adjunten el certificado médico correspondiente.`;
-
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: respuesta,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    if (!justificado) {
-        const fechaRecordatorio = Date.now() + (3 * 24 * 60 * 60 * 1000);
-        db.ref('/SISTEMAMANDO/recordatorios').push({
-            paciente: paciente,
-            tipo: 'AUSENCIA',
-            fecha: fechaRecordatorio,
-            mensaje: `⏰ Hace 3 días se reportaron ausencias de ${paciente} sin justificar. ¿Ya enviaron el certificado?`,
-            creado: Date.now(),
-            chatId: chatId
-        });
-    }
-
-    mostrarToast(`✅ Dominguito registró ausencias de ${paciente}`);
-}
-
-// ============================================================
-// =============== 18c. PROCESAR "PENDIENTE" ==================
-// ============================================================
-function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente? Decime el nombre completo por favor.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(paciente).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. reportó caso en espera: "${textoRespuesta}"\n⏳ Pendiente de resolución. Próximo chequeo automático en 3 días.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'PENDIENTE'
-    });
-
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Entendido. Dejé constancia de que el caso sigue bajo análisis.\n\n📌 Te voy a volver a consultar en 3 días hábiles para ver si lograste avanzar.\n\n⚠️ Evitemos dilatarlo demasiado para no generar alertas críticas en Dirección.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    const fechaRecordatorio = Date.now() + (3 * 24 * 60 * 60 * 1000);
-    db.ref('/SISTEMAMANDO/recordatorios').push({
-        paciente: paciente,
-        tipo: 'PENDIENTE',
-        fecha: fechaRecordatorio,
-        mensaje: `⏰ Control automático: Hace 3 días la T.S. dejó pendiente el caso de ${paciente}. ¿Se destrabó la situación?`,
-        creado: Date.now(),
-        chatId: chatId
-    });
-
-    mostrarToast(`⏳ Dominguito registró ${paciente} como pendiente`);
-}
-
-// ============================================================
-// =============== 18d. PROCESAR "RESUELTO" ===================
-// ============================================================
-function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿Qué paciente se resolvió? Indicame el nombre para poder archivar la alerta.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(paciente).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `✅ CASO RESUELTO CON ÉXITO:\n"${textoRespuesta}"\n🎉 Gestión finalizada por el área social. Alerta cerrada.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'RESUELTO'
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = '4px solid #10b981';
-        alertaElement.style.opacity = '0.5';
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:#10b981;">✅ RESUELTO Y CERRADO</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">${textoRespuesta}</div>
-        `;
-
-        setTimeout(() => {
-            if (alertaElement.parentNode) alertaElement.remove();
-        }, 60000);
-    }
-
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `🎉 ¡Impecable trabajo! Marqué el caso de ${paciente} como RESUELTO.\n\n✅ Alerta archivada. El indicador visual desaparecerá del radar en un minuto.\n\nCualquier nueva novedad del grupo familiar, volveme a escribir.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    mostrarToast(`🎉 Caso de ${paciente} resuelto`);
-}
-
-// ============================================================
-// =============== 18e. RESPUESTA GENÉRICA ====================
-// ============================================================
-function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 Hola. No logré interpretar bien el caso.\n\nRecordá que para que procese correctamente, tus reportes deben incluir palabras como:\n• "Saqué turno" o "junta" (Gestiones de CUD)\n• "Enfermo" o "reposo" (Justificación de ausencias)\n• "Pendiente" (Si requiere más tiempo)\n• "Ya está" o "listo" (Para archivar y cerrar el caso)`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(paciente).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. asentó informe general: "${textoRespuesta}"\n🗂️ Registro guardado en archivo pasivo.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Registré tu informe en la bitácora de ${paciente}.\n\n📌 Tip: Si querés que dispare una acción automática de radar o aviso de ausencias, acordate de incluir conceptos claros como "saqué turno", "certificado", "pendiente" o "resuelto".`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-}
-// ============================================================
-// =============== 18f. REVISAR RECORDATORIOS =================
-// ============================================================
-function revisarRecordatorios() {
-    db.ref('/SISTEMAMANDO/recordatorios').once('value', snap => {
-        const ahora = Date.now();
-
-        snap.forEach(child => {
-            const r = child.val();
-            if (!r || !r.fecha) return;
-
-            if (ahora >= r.fecha) {
-                // Encontrar chat original
-                const chatId = r.chatId;
-                if (chatId) {
-                    refChatsIndividuales.child(chatId).child('mensajes').push({
-                        autor: '🤖 DOMINGUITO',
-                        texto: `⏰ RECORDATORIO PROGRAMADO\n\n${r.mensaje}\n\nPor favor respondé para actualizar el estado.`,
-                        ts: Date.now(),
-                        tipo: 'sistema',
-                        requiereAccion: true
-                    });
-                }
-
-                // Eliminar recordatorio procesado
-                child.ref.remove();
-            }
-        });
-    });
-}
-
-// ============================================================
-// =============== INICIAR DOMINGUITO SEGUIDOR ================
-// ============================================================
-function iniciarDominguitoSeguidor() {
-    console.log("🔄 Iniciando Dominguito Seguidor...");
-
-    // Iniciar escucha después de 5 segundos (para dar tiempo a cargar todo)
-    setTimeout(() => {
-        dominguitoEscucharMensajes();
-        
-        // Revisar recordatorios cada hora
-        setInterval(revisarRecordatorios, 3600000);
-        
-        console.log("✅ Dominguito Seguidor activo");
-    }, 5000);
-}
-
-
-// ============================================================
-// =============== 19. PARTE DIARIO POR CHAT ==================
-// ============================================================
-
-// ---------------------------------------------------------------
-// Diccionario expandido y avanzado para el contexto clínico
-// ---------------------------------------------------------------
-const CLAVESDIARIO = {
-    falta: [
-        'faltó', 'ausente', 'no vino', 'no asistió', 'se ausentó', 'falto', 
-        'inasistencia', 'no aparece', 'faltazo', 'pegó el faltazo', 'ausencia', 
-        'ausencias', 'no se presentó', 'sin venir', 'no asistio', 'ausentó'
-    ],
-    tarde: [
-        'tarde', 'demoró', 'llegó tarde', 'atrasado', 'se atrasó', 'demorado', 
-        'retraso', 'no llega', 'demora', 'ingreso tarde', 'demoro', 'atraso'
-    ],
-    incidente: [
-        'incidente', 'problema', 'conflicto', 'pelea', 'discusión', 'accidente', 
-        'se cayó', 'se golpeó', 'crisis', 'descompensado', 'descompensación', 
-        'convulsión', 'brote', 'agresión', 'llanto', 'angustiado', 'se autoagredió', 
-        'rompió', 'discutió', 'golpe', 'descompuso'
-    ],
-    justificado: [
-        'justifica', 'aviso', 'médico', 'certificado', 'familia avisó', 'llamó', 
-        'licencia', 'reposo', 'justificado', 'avisó la madre', 'avisó el padre', 
-        'notificó', 'constancia', 'presentó certificado', 'justificó', 'llamo', 'aviso'
-    ],
-    derivacion: [
-        'derivar', 'derivación', 'pase a', 'trasladar', 'cambio de', 'nuevo profesional', 
-        'derivado', 'interconsulta', 'derivó', 'pase de sala', 'derivacio'
-    ],
-    alta: [
-        'alta', 'egreso', 'finalizó', 'terminó tratamiento', 'completó', 
-        'institucional', 'alta médica', 'egresó', 'finalizo', 'completo'
-    ],
-    novedadgeneral: [
-        'novedad', 'importante', 'aviso', 'comunicado', 'recordatorio', 
-        'reunión', 'atención', 'nota', 'supervisión', 'reunion', 'supervision'
-    ]
+const MAPACONSULTORIOS = {
+    "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
+    "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
+    "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
+    "10": "Terapia Ocupacional 2"
 };
 
 // ---------------------------------------------------------------
-// Cargar pacientes desde Firebase al iniciar
+// DICCIONARIO DE PARTE DIARIO
+// ---------------------------------------------------------------
+const CLAVESDIARIO = {
+    falta: ['faltó', 'ausente', 'no vino', 'no asistió', 'se ausentó', 'falto', 'inasistencia', 'no aparece', 'ausencia', 'no se presentó'],
+    tarde: ['tarde', 'demoró', 'llegó tarde', 'atrasado', 'se atrasó', 'demorado', 'retraso', 'demora'],
+    incidente: ['incidente', 'problema', 'conflicto', 'pelea', 'discusión', 'accidente', 'se cayó', 'se golpeó', 'crisis', 'descompensado', 'brote', 'agresión'],
+    justificado: ['justifica', 'aviso', 'médico', 'certificado', 'familia avisó', 'llamó', 'licencia', 'reposo', 'justificado', 'avisó', 'constancia'],
+    derivacion: ['derivar', 'derivación', 'pase a', 'trasladar', 'cambio de', 'nuevo profesional', 'derivado', 'interconsulta'],
+    alta: ['alta', 'egreso', 'finalizó', 'terminó tratamiento', 'completó', 'alta médica', 'egresó']
+};
+
+// ---------------------------------------------------------------
+// CACHÉ DE PACIENTES (cargar al inicio)
 // ---------------------------------------------------------------
 let cachePacientes = {};
 
 function cargarCachePacientes() {
-    const promesas = [];
     const ramas = ['cd', 'cet', 'rehab', 'saei'];
-    
-    ramas.forEach(rama => {
-        const promesa = db.ref(`/${rama}/pacientes`).once('value', snap => {
+    const promesas = ramas.map(rama => 
+        db.ref(`/${rama}/pacientes`).once('value', snap => {
             snap.forEach(child => {
                 const pac = child.val();
                 if (pac && pac.nombre) {
@@ -2760,245 +2164,497 @@ function cargarCachePacientes() {
                     };
                 }
             });
-        });
-        promesas.push(promesa);
-    });
-    
+        })
+    );
     return Promise.all(promesas).then(() => {
-        console.log(`✅ ${Object.keys(cachePacientes).length} pacientes cargados en caché`);
+        console.log(`✅ ${Object.keys(cachePacientes).length} pacientes en caché`);
     });
 }
 
 // ---------------------------------------------------------------
-// Detectar pacientes en un texto
+// BUSCADOR FLEXIBLE (tolera tildes, espacios, apellido primero)
 // ---------------------------------------------------------------
-function detectarPacientesEnTexto(texto) {
-    // --- DEBUG: ESTO NOS DIRÁ LA VERDAD ---
-    console.log("🔍 Texto recibido:", texto);
-    console.log("📦 Claves en caché:", Object.keys(cachePacientes));
-    // --------------------------------------
+function normalizar(texto) {
+    return texto.toLowerCase()
+        .replace(/[áäàâ]/g, 'a').replace(/[éëèê]/g, 'e')
+        .replace(/[íïìî]/g, 'i').replace(/[óöòô]/g, 'o')
+        .replace(/[úüùû]/g, 'u').replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ').trim();
+}
 
-    const resultados = [];
-    const lineas = texto.split('\n').filter(l => l.trim());
+function buscarPaciente(texto) {
+    const normalizado = normalizar(texto);
+    const palabras = normalizado.split(' ').filter(p => p.length > 2);
     
-    lineas.forEach((linea, idx) => {
-        const lineaLower = linea.toLowerCase().trim();
-        
-        // Buscar coincidencias de nombre
-        for (const [nombreLower, datos] of Object.entries(cachePacientes)) {
-            // Usamos .includes para detectar si el nombre está dentro de la línea
-            if (lineaLower.includes(nombreLower)) {
-                resultados.push({
-                    nombre: datos.nombre,
-                    id: datos.id,
-                    modalidad: datos.modalidad,
-                    lineaOriginal: linea.trim(),
-                    indice: idx,
-                    tipo: clasificarLinea(lineaLower),
-                    justificado: CLAVESDIARIO.justificado.some(p => lineaLower.includes(p)),
-                    timestamp: Date.now()
-                });
-                break; // Si encontramos al paciente, pasamos a la siguiente línea
+    // 1. Exacta
+    const exacta = Object.keys(cachePacientes).find(k => normalizar(k) === normalizado);
+    if (exacta) return cachePacientes[exacta];
+    
+    // 2. Inclusión
+    const inclusion = Object.keys(cachePacientes).find(k => {
+        const n = normalizar(k);
+        return n.includes(normalizado) || normalizado.includes(n);
+    });
+    if (inclusion) return cachePacientes[inclusion];
+    
+    // 3. Por palabra suelta (ej: "juan" encuentra "Juan Pérez")
+    const porPalabra = Object.keys(cachePacientes).find(k => {
+        const n = normalizar(k);
+        return palabras.some(p => n.includes(p));
+    });
+    if (porPalabra) return cachePacientes[porPalabra];
+    
+    return null;
+}
+
+// ---------------------------------------------------------------
+// NOTIFICAR AL EQUIPO
+// ---------------------------------------------------------------
+async function notificarEquipo(paciente, titulo, mensaje, nivel) {
+    const datos = await obtenerDatosPaciente(paciente.nombre);
+    if (!datos) return;
+    
+    const { modalidad, turno } = datos;
+    
+    // Buscar empleados de esa modalidad/turno
+    const snap = await db.ref('SISTEMAPERSONAL/empleados').once('value');
+    const equipo = [];
+    snap.forEach(child => {
+        const emp = child.val();
+        if (emp && emp.n) {
+            const codigo = (emp.c || '').toUpperCase();
+            const turnoEmp = (emp.turno || '').toUpperCase();
+            const esDelArea = (
+                (modalidad === 'CD' && codigo === 'CD') ||
+                (modalidad === 'CET' && codigo === `CET${turno}`) ||
+                (modalidad === 'REHAB' && codigo === 'REHAB') ||
+                codigo.includes('DIRECTOR') || codigo.includes('ADMIN')
+            );
+            if (esDelArea && turnoEmp === (turno || '').toUpperCase()) {
+                equipo.push(emp);
             }
         }
     });
     
-    return resultados;
-}
-// ---------------------------------------------------------------
-// Clasificar el tipo de novedad
-// ---------------------------------------------------------------
-function clasificarLinea(texto) {
-    for (const [tipo, palabras] of Object.entries(CLAVESDIARIO)) {
-        if (palabras.some(p => texto.includes(p))) {
-            return tipo;
-        }
-    }
-    return 'novedadgeneral';
-}
-
-// ---------------------------------------------------------------
-// Extraer resumen estructurado
-// ---------------------------------------------------------------
-function extraerResumen(pacientesEncontrados, textoOriginal) {
-    const resumen = {
-        ausencias: pacientesEncontrados.filter(p => p.tipo === 'falta'),
-        tardes: pacientesEncontrados.filter(p => p.tipo === 'tarde'),
-        incidentes: pacientesEncontrados.filter(p => p.tipo === 'incidente'),
-        derivaciones: pacientesEncontrados.filter(p => p.tipo === 'derivacion'),
-        altas: pacientesEncontrados.filter(p => p.tipo === 'alta'),
-        justificadas: pacientesEncontrados.filter(p => p.justificado),
-        novedades: pacientesEncontrados.filter(p => p.tipo === 'novedadgeneral'),
-        totalMenciones: pacientesEncontrados.length
-    };
-    
-    const lineas = textoOriginal.split('\n').filter(l => l.trim());
-    const nombresDetectados = new Set(pacientesEncontrados.map(p => p.nombre.toLowerCase()));
-    
-    resumen.lineasSueltas = lineas.filter(linea => {
-        const lw = linea.toLowerCase().trim();
-        return ![...nombresDetectados].some(n => lw.includes(n));
+    // Notificar a cada uno por chat individual
+    equipo.forEach(emp => {
+        if (!emp.m) return;
+        const idReceptor = sanitizarKey(emp.m);
+        const participantes = ['dominguito', idReceptor].sort();
+        const chatId = `chat${participantes.join('')}`;
+        
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `${titulo}\nPaciente: ${paciente.nombre} (${modalidad})\n\n${mensaje}\n\n🕐 ${new Date().toLocaleString()}`,
+            ts: Date.now(),
+            tipo: nivel || 'informativo',
+            paciente: paciente.nombre
+        });
     });
     
-    return resumen;
+    // Notificar en el expediente del paciente
+    refExpedientes.child(paciente.nombre).push({
+        autor: '🤖 DOMINGUITO',
+        msg: `📢 Notificación enviada a equipo de ${modalidad} (${turno}).\n${titulo}: ${mensaje}`,
+        ts: Date.now(),
+        tipo: 'sistema'
+    });
 }
 
 // ---------------------------------------------------------------
-// Guardar en expedientes
+// PROCESAR PARTE DIARIO
 // ---------------------------------------------------------------
-async function guardarEnExpedientes(pacientesEncontrados, autor, fecha) {
-    let contador = 0;
+function procesarParteDiario(texto, autor, chatId) {
+    const lineas = texto.split('\n').filter(l => l.trim());
+    const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    for (const paciente of pacientesEncontrados) {
-        const tipoEtiqueta = {
-            'falta': '❌ [A]',
-            'tarde': '⏰',
-            'incidente': '⚠️',
-            'derivacion': '🔄',
-            'alta': '🎉 [P]',
-            'novedadgeneral': '📌',
-            'justificado': '🔷 [AC]'
-        };
+    let pacientesProcesados = 0;
+    let alertasCreadas = 0;
+    let resumen = { faltas: 0, tardes: 0, incidentes: 0, altas: 0, derivaciones: 0 };
+    
+    lineas.forEach(linea => {
+        const lineaLower = linea.toLowerCase().trim();
+        if (lineaLower.startsWith('parte') || lineaLower.startsWith('novedades')) return; // Saltar encabezado
         
-        const emoji = tipoEtiqueta[paciente.tipo] || '📋';
-        const justifStr = paciente.justificado ? '🔷 [AC] Justificado' : '❌ [A] Sin justificar';
+        // Buscar paciente en la línea
+        const paciente = buscarPaciente(linea);
+        if (!paciente) return;
+        
+        pacientesProcesados++;
+        
+        // Clasificar
+        let tipo = 'novedad';
+        let justificado = CLAVESDIARIO.justificado.some(p => lineaLower.includes(p));
+        
+        if (CLAVESDIARIO.falta.some(p => lineaLower.includes(p))) {
+            tipo = 'falta';
+            if (justificado) tipo = 'faltajustificada';
+            resumen.faltas++;
+        } else if (CLAVESDIARIO.tarde.some(p => lineaLower.includes(p))) {
+            tipo = 'tarde';
+            resumen.tardes++;
+        } else if (CLAVESDIARIO.incidente.some(p => lineaLower.includes(p))) {
+            tipo = 'incidente';
+            resumen.incidentes++;
+        } else if (CLAVESDIARIO.alta.some(p => lineaLower.includes(p))) {
+            tipo = 'alta';
+            resumen.altas++;
+        } else if (CLAVESDIARIO.derivacion.some(p => lineaLower.includes(p))) {
+            tipo = 'derivacion';
+            resumen.derivaciones++;
+        }
+        
+        // Guardar en expediente
+        const emoji = { falta: '❌', faltajustificada: '🔷', tarde: '⏰', incidente: '⚠️', alta: '🎉', derivacion: '🔄' }[tipo] || '📌';
+        const justifStr = justificado ? '🔷 Justificado' : '❌ Sin justificar';
         
         refExpedientes.child(paciente.nombre).push({
             autor: `📋 PARTE DIARIO (${autor})`,
-            msg: `${emoji} ${fecha}\n${paciente.lineaOriginal}\n${justifStr}\n📍 ${paciente.modalidad}`,
+            msg: `${emoji} ${fecha}\n${linea.trim()}\n${justifStr}\n📍 ${paciente.modalidad}`,
             ts: Date.now(),
             tipo: 'partediario',
-            clasificacion: paciente.tipo,
-            justificado: paciente.justificado
+            clasificacion: tipo,
+            justificado: justificado
         });
         
-        contador++;
+        // Crear alerta visual en radar si corresponde
+        if ((tipo === 'falta' || tipo === 'tarde') && !justificado) {
+            alertasCreadas++;
+            const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
+            const existe = document.getElementById(alertaId);
+            if (!existe) {
+                const radar = document.getElementById('radarAlertas');
+                if (radar) {
+                    const div = document.createElement('div');
+                    div.id = alertaId;
+                    div.className = 'radar-card';
+                    div.style.cssText = 'border-left: 4px solid #ef4444; padding: 12px; margin: 8px 0; background: #1e293b; border-radius: 8px;';
+                    div.innerHTML = `
+                        <div style="font-size:10px; font-weight:900; color:#ef4444;">⚠️ ${tipo === 'falta' ? 'AUSENCIA' : 'TARDANZA'} SIN JUSTIFICAR</div>
+                        <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente.nombre}</div>
+                        <div style="font-size:11px; color:#94a3b8;">${linea.trim()}</div>
+                        <div style="font-size:10px; color:#64748b; margin-top:4px;">📋 Reportado por: ${autor}</div>
+                    `;
+                    radar.prepend(div);
+                }
+            }
+        }
+        
+        // Notificar al equipo
+        notificarEquipo(paciente, 
+            tipo === 'alta' ? '🎉 ALTA REGISTRADA' : 
+            tipo === 'faltajustificada' ? '🔷 AUSENCIA JUSTIFICADA' :
+            tipo === 'falta' ? '⚠️ AUSENCIA SIN JUSTIFICAR' :
+            tipo === 'tarde' ? '⏰ TARDANZA REGISTRADA' :
+            tipo === 'incidente' ? '⚠️ INCIDENTE REPORTADO' : '📌 NOVEDAD',
+            `${linea.trim()}\n\nRegistrado por: ${autor}`,
+            tipo === 'falta' && !justificado ? 'alerta' : 'informativo'
+        );
+    });
+    
+    // Responder al usuario
+    let respuesta = `✅ PARTE DIARIO REGISTRADO\n📅 ${fecha}\n👤 ${autor}\n\n📊 Resumen:\n• Pacientes procesados: ${pacientesProcesados}\n• Ausencias: ${resumen.faltas}\n• Tardes: ${resumen.tardes}\n• Incidentes: ${resumen.incidentes}\n• Altas: ${resumen.altas}\n• Derivaciones: ${resumen.derivaciones}\n• Alertas generadas: ${alertasCreadas}`;
+    
+    if (alertasCreadas > 0) {
+        respuesta += `\n\n🔴 Se notificó al equipo correspondiente.`;
     }
     
-    return contador;
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: '🤖 DOMINGUITO',
+        texto: respuesta,
+        ts: Date.now(),
+        tipo: 'sistema'
+    });
 }
 
 // ---------------------------------------------------------------
-// Cruzar con alertas activas en Radar
+// PROCESAR RESPUESTA DE T.S. (cuando le responde a Dominguito)
 // ---------------------------------------------------------------
-function cruzarConAlertas(pacientesEncontrados) {
-    const alertasDisparadas = [];
+async function procesarRespuestaTS(paciente, texto, autor, chatId) {
+    const textLower = texto.toLowerCase();
+    let alertasCreadas = 0; // Corrección: Declaración local de variable huérfana
     
-    pacientesEncontrados.forEach(paciente => {
-        // Caso A: Ausencia o tardanza crítica sin justificar
-        if ((paciente.tipo === 'falta' || paciente.tipo === 'tarde') && !paciente.justificado) {
-            
-            const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const existeAlerta = document.getElementById(alertaId);
-            
-            if (!existeAlerta) {
-                const radarContainer = document.getElementById('radarAlertas');
-                if (radarContainer) {
-                    const alertaDiv = document.createElement('div');
-                    alertaDiv.id = alertaId;
-                    alertaDiv.className = 'radar-card';
-                    alertaDiv.style.cssText = 'border-left: 4px solid #ef4444; padding: 12px; margin: 8px 0; background: #1e293b; border-radius: 8px;';
-                    alertaDiv.innerHTML = `
-                        <div style="font-size:10px; font-weight:900; color:#ef4444;">⚠️ [A] AUSENCIA SIN JUSTIFICAR</div>
-                        <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente.nombre}</div>
-                        <div style="font-size:11px; color:#94a3b8;">${paciente.lineaOriginal}</div>
-                        <div style="font-size:10px; color:#64748b; margin-top:4px;">📋 Reportado por: Parte diario</div>
-                    `;
-                    radarContainer.prepend(alertaDiv);
-                }
-            }
-            alertasDisparadas.push(paciente);
+    // Guardar en expediente
+    refExpedientes.child(paciente.nombre).push({
+        autor: autor || 'T.S.',
+        msg: texto,
+        ts: Date.now(),
+        tipo: 'respuesta'
+    });
+    
+    // Clasificar automáticamente
+    if (textLower.includes('turno') || textLower.includes('saqué') || textLower.includes('reservé') || textLower.includes('agendé') || textLower.includes('junta')) {
+        // GESTIÓN DE CUD - Notificar al equipo
+        alertasCreadas++;
+        notificarEquipo(paciente, '🔄 CUD EN GESTIÓN', `La T.S. gestionó: "${texto}"\n⚠️ Pendiente de confirmación.`, 'informativo');
+        
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `✅ Registré tu gestión. Notifiqué al equipo de ${paciente.modalidad}.\n\n⏰ Te consulto en 7 días para confirmar.`,
+            ts: Date.now(),
+            tipo: 'sistema'
+        });
+        
+        // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
+        db.ref('/SISTEMAMANDO/recordatorios').push({
+            paciente: paciente.nombre,
+            tipo: 'CUD',
+            fecha: Date.now() + (7 * 24 * 60 * 60 * 1000),
+            mensaje: `⏰ Hace 7 días gestionaste el CUD de ${paciente.nombre}. ¿Ya se renovó?`,
+            chatId: chatId
+        });
+        return;
+    }
+    
+    if (textLower.includes('resolvió') || textLower.includes('renovó') || textLower.includes('tramitó') || textLower.includes('ya está') || textLower.includes('listo') || textLower.includes('terminé') || textLower.includes('finalizó')) {
+        // RESUELTO - Cerrar alerta
+        const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const alertaEl = document.getElementById(alertaId);
+        if (alertaEl) {
+            alertaEl.style.borderLeft = '4px solid #10b981';
+            alertaEl.style.opacity = '0.5';
+            setTimeout(() => alertaEl.remove(), 60000);
         }
         
-        // Caso AC: Si viene reportado como falta pero JUSTIFICADA en el texto, aplicar color Azul institucional
-        if (paciente.tipo === 'falta' && paciente.justificado) {
-            const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const existeAlerta = document.getElementById(alertaId);
-            if (!existeAlerta) {
-                const radarContainer = document.getElementById('radarAlertas');
-                if (radarContainer) {
-                    const alertaDiv = document.createElement('div');
-                    alertaDiv.id = alertaId;
-                    alertaDiv.className = 'radar-card';
-                    alertaDiv.style.cssText = 'border-left: 4px solid #3b82f6; padding: 12px; margin: 8px 0; background: #1e293b; border-radius: 8px;';
-                    alertaDiv.innerHTML = `
-                        <div style="font-size:10px; font-weight:900; color:#3b82f6;">🔷 [AC] AUSENCIA CON AVISO</div>
-                        <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente.nombre}</div>
-                        <div style="font-size:11px; color:#94a3b8;">${paciente.lineaOriginal}</div>
-                    `;
-                    radarContainer.prepend(alertaDiv);
-                }
-            }
-        }
+        notificarEquipo(paciente, '🎉 CASO RESUELTO', `${texto}\n✅ Gestión finalizada. Alerta cerrada.`, 'informativo');
         
-        // Caso P: Si es un alta médica o egreso exitoso, pintar en verde y limpiar radar
-        if (paciente.tipo === 'alta') {
-            const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const alertaElement = document.getElementById(alertaId);
-            if (alertaElement) {
-                alertaElement.style.borderLeft = '4px solid #10b981';
-                alertaElement.style.opacity = '0.5';
-                alertaElement.innerHTML = `<div style="font-size:10px; font-weight:900; color:#10b981;">🎉 [P] ALTA REGISTRADA</div>` + alertaElement.innerHTML;
-                setTimeout(() => {
-                    if (alertaElement.parentNode) alertaElement.remove();
-                }, 5000);
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `🎉 ¡Excelente! Marqué ${paciente.nombre} como RESUELTO.\n✅ Alerta archivada.\n👥 Equipo notificado.`,
+            ts: Date.now(),
+            tipo: 'sistema'
+        });
+        return;
+    }
+    
+    if (textLower.includes('pendiente') || textLower.includes('todavía') || textLower.includes('esperando') || textLower.includes('no sé')) {
+        // PENDIENTE
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `✅ Entendido. Dejo ${paciente.nombre} como pendiente.\n⏰ Te vuelvo a consultar en 3 días.`,
+            ts: Date.now(),
+            tipo: 'sistema'
+        });
+        
+        // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
+        db.ref('/SISTEMAMANDO/recordatorios').push({
+            paciente: paciente.nombre,
+            tipo: 'PENDIENTE',
+            fecha: Date.now() + (3 * 24 * 60 * 60 * 1000),
+            mensaje: `⏰ Hace 3 días dejaste pendiente a ${paciente.nombre}. ¿Avanzó algo?`,
+            chatId: chatId
+        });
+        return;
+    }
+    
+    if (textLower.includes('enfermo') || textLower.includes('fiebre') || textLower.includes('médico') || textLower.includes('licencia') || textLower.includes('reposo') || textLower.includes('certificado')) {
+        // AUSENCIA JUSTIFICADA
+        notificarEquipo(paciente, '🔷 AUSENCIA JUSTIFICADA', `${texto}\nRegistrado por: ${autor}`, 'informativo');
+        
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: `✅ Ausencia justificada registrada.\n👥 Equipo de ${paciente.modalidad} notificado.`,
+            ts: Date.now(),
+            tipo: 'sistema'
+        });
+        return;
+    }
+    
+    // Respuesta genérica
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: '🤖 DOMINGUITO',
+        texto: `✅ Registré tu respuesta en el expediente de ${paciente.nombre}.\n\n📌 Tip: Si es una gestión, decime "saqué turno". Si está resuelto, decime "listo".`,
+        ts: Date.now(),
+        tipo: 'sistema'
+    });
+}
+
+// ---------------------------------------------------------------
+// OBTENER DATOS DEL PACIENTE
+// ---------------------------------------------------------------
+async function obtenerDatosPaciente(nombre) {
+    const snap = await refAsignaciones.child(nombre).once('value');
+    const asig = snap.val();
+    const pac = cachePacientes[nombre.toLowerCase()];
+    
+    return {
+        nombre: nombre,
+        modalidad: pac?.modalidad || 'DESCONOCIDA',
+        turno: pac?.turno || 'MAÑANA',
+        profesionales: pac?.profesional || 'No asignado',
+        tsAsignada: asig?.ts || null
+    };
+}
+
+// ---------------------------------------------------------------
+// PROCESAR COMANDO CUD
+// ---------------------------------------------------------------
+function procesarComandoCUD(chatId) {
+    const ramas = ['cd', 'cet', 'rehab'];
+    let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
+    let total = 0;
+    let completado = 0;
+    
+    ramas.forEach(rama => {
+        db.ref(`/${rama}/pacientes`).once('value', snap => {
+            snap.forEach(child => {
+                const pac = child.val();
+                if (pac && pac.cud) {
+                    const venc = new Date(pac.cud);
+                    // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
+                    const diff = Math.floor((venc - new Date()) / (1000 * 60 * 60 * 24));
+                    total++;
+                    if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
+                    else if (diff <= 90) respuesta += `⚠️ ${child.key}: Vence en ${diff} días\n`;
+                }
+            });
+            completado++;
+            if (completado === ramas.length) {
+                if (total === 0) respuesta += "✅ No se encontraron CUDs.";
+                refChatsIndividuales.child(chatId).child('mensajes').push({
+                    autor: '🤖 DOMINGUITO',
+                    texto: respuesta,
+                    ts: Date.now(),
+                    tipo: 'sistema'
+                });
             }
+        });
+    });
+}
+
+// ---------------------------------------------------------------
+// MOSTRAR FICHA COMPLETA
+// ---------------------------------------------------------------
+function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
+    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n\n`;
+    
+    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
+    const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
+    
+    info += `👤 IDENTIDAD:\n`;
+    orden.forEach(c => { if (pac[c]) info += `• ${c.toUpperCase()}: ${pac[c]}\n`; });
+    
+    info += `\n📅 GESTIÓN:\n`;
+    if (pac.cud) info += `• CUD: ${pac.cud}\n`;
+    if (pac.turno) info += `• Turno: ${pac.turno}\n`;
+    
+    if (pac.turnos && typeof pac.turnos === 'object') {
+        Object.entries(pac.turnos).forEach(([dia, horarios]) => {
+            info += `\n[${dia.toUpperCase()}]\n`;
+            Object.entries(horarios).forEach(([hora, valor]) => {
+                const partes = hora.split('-');
+                const time = partes[0];
+                const consId = partes[1];
+                const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
+                info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
+            });
+        });
+    }
+    
+    info += `\n🏥 CLÍNICA:\n`;
+    Object.entries(pac).forEach(([key, value]) => {
+        const lowerKey = key.toLowerCase();
+        if (!ignorar.some(i => lowerKey.includes(i)) && typeof value !== 'object' && !orden.includes(lowerKey) && key !== 'turnos' && key !== 'cud' && key !== 'turno') {
+            info += `• ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
         }
     });
     
-    return alertasDisparadas;
+    callback(info);
 }
 
+// ---------------------------------------------------------------
+// ENVIAR AYUDA
+// ---------------------------------------------------------------
+function enviarAyuda(chatId) {
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: '🤖 DOMINGUITO',
+        texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
+        ts: Date.now(),
+        tipo: 'sistema'
+    });
+}
 
 // ============================================================
-// ========== 20. DOMINGUITO INTERPRETA PARTE DIARIO ==========
+// =============== 20. PUNTO DE ESCUCHA ÚNICO =================
 // ============================================================
 
-function dominguitoEscucharParteDiario() {
-    console.log("📋 Dominguito modo activo...");
+function dominguitoEscuchaUnico() {
+    console.log("👂 Dominguito modo único activado");
     
-    refChatsIndividuales.on('child_added', snap => {
+    // CORRECCIÓN: Se cambió el evento incorrecto 'childadded' por 'child_added' con su guion bajo reglamentario
+    refChatsIndividuales.on('child_added', function(snap) {
         const chatId = snap.key;
         if (!chatId || !chatId.includes('dominguito')) return;
         
-        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', async snapMsg => {
+        // CORRECCIÓN: Se cambió el evento incorrecto 'childadded' por 'child_added'
+        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
             const msg = snapMsg.val();
-            if (!msg || msg.autor === '🤖 DOMINGUITO') return;
+            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo) return;
             
-            const textoUsuario = (msg.texto || '').toLowerCase().trim();
-            console.log("📨 Recibido:", textoUsuario); 
-
-            // --- DEPURACIÓN: Verificamos qué hay en el caché exactamente ---
-            const claves = Object.keys(cachePacientes);
-            console.log("🔍 Cantidad de claves en caché:", claves.length);
+            const textoOriginal = (msg.texto || '').trim();
+            if (!textoOriginal) return;
             
-            // Intentamos encontrar el match
-            const nombreHallado = claves.find(n => n.toLowerCase() === textoUsuario);
+            const textoLower = textoOriginal.toLowerCase().trim();
+            const autor = msg.autor;
             
-            if (nombreHallado) {
-                console.log("✅ ¡MATCH EXACTO ENCONTRADO para:", nombreHallado);
-                const datos = cachePacientes[nombreHallado];
-                // Aquí deberías llamar a tu función de mostrar ficha, ej:
-                // mostrarFichaCompleta(datos, datos.modalidad, datos.id);
-            } else {
-                console.log("❌ No hay match exacto. Primeras 5 claves disponibles:", claves.slice(0, 5));
+            // PASO 1: ¿Es parte diario?
+            if (textoLower.startsWith('parte') || textoLower.includes('novedades del día') || textoLower.includes('novedades')) {
+                procesarParteDiario(textoOriginal, autor, chatId);
+                return;
             }
-
-            // --- LÓGICA DE PARTE DIARIO (Se mantiene igual que antes) ---
-            const esParte = textoUsuario.startsWith('parte') || textoUsuario.includes('parte diario') || textoUsuario.includes('novedades');
             
-            if (!esParte) return; // Si no es parte, salimos después de intentar la búsqueda
+            // PASO 2: ¿Es comando?
+            if (textoLower.includes('cud') && !buscarPaciente(textoLower)) {
+                procesarComandoCUD(chatId);
+                return;
+            }
+            if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
+                enviarAyuda(chatId);
+                return;
+            }
             
-            // ... (resto de tu lógica de parte diario)
-            const pacientesEncontrados = detectarPacientesEnTexto(textoUsuario);
-            const resumen = extraerResumen(pacientesEncontrados, textoUsuario);
-            // ... (etc)
+            // PASO 3: ¿Es nombre de paciente?
+            const paciente = buscarPaciente(textoLower);
+            if (paciente) {
+                // Ver si viene de un contexto de alerta (estaba respondiendo a algo)
+                const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
+                const alertaEl = document.getElementById(alertaId);
+                
+                if (alertaEl) {
+                    // Está respondiendo a una alerta activa
+                    procesarRespuestaTS(paciente, textoOriginal, autor, chatId);
+                } else {
+                    // Quiere ver la ficha del paciente
+                    mostrarFichaCompleta(paciente, paciente.modalidad, paciente.nombre, function(respuesta) {
+                        refChatsIndividuales.child(chatId).child('mensajes').push({
+                            autor: '🤖 DOMINGUITO',
+                            texto: respuesta,
+                            ts: Date.now(),
+                            tipo: 'sistema'
+                        });
+                    });
+                }
+                return;
+            }
+            
+            // PASO 4: Último intento - ¿está respondiendo a un recordatorio?
+            const ultimoContexto = null; // Podríamos trackear el último recordatorio enviado
+            if (ultimoContexto) {
+                procesarRespuestaTS(ultimoContexto, textoOriginal, autor, chatId);
+                return;
+            }
+            
+            // PASO 5: No entendí
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: `🤔 No entendí.\n\nPodés escribir:\n• El NOMBRE de un paciente\n• "parte diario" + novedades del día\n• "CUD" → vencimientos\n• "ayuda" → comandos`,
+                ts: Date.now(),
+                tipo: 'sistema'
+            });
         });
     });
 }
-
-// ============================================================
-// ========== 21. INICIALIZAR SISTEMA COMPLETO ================
+// =============== 21. INICIALIZAR ============================
 // ============================================================
 
 async function iniciarSistemaCompleto() {
@@ -3007,28 +2663,17 @@ async function iniciarSistemaCompleto() {
     // 1. Cargar caché de pacientes
     await cargarCachePacientes();
     
-    // 2. Iniciar Dominguito Seguidor (CUDs, ausencias en chats individuales)
+    // 2. Iniciar escucha única (reemplaza a las 2 anteriores)
     setTimeout(() => {
-        dominguitoEscucharMensajes();
-        console.log("✅ Dominguito Seguidor activo");
+        dominguitoEscuchaUnico();
+        console.log("✅ Dominguito modo único activo");
     }, 3000);
     
-    // 3. Iniciar Dominguito Parte Diario (Análisis masivo de texto)
-    setTimeout(() => {
-        dominguitoEscucharParteDiario();
-        console.log("✅ Dominguito Parte Diario activo");
-    }, 5000);
-    
-    // 4. Activar el demonio de revisión horaria de recordatorios
+    // 3. Revisar recordatorios cada hora
     setInterval(revisarRecordatorios, 3600000);
     
-    console.log("🚀 Sistema Dominguito v2.0 levantado con éxito");
-}
-// ============================================================
-// =============== INICIALIZACIÓN =============================
-// ============================================================
-console.log("🚀 DOMINGUITO v2.0 - Sistema de Comunicación Interna");
-console.log("👁️ Vigilando...");
+    console.log("🚀 Dominguito v2.0 listo");
+}    
 </script>
 </body>
 </html>
