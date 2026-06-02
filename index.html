@@ -2224,32 +2224,49 @@ function buscarPaciente(texto) {
 // NOTIFICAR AL EQUIPO
 // ---------------------------------------------------------------
 async function notificarEquipo(paciente, titulo, mensaje, nivel) {
-    const datos = await obtenerDatosPaciente(paciente.nombre);
+    // 1. Obtenemos datos (recordá pasarle la 'rama' si tu función lo requiere)
+    const datos = await obtenerDatosPaciente(paciente.nombre, paciente.modalidad); 
     if (!datos) return;
     
-    const { modalidad, turno } = datos;
+    const { modalidad, turno, esquema, profesionales, tsAsignada } = datos;
     
-    // Buscar empleados de esa modalidad/turno
+    // 2. Normalización para el Match (Solución a VESPERTINO vs VESPERT)
+    let turnoNormalizado = (turno || 'MAÑANA').toUpperCase();
+    if (turnoNormalizado === 'VESPERTINO') turnoNormalizado = 'VESPERT';
+    
+    // 3. Buscar empleados
     const snap = await db.ref('SISTEMAPERSONAL/empleados').once('value');
     const equipo = [];
+    
     snap.forEach(child => {
         const emp = child.val();
         if (emp && emp.n) {
             const codigo = (emp.c || '').toUpperCase();
             const turnoEmp = (emp.turno || '').toUpperCase();
-            const esDelArea = (
-                (modalidad === 'CD' && codigo === 'CD') ||
-                (modalidad === 'CET' && codigo === `CET${turno}`) ||
-                (modalidad === 'REHAB' && codigo === 'REHAB') ||
-                codigo.includes('DIRECTOR') || codigo.includes('ADMIN')
-            );
-            if (esDelArea && turnoEmp === (turno || '').toUpperCase()) {
+            const esquemaEmp = (emp.esquema || '').toUpperCase();
+            
+            // Lógica de Match diferenciada por modalidad
+            let esDelArea = false;
+            
+            if (codigo.includes('DIRECTOR') || codigo.includes('ADMIN')) {
+                esDelArea = true;
+            } else if (modalidad === 'CD') {
+                esDelArea = (codigo === 'CD');
+            } else if (modalidad === 'CET') {
+                esDelArea = (codigo === `CET${turnoNormalizado}`);
+            } else if (modalidad === 'REHAB') {
+                // Match: El empleado es REHAB y su esquema coincide con el del paciente
+                esDelArea = (codigo === 'REHAB' && esquemaEmp === (esquema || '').toUpperCase());
+            }
+            
+            // Validación final de turno (para CET/CD que lo requieren)
+            if (esDelArea && (modalidad === 'REHAB' || turnoEmp === turnoNormalizado)) {
                 equipo.push(emp);
             }
         }
     });
     
-    // Notificar a cada uno por chat individual
+    // 4. Notificar a cada uno por chat individual
     equipo.forEach(emp => {
         if (!emp.m) return;
         const idReceptor = sanitizarKey(emp.m);
@@ -2265,7 +2282,7 @@ async function notificarEquipo(paciente, titulo, mensaje, nivel) {
         });
     });
     
-    // Notificar en el expediente del paciente
+    // 5. Notificar en el expediente del paciente
     refExpedientes.child(paciente.nombre).push({
         autor: '🤖 DOMINGUITO',
         msg: `📢 Notificación enviada a equipo de ${modalidad} (${turno}).\n${titulo}: ${mensaje}`,
@@ -2273,7 +2290,6 @@ async function notificarEquipo(paciente, titulo, mensaje, nivel) {
         tipo: 'sistema'
     });
 }
-
 // ---------------------------------------------------------------
 // PROCESAR PARTE DIARIO
 // ---------------------------------------------------------------
@@ -2354,7 +2370,7 @@ function procesarParteDiario(texto, autor, chatId) {
         }
         
         // Notificar al equipo
-        notificarEquipo(paciente, 
+        notificarEquipo(paciente, paciente.modalidad, 
             tipo === 'alta' ? '🎉 ALTA REGISTRADA' : 
             tipo === 'faltajustificada' ? '🔷 AUSENCIA JUSTIFICADA' :
             tipo === 'falta' ? '⚠️ AUSENCIA SIN JUSTIFICAR' :
@@ -2485,20 +2501,31 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
 // ---------------------------------------------------------------
 // OBTENER DATOS DEL PACIENTE
 // ---------------------------------------------------------------
-async function obtenerDatosPaciente(nombre) {
+async function obtenerDatosPaciente(nombre, rama) {
+    // 1. Obtiene la asignación (donde está el ts) usando la referencia que ya sabes que funciona
     const snap = await refAsignaciones.child(nombre).once('value');
     const asig = snap.val();
+    
+    // 2. Obtiene datos del paciente (del cache)
     const pac = cachePacientes[nombre.toLowerCase()];
     
+    // 3. Determina el turno: 
+    // Si es CD/CET, lo saca de 'pac'. 
+    // Si es REHAB, lo saca de la rama externa de turnos.
+    let turnoFinal = pac?.turno || 'MAÑANA';
+    if (rama === 'REHAB') {
+        const snapTurno = await db.ref('/REHAB/turnos').once('value');
+        turnoFinal = snapTurno.val() || 'MAÑANA';
+    }
+
     return {
         nombre: nombre,
-        modalidad: pac?.modalidad || 'DESCONOCIDA',
-        turno: pac?.turno || 'MAÑANA',
+        modalidad: rama.toUpperCase(),
+        turno: turnoFinal,
         profesionales: pac?.profesional || 'No asignado',
-        tsAsignada: asig?.ts || null
+        tsAsignada: asig?.ts || null 
     };
 }
-
 // ---------------------------------------------------------------
 // PROCESAR COMANDO CUD
 // ---------------------------------------------------------------
@@ -2538,8 +2565,19 @@ function procesarComandoCUD(chatId) {
 // ---------------------------------------------------------------
 // MOSTRAR FICHA COMPLETA
 // ---------------------------------------------------------------
-function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
+// Agregamos 'async' aquí
+async function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
+    
+    // Si la rama es 'rehab', esperamos a buscar los turnos ANTES de seguir
+    if (rama === 'rehab') {
+        const snapTurnos = await db.ref(`/rehab/turnos/${nombrePac}`).once('value');
+        // Asignamos los turnos al objeto paciente
+        pac.turnos = snapTurnos.val(); 
+    }
+
     let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n\n`;
+    
+    // ... (el resto de tu código igual hasta la parte de los turnos)
     
     const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
     const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
@@ -2551,6 +2589,7 @@ function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
     if (pac.cud) info += `• CUD: ${pac.cud}\n`;
     if (pac.turno) info += `• Turno: ${pac.turno}\n`;
     
+    // Aquí el código ya tendrá los turnos cargados, sea de rehab o de las otras sedes
     if (pac.turnos && typeof pac.turnos === 'object') {
         Object.entries(pac.turnos).forEach(([dia, horarios]) => {
             info += `\n[${dia.toUpperCase()}]\n`;
@@ -2564,6 +2603,7 @@ function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
         });
     }
     
+    // ... (el resto de tu lógica de la parte 🏥 CLÍNICA igual)
     info += `\n🏥 CLÍNICA:\n`;
     Object.entries(pac).forEach(([key, value]) => {
         const lowerKey = key.toLowerCase();
