@@ -1015,36 +1015,37 @@ function procesarComandoDominguito(texto) {
     }
 
     // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
+    // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
     if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
         const normalizado = normalizar(texto);
         const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
 
-        // Buscar paciente: matching flexible
         const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
             const nombreNormalizado = normalizar(llave);
-            
-            // 1. Exacta
             if (nombreNormalizado === normalizado) return true;
-            
-            // 2. Inclusión (uno contiene al otro)
             if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
-            
-            // 3. Por palabra suelta (ej: escribís "Rodrigo" y el paciente es "Rodrigo Arroyo")
             const palabrasPaciente = nombreNormalizado.split(' ');
-            return palabrasInput.some(p => 
-                palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
-            );
+            return palabrasInput.some(p => palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp)));
         });
 
         if (llaveEncontrada) {
             const pac = cachePacientes[llaveEncontrada];
-            console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
-            
-            mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
+            const rama = pac.modalidad;
+
+            // --- AQUÍ ESTÁ EL CAMBIO PARA REHAB ---
+            if (rama && rama.toLowerCase() === 'rehab') {
+                // Buscamos los turnos específicamente en la rama de REHAB
+                db.ref(`/rehab/turnos/${llaveEncontrada}`).once('value', snap => {
+                    pac.turnos = snap.val(); // Inyectamos los turnos al objeto antes de mostrar
+                    mostrarFichaCompleta(pac, rama, llaveEncontrada, enviarRespuesta);
+                });
+            } else {
+                // Si es otra rama, mostramos directo como siempre
+                mostrarFichaCompleta(pac, rama, llaveEncontrada, enviarRespuesta);
+            }
             return; 
         }
     }
-
     // --- PASO 3: COMANDOS ORIGINALES ---
     
     // Comando: CUD
