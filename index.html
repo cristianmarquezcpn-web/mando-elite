@@ -371,7 +371,8 @@ let pacienteSeleccionado = "";
 let listaContactos = [];
 let misGrupos = [];
 let cacheTareas = {};
-let listaPacientesCache = [];
+let cachePacientes = {};
+let listaPacientesCache = [];    
 let urlArchivoAdjunto = '';    
 
 // ============================================================
@@ -496,6 +497,7 @@ function verificarPinChatGlobal() {
 // =============== INICIAR APLICACIÓN =========================
 // ============================================================
 function iniciarApp() {
+    
     console.log("🚀 DOMINGUITO iniciado - Usuario:", usuarioActivo, "Rol:", rangoActivo);
     
     const esAdmin = uidActivo === "cristianmarquezcpn@gmail.com" || rangoActivo === "ADMIN";
@@ -530,7 +532,31 @@ function iniciarApp() {
     
     // Iniciar Dominguito
     iniciarDominguito();
-    
+    / ===== CARGAR CACHÉ DE PACIENTES PARA DOMINGUITO =====
+function cargarCachePacientes() {
+    const ramas = ['cd', 'cet', 'rehab'];
+    return Promise.all(ramas.map(rama => 
+        db.ref(`/${rama}/pacientes`).once('value', snap => {
+            snap.forEach(child => {
+                const pac = child.val();
+                if (pac && child.key) {
+                    cachePacientes[child.key] = {
+                        ...pac,
+                        id: child.key,
+                        modalidad: rama.toUpperCase()
+                    };
+                }
+            });
+        })
+    ));
+}
+
+cargarCachePacientes().then(() => {
+    const total = Object.keys(cachePacientes).length;
+    console.log(`✅ ${total} pacientes cacheados para Dominguito`);
+    if (total === 0) console.warn("⚠️ No se encontraron pacientes en CD, CET o REHAB");
+});
+
     // Contar online
     refOnline.on('value', snap => {
         const count = snap.numChildren();
@@ -962,28 +988,10 @@ function enviarMensajeIndividual() {
 // ============================================================
 // =============== 8. PROCESAR COMANDOS DE DOMINGUITO =========
 // ============================================================
-// ============================================================
-// DICCIONARIO DE CONSULTORIOS (Para la sede Rehab)
-// ============================================================
-const MAPA_CONSULTORIOS = {
-    "1": "Psicopedagogía 1", 
-    "2": "Psicopedagogía 2", 
-    "3": "Psicopedagogía 3",
-    "4": "Psicopedagogía 4", 
-    "5": "Kinesiología", 
-    "6": "Fonoaudiología",
-    "7": "Psicología 1", 
-    "8": "Psicología 2", 
-    "9": "Terapia Ocupacional 1", 
-    "10": "Terapia Ocupacional 2"
-};
-
-// ============================================================
-// FUNCIÓN PRINCIPAL DOMINGUITO
-// ============================================================
 function procesarComandoDominguito(texto) {
     const chatContainer = document.getElementById('chat-individual');
     const upper = texto.toUpperCase();
+    const textoLower = texto.toLowerCase().trim();
 
     // Función auxiliar para enviar respuestas
     const enviarRespuesta = (msg) => {
@@ -995,25 +1003,48 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-   // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
-if (typeof cachePacientes !== 'undefined') {
-    const inputLimpio = texto.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    // Buscamos el nombre que contenga lo que el usuario escribió
-    const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
-        const nombreCacheLimpio = llave.replace(/[^a-z0-9]/g, '');
-        return nombreCacheLimpio.includes(inputLimpio) || inputLimpio.includes(nombreCacheLimpio);
-    });
-
-    if (llaveEncontrada) {
-        const pac = cachePacientes[llaveEncontrada];
-        console.log("✅ Dominguito encontró al paciente:", pac.id);
-        
-        // Usamos pac.modalidad (que se guardó en tu función cargarCachePacientes)
-        mostrarFichaCompleta(pac, pac.modalidad, pac.id, enviarRespuesta);
-        return; 
+    // --- PASO 1: Normalizar texto para búsqueda (tolerar comas, tildes, espacios) ---
+    function normalizar(t) {
+        return t.toLowerCase()
+            .replace(/[áäàâ]/g, 'a').replace(/[éëèê]/g, 'e')
+            .replace(/[íïìî]/g, 'i').replace(/[óöòô]/g, 'o')
+            .replace(/[úüùû]/g, 'u')
+            .replace(/[^a-z0-9\s]/g, ' ')  // Reemplaza comas, puntos, etc por espacio
+            .replace(/\s+/g, ' ')          // Espacios múltiples a uno
+            .trim();
     }
-}
+
+    // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
+    if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
+        const normalizado = normalizar(texto);
+        const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
+
+        // Buscar paciente: matching flexible
+        const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
+            const nombreNormalizado = normalizar(llave);
+            
+            // 1. Exacta
+            if (nombreNormalizado === normalizado) return true;
+            
+            // 2. Inclusión (uno contiene al otro)
+            if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
+            
+            // 3. Por palabra suelta (ej: escribís "Rodrigo" y el paciente es "Rodrigo Arroyo")
+            const palabrasPaciente = nombreNormalizado.split(' ');
+            return palabrasInput.some(p => 
+                palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
+            );
+        });
+
+        if (llaveEncontrada) {
+            const pac = cachePacientes[llaveEncontrada];
+            console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
+            
+            mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
+            return; 
+        }
+    }
+
     // --- PASO 3: COMANDOS ORIGINALES ---
     
     // Comando: CUD
@@ -1031,6 +1062,7 @@ if (typeof cachePacientes !== 'undefined') {
                     if (pac && pac.cud) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
+                        // CORRECCIÓN: Se restauran los asteriscos de multiplicación para calcular los días
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
                         total++;
                         if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
@@ -1051,7 +1083,7 @@ if (typeof cachePacientes !== 'undefined') {
     // Comando: Ausencias
     if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
         enviarRespuesta("📉 Verificando ausencias...");
-        db.ref('/seguimiento_pacientes').once('value', snap => {
+        db.ref('/seguimientopacientes').once('value', snap => {
             let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
             let encontrados = false;
             snap.forEach(child => {
@@ -1073,7 +1105,7 @@ if (typeof cachePacientes !== 'undefined') {
 
     // Comando: Ayuda
     if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
-        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa filtrada\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida clásica\n• "Tareas" - Mis tareas pendientes\n• "Ayuda" - Esta lista`);
+        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa filtrada\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida clásica\n• "Ayuda" - Esta lista`);
         return;
     }
     
@@ -1083,7 +1115,7 @@ if (typeof cachePacientes !== 'undefined') {
         return;
     }
     
-    // Comando: Paciente específico
+    // Comando: Paciente específico (búsqueda directa a Firebase si no encontró en caché)
     if (upper.includes('PACIENTE')) {
         const nombrePac = texto.replace(/paciente\s/i, '').trim();
         if (nombrePac) {
@@ -1092,16 +1124,22 @@ if (typeof cachePacientes !== 'undefined') {
             let completado = 0;
             enviarRespuesta(`🔍 Buscando información de "${nombrePac}"...`);
             ramas.forEach(rama => {
-                db.ref(`/${rama}/pacientes/${nombrePac}`).once('value', snap => {
-                    const pac = snap.val();
-                    if (pac) {
-                        encontrado = true;
-                        let info = `📋 PACIENTE: ${nombrePac}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
-                        if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
-                        if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
-                        if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
-                        enviarRespuesta(info);
-                    }
+                db.ref(`/${rama}/pacientes`).once('value', snap => {
+                    snap.forEach(child => {
+                        const pac = child.val();
+                        const nombreKey = child.key;
+                        const nombreCampo = pac.nombre || '';
+                        
+                        if (nombreKey.toLowerCase().includes(nombrePac.toLowerCase()) || 
+                            nombreCampo.toLowerCase().includes(nombrePac.toLowerCase())) {
+                            encontrado = true;
+                            let info = `📋 PACIENTE: ${nombreKey}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
+                            if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
+                            if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
+                            if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
+                            enviarRespuesta(info);
+                        }
+                    });
                     completado++;
                     if (completado === ramas.length && !encontrado) {
                         enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
@@ -1117,13 +1155,13 @@ if (typeof cachePacientes !== 'undefined') {
 }
 
 // ============================================================
-// NUEVA FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
+// FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
 // ============================================================
 function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
-    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n\n`;
+    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
 
     // Filtros de campos que no queremos mostrar
-    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistf_link', 'cuddoc_link', 'cuddoc'];
+    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
     const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
 
     // 1. Datos Identificatorios
@@ -1137,19 +1175,23 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
     if (pac.cud) info += `• CUD: ${pac.cud}\n`;
     if (pac.turno) info += `• Turno principal: ${pac.turno}\n`;
     
-    // Lógica especial para desglosar turnos de REHAB usando MAPA_CONSULTORIOS
+    // Mapa de consultorios
+    const MAPACONSULTORIOS = {
+        "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
+        "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
+        "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
+        "10": "Terapia Ocupacional 2"
+    };
+    
+    // Desglosar turnos de REHAB
     if (pac.turnos && typeof pac.turnos === 'object') {
         Object.entries(pac.turnos).forEach(([dia, horarios]) => {
             info += `\n[${dia.toUpperCase()}]\n`;
             Object.entries(horarios).forEach(([hora, valor]) => {
-                // Separamos "13:00-1" en "13:00" y "1"
                 const partes = hora.split('-');
                 const time = partes[0];
                 const consId = partes[1];
-                
-                // Buscamos en el diccionario, si no existe ponemos el número crudo
-                const consultorio = consId && MAPA_CONSULTORIOS[consId] ? MAPA_CONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
-                
+                const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
                 info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
             });
         });
@@ -1159,12 +1201,10 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
     info += `\n🏥 CLÍNICA:\n`;
     Object.entries(pac).forEach(([key, value]) => {
         const lowerKey = key.toLowerCase();
-        // Si no está en ignorar, no es un objeto, no está en identidad, y no es 'turnos'
         if (!ignorar.some(i => lowerKey.includes(i)) && 
             typeof value !== 'object' && 
             !orden.includes(lowerKey) &&
             key !== 'turnos' && key !== 'cud' && key !== 'turno') {
-            
             const label = key.charAt(0).toUpperCase() + key.slice(1);
             info += `• ${label}: ${value}\n`;
         }
