@@ -2135,7 +2135,7 @@ function cargarDatosPrivados(nombre) {
             });
         }
 
-        db.ref('/factura_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
+        db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
             let hayDeuda = false;
             let facturasHtml = '<div style="margin-top:10px; border-top:1px solid #1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
             snapFact.forEach(child => {
