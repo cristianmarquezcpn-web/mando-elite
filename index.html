@@ -2509,8 +2509,9 @@ function revisarRecordatorios() {
 // PROCESAR PARTE DIARIO
 // ---------------------------------------------------------------
 function procesarParteDiario(texto, autor, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarParteDiario.");
+    // ✅ VALIDACIÓN CRÍTICA
+    if (!chatId || typeof chatId !== 'string') {
+        console.error("❌ procesarParteDiario: chatId inválido, ignorando mensaje", chatId);
         return;
     }
 
@@ -2615,7 +2616,6 @@ function procesarParteDiario(texto, autor, chatId) {
         tipo: 'sistema'
     });
 }
-
 // ---------------------------------------------------------------
 // PROCESAR RESPUESTA DE T.S. (cuando le responde a Dominguito)
 // ---------------------------------------------------------------
@@ -2753,6 +2753,12 @@ async function obtenerDatosPaciente(nombre, rama) {
 // PROCESAR COMANDO CUD
 // ---------------------------------------------------------------
 function procesarComandoCUD(chatId) {
+    // ✅ VALIDACIÓN AGREGADA
+    if (!chatId || typeof chatId !== 'string') {
+        console.error("❌ procesarComandoCUD: chatId inválido", chatId);
+        return;
+    }
+
     const ramas = ['cd', 'cet', 'rehab'];
     let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
     let total = 0;
@@ -2784,7 +2790,6 @@ function procesarComandoCUD(chatId) {
         });
     });
 }
-
 // ============================================================
 // =============== MOSTRAR FICHA COMPLETA (ÚNICA) =============
 // ============================================================
@@ -2856,24 +2861,21 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
 // ENVIAR AYUDA
 // ---------------------------------------------------------------
 function enviarAyuda(chatId) {
-    // 1. Validar existencia básica
-    if (!chatId || typeof chatId !== 'string') {
-        console.warn("⚠️ enviarAyuda fue llamada con un chatId inválido o nulo.");
+    if (!chatId || typeof chatId !== 'string' || chatId.length < 3) {
+        console.error("❌ enviarAyuda: chatId inválido", chatId);
         return;
     }
-
-    // 2. Referencia segura
-    const chatRef = refChatsIndividuales.child(chatId).child('mensajes');
-
-    // 3. Push con manejo de errores
-    chatRef.push({
+    
+    refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
         ts: Date.now(),
         tipo: 'sistema'
-    })
-    .then(() => console.log(`✅ Ayuda enviada a ${chatId}`))
-    .catch((err) => console.error(`❌ Error al enviar ayuda a ${chatId}:`, err));
+    }).then(function() {
+        console.log("✅ Ayuda enviada a chat " + chatId);
+    }).catch(function(err) {
+        console.error("❌ Error al enviar ayuda:", err);
+    });
 }
 
 // ============================================================
