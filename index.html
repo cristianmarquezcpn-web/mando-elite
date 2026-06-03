@@ -2873,14 +2873,14 @@ function enviarAyuda(chatId) {
 // ============================================================
 // =============== 20. PUNTO DE ESCUCHA ÚNICO =================
 // ============================================================
-
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
     
-    refChatsIndividuales.on('childadded', function(snap) {
+    // ✅ CORRECCIÓN 1: 'child_added' con guion bajo
+    refChatsIndividuales.on('child_added', function(snap) {
         // ✅ VALIDACIÓN CRÍTICA: snap.key debe existir
         if (!snap || !snap.key) {
-            console.warn("⚠️ childadded sin key válido, ignorando");
+            console.warn("⚠️ child_added sin key válido, ignorando");
             return;
         }
         
@@ -2889,7 +2889,8 @@ function dominguitoEscuchaUnico() {
         // ✅ chatId debe ser string y contener 'dominguito'
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        refChatsIndividuales.child(chatId).child('mensajes').on('childadded', function(snapMsg) {
+        // ✅ CORRECCIÓN 2: 'child_added' con guion bajo
+        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
             // ✅ VALIDACIÓN CRÍTICA: snapMsg debe tener datos
             if (!snapMsg || !snapMsg.val) {
                 console.warn("⚠️ mensaje sin datos válidos");
