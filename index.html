@@ -519,14 +519,43 @@ function verificarPinChatGlobal() {
 // ============================================================
 // =============== INICIAR APLICACIÓN =========================
 // ============================================================
-function iniciarApp() {
+// Asegurate de que esta función esté definida FUERA de iniciarApp
+async function cargarCachePacientes() {
+    const ramas = ['cd', 'cet', 'rehab'];
+    // Limpiamos los globales antes de llenar
+    cachePacientes = {}; 
     
+    // Usamos un bucle for...of para esperar cada rama
+    for (const rama of ramas) {
+        const snap = await db.ref(`/${rama}/pacientes`).once('value');
+        snap.forEach(child => {
+            const pac = child.val();
+            if (pac && child.key) {
+                cachePacientes[child.key] = {
+                    ...pac,
+                    id: child.key,
+                    modalidad: rama.toUpperCase()
+                };
+            }
+        });
+    }
+    const total = Object.keys(cachePacientes).length;
+    console.log(`✅ ${total} pacientes cacheados para Dominguito`);
+}
+
+// ESTA ES TU FUNCIÓN INICIARAPP (Reemplazala por esta estructura)
+async function iniciarApp() {
+    console.log("🚀 Iniciando carga de datos...");
+    
+    // 1. PRIMERO cargamos los pacientes (ESPERA A QUE TERMINE)
+    await cargarCachePacientes();
+
+    // 2. AHORA INICIAMOS TODO LO DEMÁS (No borré nada de lo tuyo)
     console.log("🚀 DOMINGUITO iniciado - Usuario:", usuarioActivo, "Rol:", rangoActivo);
     
     const esAdmin = uidActivo === "cristianmarquezcpn@gmail.com" || rangoActivo === "ADMIN";
     const esTs = rangoActivo.includes("T.S.") || rangoActivo.includes("TRABAJADOR");
     
-    // Mostrar paneles según rol
     if (esAdmin) {
         document.getElementById('panel-asignacion').style.display = 'block';
         document.getElementById('panel-ts').style.display = 'none';
@@ -542,55 +571,24 @@ function iniciarApp() {
         document.getElementById('panel-asignacion').style.display = 'none';
     }
     
-    // Cargar pizarra
     refPizarra.on('value', snap => {
         cacheTareas = snap.val() || {};
         renderPizarraLocal();
     });
     
-    // Cargar contactos y grupos
     cargarContactos();
     escucharMensajesIndividuales();
     cargarGrupos();
     
-    // Iniciar Dominguito
     iniciarDominguito();
-console.log("✅ Aplicación iniciada completamente");
-iniciarEscuchaLiquidacionesMejorado(usuarioActivo);
-    // ===== CARGAR CACHÉ DE PACIENTES PARA DOMINGUITO =====
-function cargarCachePacientes() {
-    const ramas = ['cd', 'cet', 'rehab'];
-    return Promise.all(ramas.map(rama => 
-        db.ref(`/${rama}/pacientes`).once('value', snap => {
-            snap.forEach(child => {
-                const pac = child.val();
-                if (pac && child.key) {
-                    cachePacientes[child.key] = {
-                        ...pac,
-                        id: child.key,
-                        modalidad: rama.toUpperCase()
-                    };
-                }
-            });
-        })
-    ));
-}
-
-cargarCachePacientes().then(() => {
-    const total = Object.keys(cachePacientes).length;
-    console.log(`✅ ${total} pacientes cacheados para Dominguito`);
-    if (total === 0) console.warn("⚠️ No se encontraron pacientes en CD, CET o REHAB");
-});
-
-    // Contar online
+    iniciarEscuchaLiquidacionesMejorado(usuarioActivo);
+    
     refOnline.on('value', snap => {
         const count = snap.numChildren();
         const onlineTag = document.getElementById('online-count');
         if (onlineTag) onlineTag.textContent = `● ${count} online`;
     });
-    
 
-    // Pedir permiso para notificaciones
     if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
     }
