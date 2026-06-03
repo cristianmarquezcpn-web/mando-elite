@@ -2519,7 +2519,7 @@ function procesarParteDiario(texto, autor, chatId) {
     
     lineas.forEach(linea => {
         const lineaLower = linea.toLowerCase().trim();
-        if (lineaLower.startsWith('parte') || lineaLower.startsWith('novedades')) return; // Saltar encabezado
+        if (lineaLower === 'parte diario' || lineaLower === 'parte' || lineaLower === 'novedades') return;
         
         // Buscar paciente en la línea
         const paciente = buscarPaciente(linea);
