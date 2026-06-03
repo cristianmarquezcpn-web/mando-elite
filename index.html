@@ -547,10 +547,8 @@ async function cargarCachePacientes() {
 async function iniciarApp() {
     console.log("🚀 Iniciando carga de datos...");
     
-    // 1. PRIMERO cargamos los pacientes (ESPERA A QUE TERMINE)
     await cargarCachePacientes();
 
-    // 2. AHORA INICIAMOS TODO LO DEMÁS (No borré nada de lo tuyo)
     console.log("🚀 DOMINGUITO iniciado - Usuario:", usuarioActivo, "Rol:", rangoActivo);
     
     const esAdmin = uidActivo === "cristianmarquezcpn@gmail.com" || rangoActivo === "ADMIN";
@@ -580,7 +578,9 @@ async function iniciarApp() {
     escucharMensajesIndividuales();
     cargarGrupos();
     
-    iniciarDominguito();
+    // CAMBIO IMPORTANTE: reemplazar iniciarDominguito() por iniciarSistemaCompleto()
+    iniciarSistemaCompleto();
+    
     iniciarEscuchaLiquidacionesMejorado(usuarioActivo);
     
     refOnline.on('value', snap => {
@@ -610,19 +610,6 @@ function limpiarNombre(texto) {
     // Quita signos de puntuación extra al inicio si quedaron
     return nombreLimpio.replace(/^[:\s\-]+/, "").trim();
 }
-// ============================================================
-// =============== 2. INICIAR DOMINGUITO ======================
-// ============================================================
-function iniciarDominguito() {
-    console.log("👁️ DOMINGUITO activo - Vigilando pacientes...");
-    
-    // Escaneo inicial
-    escanearBaseDeDatos();
-    
-    // Repetir cada 24 horas (86400000 ms)
-    setInterval(escanearBaseDeDatos, 86400000); 
-}
-
 // ============================================================
 // =============== 3. RADAR / ESCANEO DE PACIENTES ============
 // ============================================================
@@ -1026,18 +1013,37 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-    // --- PASO 1: Normalizar texto para búsqueda ---
-function normalizar(t) {
-    if (!t) return "";
-    return t.toString().toLowerCase()
-        // 1. Normaliza los caracteres (ej: "á" -> "a")
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        // 2. Elimina cualquier cosa que NO sea letra o número (borra comas, puntos, etc.)
-        .replace(/[^a-z0-9\s]/g, '')
-        // 3. Reemplaza espacios múltiples por uno solo y limpia bordes
-        .replace(/\s+/g, ' ').trim();
-}
-    // --- PASO 3: COMANDOS ---
+    // --- PASO 1: BÚSQUEDA INTELIGENTE EN CACHÉ ---
+    if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
+        const normalizado = normalizar(texto);
+        const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
+
+        const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
+            const nombreNormalizado = normalizar(llave);
+            
+            // 1. Exacta
+            if (nombreNormalizado === normalizado) return true;
+            
+            // 2. Inclusión (uno contiene al otro)
+            if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
+            
+            // 3. Por palabra suelta
+            const palabrasPaciente = nombreNormalizado.split(' ');
+            return palabrasInput.some(p => 
+                palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
+            );
+        });
+
+        if (llaveEncontrada) {
+            const pac = cachePacientes[llaveEncontrada];
+            console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
+            
+            mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
+            return; 
+        }
+    }
+
+    // --- PASO 2: COMANDOS ---
     
     // Comando: CUD
     if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
@@ -1096,7 +1102,7 @@ function normalizar(t) {
 
     // Comando: Ayuda
     if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
-        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa filtrada\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida clásica\n• "Ayuda" - Esta lista`);
+        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida\n• "Ayuda" - Esta lista`);
         return;
     }
     
@@ -1106,57 +1112,22 @@ function normalizar(t) {
         return;
     }
     
-    // Comando: Paciente específico (Búsqueda centralizada con lógica de REHAB integrada)
+    // Comando: Paciente específico (usando buscarPaciente global)
     if (upper.includes('PACIENTE')) {
         const nombrePac = texto.replace(/paciente\s/i, '').trim();
         if (nombrePac) {
-            const ramas = ['cd', 'cet', 'rehab'];
-            enviarRespuesta(`🔍 Buscando a "${nombrePac}"...`);
-            
-            ramas.forEach(rama => {
-                db.ref(`/${rama}/pacientes`).once('value', snap => {
-                    snap.forEach(child => {
-                        const pac = child.val();
-                        const nombreKey = child.key;
-                        const nombreCampo = pac.nombre || '';
-                        
-                        if (nombreKey.toLowerCase().includes(nombrePac.toLowerCase()) || 
-                            nombreCampo.toLowerCase().includes(nombrePac.toLowerCase())) {
-                            
-                            // Lógica REHAB integrada: si es rehab, primero busca turnos
-                            if (rama === 'rehab') {
-                                db.ref('/rehab/turnos').once('value', turnosSnap => {
-                                    let turnosEncontrados = {};
-                                    turnosSnap.forEach(diaSnap => {
-                                        diaSnap.forEach(turnoSnap => {
-                                            if (turnoSnap.key.includes(nombreKey)) {
-                                                turnosEncontrados[turnoSnap.key] = turnoSnap.val();
-                                            }
-                                        });
-                                    });
-                                    // Mostramos con turnos
-                                    let info = `📋 PACIENTE: ${nombreKey} (REHAB)\n━━━━━━━━━━━━━━\n`;
-                                    info += `📍 Sede: REHAB\n`;
-                                    info += `📅 Turnos encontrados: ${Object.keys(turnosEncontrados).length}\n`;
-                                    enviarRespuesta(info);
-                                });
-                            } else {
-                                // Mostramos ficha normal
-                                let info = `📋 PACIENTE: ${nombreKey}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
-                                if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
-                                if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
-                                if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
-                                enviarRespuesta(info);
-                            }
-                        }
-                    });
-                });
-            });
+            const pac = buscarPaciente(nombrePac);
+            if (pac) {
+                mostrarFichaCompleta(pac, pac.modalidad, pac.nombre, enviarRespuesta);
+            } else {
+                enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
+            }
             return;
         }
     }
     
-    enviarRespuesta(`✅ Mensaje registrado: "${texto}".\n\n¿Necesitás algo más? Consultame "Ayuda".`);
+    // Respuesta por defecto
+    enviarRespuesta(`✅ Mensaje registrado.\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`);
 }
 // ============================================================
 // =============== 9. ESCUCHAR NOTIFICACIONES =================
@@ -2173,7 +2144,7 @@ async function notificarEquipo(paciente, titulo, mensaje, nivel) {
     if (turnoNormalizado === 'VESPERTINO') turnoNormalizado = 'VESPERT';
     
     // 3. Buscar empleados
-    const snap = await db.ref('SISTEMAPERSONAL/empleados').once('value');
+    const snap = await db.ref('SISTEMA_PERSONAL/empleados').once('value');
     const equipo = [];
     
     snap.forEach(child => {
@@ -2501,17 +2472,15 @@ function procesarComandoCUD(chatId) {
     });
 }
 
-// ---------------------------------------------------------------
-// MOSTRAR FICHA COMPLETA
-// ---------------------------------------------------------------
-// BORRA LA OTRA Y DEJA SOLO ESTA FUNCIÓN ÚNICA
+// ============================================================
+// =============== MOSTRAR FICHA COMPLETA (ÚNICA) =============
+// ============================================================
 function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
     
-    // Función que arma el texto final (se llama después de cargar turnos o al instante)
     const generarInfo = (pacienteConTurnos) => {
         let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
         
-        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
+        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistf_link', 'cuddoc_link', 'cuddoc'];
         const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
 
         info += `👤 IDENTIDAD:\n`;
@@ -2521,12 +2490,15 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
         if (pacienteConTurnos.cud) info += `• CUD: ${pacienteConTurnos.cud}\n`;
         if (pacienteConTurnos.turno) info += `• Turno principal: ${pacienteConTurnos.turno}\n`;
         
-        // Renderizado de turnos si existen
         if (pacienteConTurnos.turnos && typeof pacienteConTurnos.turnos === 'object') {
             Object.entries(pacienteConTurnos.turnos).forEach(([dia, horarios]) => {
                 info += `\n[${dia.toUpperCase()}]\n`;
                 Object.entries(horarios).forEach(([hora, valor]) => {
-                    info += `• ${hora}: ${valor}\n`;
+                    const partes = hora.split('-');
+                    const time = partes[0];
+                    const consId = partes[1];
+                    const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
+                    info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
                 });
             });
         }
@@ -2542,13 +2514,12 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
         enviarRespuesta(info);
     };
 
-    // LÓGICA DE BÚSQUEDA DE TURNOS
+    // BÚSQUEDA DE TURNOS
     if (rama && rama.toLowerCase() === 'rehab') {
         db.ref(`/rehab/turnos`).once('value', snap => {
             let turnosFiltrados = {};
             snap.forEach(diaSnap => {
                 diaSnap.forEach(turnoSnap => {
-                    // Buscamos que el nombre del paciente esté en la clave del turno
                     if (turnoSnap.key.toLowerCase().includes(nombrePac.toLowerCase())) {
                         if (!turnosFiltrados[diaSnap.key]) turnosFiltrados[diaSnap.key] = {};
                         turnosFiltrados[diaSnap.key][turnoSnap.key] = turnoSnap.val();
@@ -2562,7 +2533,6 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
         generarInfo(pac);
     }
 }
-
 // ---------------------------------------------------------------
 // ENVIAR AYUDA
 // ---------------------------------------------------------------
@@ -2663,26 +2633,29 @@ function dominguitoEscuchaUnico() {
         });
     });
 }
-// =============== 21. INICIALIZAR ============================
 // ============================================================
-
+// =============== 21. INICIALIZAR DOMINGUITO V2.0 ============
+// ============================================================
 async function iniciarSistemaCompleto() {
     console.log("🚀 Iniciando Dominguito v2.0...");
     
-    // 1. Cargar caché de pacientes
-    await cargarCachePacientes();
+    // 1. Escaneo inicial del radar (CUDs + ausencias)
+    escanearBaseDeDatos();
     
-    // 2. Iniciar escucha única (reemplaza a las 2 anteriores)
+    // 2. Repetir escaneo cada 24 horas
+    setInterval(escanearBaseDeDatos, 86400000);
+    
+    // 3. Iniciar escucha única de mensajes (después de 3 segundos para que todo cargue)
     setTimeout(() => {
         dominguitoEscuchaUnico();
         console.log("✅ Dominguito modo único activo");
     }, 3000);
     
-    // 3. Revisar recordatorios cada hora
+    // 4. Revisar recordatorios cada hora
     setInterval(revisarRecordatorios, 3600000);
     
     console.log("🚀 Dominguito v2.0 listo");
-}    
+}
 </script>
 </body>
 </html>
