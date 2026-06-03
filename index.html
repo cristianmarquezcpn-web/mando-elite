@@ -999,20 +999,14 @@ function enviarMensajeIndividual() {
 // =============== 8. PROCESAR COMANDOS DE DOMINGUITO =========
 // ============================================================
 async function procesarComandoDominguito(texto, autor, chatId) {
-    // ✅ DETECCIÓN DE PARTE DIARIO
-    const esParteDiario = texto.toLowerCase().includes('parte diario') || 
-                           texto.toLowerCase().includes('parte') ||
-                           texto.toLowerCase().includes('novedades') ||
-                           texto.toLowerCase().includes('no vino') ||
-                           texto.toLowerCase().includes('ausente') ||
-                           texto.toLowerCase().includes('falto') ||
-                           texto.toLowerCase().includes('falta') ||
-                           texto.toLowerCase().includes('se retiro') ||
-                           texto.toLowerCase().includes('licencia') ||
-                           texto.toLowerCase().includes('enfermo');
+    // ✅ FIX: Si no hay chatId, intentar con el que está escuchando
+    if (!chatId && typeof contactoEscuchando !== 'undefined' && contactoEscuchando) {
+        chatId = contactoEscuchando;
+    }
     
-    if (esParteDiario) {
-        procesarParteDiario(texto, autor, chatId);
+    // ✅ VALIDACIÓN
+    if (!chatId || typeof chatId !== 'string') {
+        console.error("❌ procesarComandoDominguito: chatId inválido", chatId);
         return;
     }
 
@@ -1022,7 +1016,7 @@ async function procesarComandoDominguito(texto, autor, chatId) {
 
     // Función auxiliar para enviar respuestas
     const enviarRespuesta = (msg) => {
-        refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
+        refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: msg,
             ts: Date.now(),
@@ -1077,6 +1071,7 @@ async function procesarComandoDominguito(texto, autor, chatId) {
                     if (pac && pac.cud) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
+                        // ✅ CORREGIDO: Se agregaron los asteriscos de multiplicación
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
                         total++;
                         if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
@@ -1097,7 +1092,7 @@ async function procesarComandoDominguito(texto, autor, chatId) {
     // Comando: Ausencias
     if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
         enviarRespuesta("📉 Verificando ausencias...");
-        db.ref('/seguimiento_pacientes').once('value', snap => {
+        db.ref('/seguimientopacientes').once('value', snap => {
             let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
             let encontrados = false;
             snap.forEach(child => {
@@ -2910,27 +2905,37 @@ function dominguitoEscuchaUnico() {
             // ✅ USAR chatIdLocal siempre (está en el closure)
             var chatId = chatIdLocal;
             
-            // PASO 1: Comandos
+            // -------------------------------------------------------
+            // PASO 1: Comandos - ORDEN CORRECTO
+            // -------------------------------------------------------
+            
+            // 1a. AYUDA / SALUDO
             if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
                 enviarAyuda(chatId);
                 return;
             }
+            
+            // 1b. ✅ PARTE DIARIO PRIMERO (antes que ausencia)
             if (textoLower.includes('parte') || textoLower.includes('novedades')) {
                 procesarParteDiario(textoOriginal, autor, chatId);
                 return;
             }
-            if (textoLower.includes('ausencia') || textoLower.includes('falta') || textoLower.includes('inasistencia')) {
-                procesarComandoDominguito(textoOriginal); 
+            
+            // 1c. ✅ AUSENCIA SOLO si NO es parte diario
+            if ((textoLower.includes('ausencia') || textoLower.includes('inasistencia')) && !textoLower.includes('parte')) {
+                procesarComandoDominguito(textoOriginal, autor, chatId);
                 return;
             }
             
-            // 2. COMANDO CUD
+            // 1d. COMANDO CUD
             if (textoLower.includes('cud') || textoLower.includes('vencido')) {
                 procesarComandoCUD(chatId);
                 return;
             }
             
-            // PASO 3: ¿Es nombre de paciente?
+            // -------------------------------------------------------
+            // PASO 2: ¿Es nombre de paciente?
+            // -------------------------------------------------------
             var paciente = buscarPaciente(textoLower);
             if (paciente) {
                 var alertaId = 'alerta' + paciente.nombre.replace(/[^a-zA-Z0-9]/g, '');
@@ -2951,7 +2956,9 @@ function dominguitoEscuchaUnico() {
                 return;
             }
             
-            // PASO 5: No entendí
+            // -------------------------------------------------------
+            // PASO 3: No entendí
+            // -------------------------------------------------------
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
                 texto: '🤔 No entendí.\n\nPodés escribir:\n• El NOMBRE de un paciente\n• "parte diario" + novedades del día\n• "CUD" → vencimientos\n• "ayuda" → comandos',
