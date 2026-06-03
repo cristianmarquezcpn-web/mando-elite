@@ -2856,27 +2856,36 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
 // ENVIAR AYUDA
 // ---------------------------------------------------------------
 function enviarAyuda(chatId) {
-    // ✅ Validar que chatId existe y es string válido
-    if (!chatId || typeof chatId !== 'string' || chatId.length < 3) {
-        console.error("❌ enviarAyuda: chatId inválido", chatId);
+    // 1. Validar existencia básica
+    if (!chatId || typeof chatId !== 'string') {
+        console.warn("⚠️ enviarAyuda fue llamada con un chatId inválido o nulo.");
         return;
     }
 
-    refChatsIndividuales.child(chatId).child('mensajes').push({
+    // 2. Referencia segura
+    const chatRef = refChatsIndividuales.child(chatId).child('mensajes');
+
+    // 3. Push con manejo de errores
+    chatRef.push({
         autor: '🤖 DOMINGUITO',
         texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
         ts: Date.now(),
         tipo: 'sistema'
-    });
+    })
+    .then(() => console.log(`✅ Ayuda enviada a ${chatId}`))
+    .catch((err) => console.error(`❌ Error al enviar ayuda a ${chatId}:`, err));
 }
 
 // ============================================================
 // =============== 20. PUNTO DE ESCUCHA ÚNICO =================
 // ============================================================
+// Variable global para actuar como "semáforo" y evitar bucles infinitos
+let procesandoMensaje = false;
+
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
     
-    // ✅ CORRECCIÓN 1: 'child_added' con guion bajo
+    // ✅ CORRECCIÓN: 'child_added' con guion bajo
     refChatsIndividuales.on('child_added', function(snap) {
         // ✅ VALIDACIÓN CRÍTICA: snap.key debe existir
         if (!snap || !snap.key) {
@@ -2889,47 +2898,78 @@ function dominguitoEscuchaUnico() {
         // ✅ chatId debe ser string y contener 'dominguito'
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        // ✅ CORRECCIÓN 2: 'child_added' con guion bajo
+        // ✅ ELIMINAR LISTENERS VIEJOS AQUÍ (antes del on, no adentro) para que no se acumulen
+        refChatsIndividuales.child(chatId).child('mensajes').off('child_added');
+        
+        // ✅ CORRECCIÓN: 'child_added' con guion bajo
         refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
+            
+            // ✅ CORTAR EL LOOP: Si ya estamos procesando, ignorar este evento
+            if (procesandoMensaje) {
+                console.log("⚠️ Loop detectado, ignorando mensaje");
+                return;
+            }
+            
+            // Encendemos el semáforo
+            procesandoMensaje = true;
+            
+            // ✅ TIMEOUT para liberar el semáforo después de 1 segundo
+            setTimeout(function() {
+                procesandoMensaje = false;
+            }, 1000);
+            
             // ✅ VALIDACIÓN CRÍTICA: snapMsg debe tener datos
             if (!snapMsg || !snapMsg.val) {
                 console.warn("⚠️ mensaje sin datos válidos");
+                procesandoMensaje = false;
                 return;
             }
             
             const msg = snapMsg.val();
-            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo) return;
+            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo) {
+                procesandoMensaje = false;
+                return;
+            }
             
             const textoOriginal = (msg.texto || '').trim();
-            if (!textoOriginal) return;
+            if (!textoOriginal) {
+                procesandoMensaje = false;
+                return;
+            }
             
             const textoLower = textoOriginal.toLowerCase().trim();
             const autor = msg.autor;
             
-            // PASO 1: ¿Es parte diario?
+            // PASO 1: ¿Es parte diario o ayuda?
             if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
                 enviarAyuda(chatId);
+                procesandoMensaje = false;
                 return;
             }
             if (textoLower.includes('parte') || textoLower.includes('novedades')) {
                 procesarParteDiario(textoOriginal, autor, chatId);
+                procesandoMensaje = false;
                 return;
             }
             if (textoLower.includes('ausencia') || textoLower.includes('falta') || textoLower.includes('inasistencia')) {
                 procesarComandoDominguito(textoOriginal); 
+                procesandoMensaje = false;
                 return;
             }
             
             // 2. COMANDO CUD
             if (textoLower.includes('cud') || textoLower.includes('vencido')) {
                 procesarComandoCUD(chatId);
+                procesandoMensaje = false;
                 return;
             }
             
             // PASO 3: ¿Es nombre de paciente?
             const paciente = buscarPaciente(textoLower);
             if (paciente) {
-                const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
+                // ✅ PROTECCIÓN ANTI-UNDEFINED (Para que no explote el replace si el nombre está vacío)
+                const nombreSeguro = paciente.nombre || '';
+                const alertaId = `alerta${nombreSeguro.replace(/[^a-zA-Z0-9]/g, '')}`;
                 const alertaEl = document.getElementById(alertaId);
                 
                 if (alertaEl) {
@@ -2944,6 +2984,7 @@ function dominguitoEscuchaUnico() {
                         });
                     });
                 }
+                procesandoMensaje = false;
                 return;
             }
             
@@ -2954,6 +2995,9 @@ function dominguitoEscuchaUnico() {
                 ts: Date.now(),
                 tipo: 'sistema'
             });
+            
+            // Apagamos el semáforo al final
+            procesandoMensaje = false;
         });
     });
 }
