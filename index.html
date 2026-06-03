@@ -2159,12 +2159,7 @@ async function notificarEquipoPaciente(datosPaciente, titulo, mensaje, nivel) {
     if (!listaNombresEquipo) listaNombresEquipo = '• Sin profesionales asignados en este turno';
 
     // Construir la cabecera informativa limpia
-    const CABECERA = `📋 PACIENTE: ${nombre}
-📍 ${modalidad} - Turno ${turno}
-👨‍⚕️ Especialista: ${profesionales}
-👥 Equipo de Guardia Detectado:
-${listaNombresEquipo}
-`;
+    const CABECERA = `📋 PACIENTE: ${nombre}\n📍 ${modalidad} - Turno ${turno}\n👨‍⚕️ Especialista: ${profesionales}\n👥 Equipo de Guardia Detectado:\n${listaNombresEquipo}\n`;
 
     const mensajeCompleto = `${CABECERA}\n${titulo}\n\n${mensaje}\n\n🕐 ${new Date().toLocaleString()}`;
 
@@ -2211,6 +2206,11 @@ ${listaNombresEquipo}
 // =============== 18a. PROCESAR RESPUESTA CUD ================
 // ============================================================
 async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarRespuestaCUD.");
+        return;
+    }
+
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2226,7 +2226,7 @@ async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
 
     refExpedientes.child(paciente).push({
         autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. reportó gestión de CUD:\n"${textoRespuesta}"\n⏰ Pendiente de confirmation de renovación.`,
+        msg: `📋 T.S. reportó gestión de CUD:\n"${textoRespuesta}"\n⏰ Pendiente de confirmación de renovación.`,
         ts: Date.now(),
         tipo: 'sistema',
         estado: 'ENGESTION'
@@ -2275,6 +2275,11 @@ async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
 // =============== 18b. PROCESAR RESPUESTA AUSENCIA ===========
 // ============================================================
 async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justificado) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarRespuestaAusencia.");
+        return;
+    }
+
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2344,6 +2349,11 @@ async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justi
 // =============== 18c. PROCESAR "PENDIENTE" ==================
 // ============================================================
 function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarRespuestaPendiente.");
+        return;
+    }
+
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2386,6 +2396,11 @@ function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
 // =============== 18d. PROCESAR "RESUELTO" ===================
 // ============================================================
 function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarRespuestaResuelto.");
+        return;
+    }
+
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2434,6 +2449,11 @@ function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
 // =============== 18e. RESPUESTA GENÉRICA ====================
 // ============================================================
 function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en registrarRespuestaGenerica.");
+        return;
+    }
+
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2453,7 +2473,7 @@ function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
 
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
-        texto: `✅ Registré tu informe en la bitácora de ${paciente}.\n\n📌 Tip: Si querés que dispare una acción automática de radar o aviso de ausencias, acordate de incluir concepts claros como "saqué turno", "certificado", "pendiente" o "resuelto".`,
+        texto: `✅ Registré tu informe en la bitácora de ${paciente}.\n\n📌 Tip: Si querés que dispare una acción automática de radar o aviso de ausencias, acordate de incluir conceptos claros como "saqué turno", "certificado", "pendiente" o "resuelto".`,
         ts: Date.now(),
         tipo: 'sistema'
     });
@@ -2484,10 +2504,16 @@ function revisarRecordatorios() {
         });
     });
 }
+
 // ---------------------------------------------------------------
 // PROCESAR PARTE DIARIO
 // ---------------------------------------------------------------
 function procesarParteDiario(texto, autor, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarParteDiario.");
+        return;
+    }
+
     const lineas = texto.split('\n').filter(l => l.trim());
     const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
@@ -2594,8 +2620,13 @@ function procesarParteDiario(texto, autor, chatId) {
 // PROCESAR RESPUESTA DE T.S. (cuando le responde a Dominguito)
 // ---------------------------------------------------------------
 async function procesarRespuestaTS(paciente, texto, autor, chatId) {
+    if (!chatId) {
+        console.error("❌ ERROR: chatId es undefined en procesarRespuestaTS.");
+        return;
+    }
+
     const textLower = texto.toLowerCase();
-    let alertasCreadas = 0; // Corrección: Declaración local de variable huérfana
+    let alertasCreadas = 0; 
     
     // Guardar en expediente
     refExpedientes.child(paciente.nombre).push({
@@ -2618,7 +2649,6 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
             tipo: 'sistema'
         });
         
-        // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
         db.ref('/SISTEMA_MANDO/recordatorios').push({
             paciente: paciente.nombre,
             tipo: 'CUD',
@@ -2659,7 +2689,6 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
             tipo: 'sistema'
         });
         
-        // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
         db.ref('/SISTEMA_MANDO/recordatorios').push({
             paciente: paciente.nombre,
             tipo: 'PENDIENTE',
@@ -2691,7 +2720,6 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
         tipo: 'sistema'
     });
 }
-
 // ---------------------------------------------------------------
 // OBTENER DATOS DEL PACIENTE
 // ---------------------------------------------------------------
