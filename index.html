@@ -2520,7 +2520,13 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
             let turnosFiltrados = {};
             snap.forEach(diaSnap => {
                 diaSnap.forEach(turnoSnap => {
-                    if (turnoSnap.key.toLowerCase().includes(nombrePac.toLowerCase())) {
+                    // Buscar en el VALOR del turno (REHAB guarda nombre en valor, key es horario)
+                    const valorTurno = turnoSnap.val();
+                    const nombreLimpio = nombrePac.toLowerCase().replace(/\s+/g, ' ').trim();
+                    const coincideKey = turnoSnap.key.toLowerCase().replace(/\s+/g, '').includes(nombreLimpio.replace(/\s+/g, ''));
+                    const coincideValor = typeof valorTurno === 'string' && valorTurno.toLowerCase().replace(/\s+/g, ' ').includes(nombreLimpio);
+                    
+                    if (coincideKey || coincideValor) {
                         if (!turnosFiltrados[diaSnap.key]) turnosFiltrados[diaSnap.key] = {};
                         turnosFiltrados[diaSnap.key][turnoSnap.key] = turnoSnap.val();
                     }
