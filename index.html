@@ -1076,7 +1076,7 @@ function procesarComandoDominguito(texto) {
     // Comando: Ausencias
     if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
         enviarRespuesta("📉 Verificando ausencias...");
-        db.ref('/seguimientopacientes').once('value', snap => {
+        db.ref('/seguimiento_pacientes').once('value', snap => {
             let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
             let encontrados = false;
             snap.forEach(child => {
@@ -1159,74 +1159,6 @@ function procesarComandoDominguito(texto) {
     }
     
     enviarRespuesta(`✅ Mensaje registrado: "${texto}".\n\n¿Necesitás algo más? Consultame "Ayuda".`);
-}
-// ============================================================
-// FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
-// ============================================================
-function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
-    const generarInfo = (pacienteConTurnos) => {
-        let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
-        
-        // ... (el código de filtros, identidad y gestión sigue igual)
-        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
-        const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
-
-        info += `👤 IDENTIDAD:\n`;
-        orden.forEach(c => { if (pacienteConTurnos[c]) info += `• ${c.toUpperCase()}: ${pacienteConTurnos[c]}\n`; });
-
-        info += `\n📅 GESTIÓN:\n`;
-        if (pacienteConTurnos.cud) info += `• CUD: ${pacienteConTurnos.cud}\n`;
-        if (pacienteConTurnos.turno) info += `• Turno principal: ${pacienteConTurnos.turno}\n`;
-        
-        const MAPACONSULTORIOS = {
-            "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
-            "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
-            "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
-            "10": "Terapia Ocupacional 2"
-        };
-        
-        // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
-        if (pacienteConTurnos.turnos && typeof pacienteConTurnos.turnos === 'object') {
-            Object.entries(pacienteConTurnos.turnos).forEach(([dia, horarios]) => {
-                info += `\n[${dia.toUpperCase()}]\n`;
-                Object.entries(horarios).forEach(([hora, valor]) => {
-                    info += `• ${hora}: ${valor}\n`; // Ajustado a tu estructura nueva
-                });
-            });
-        }
-
-        info += `\n🏥 CLÍNICA:\n`;
-        // ... (el resto igual)
-        Object.entries(pacienteConTurnos).forEach(([key, value]) => {
-            const lowerKey = key.toLowerCase();
-            if (!ignorar.some(i => lowerKey.includes(i)) && typeof value !== 'object' && !orden.includes(lowerKey) && key !== 'turnos' && key !== 'cud' && key !== 'turno') {
-                const label = key.charAt(0).toUpperCase() + key.slice(1);
-                info += `• ${label}: ${value}\n`;
-            }
-        });
-        enviarRespuesta(info);
-    };
-
-    // --- LÓGICA DE REHAB ACTUALIZADA ---
-    if (rama && rama.toLowerCase() === 'rehab') {
-        db.ref(`/rehab/turnos`).once('value', snap => {
-            let turnosFiltrados = {};
-            // Recorremos días -> turnos y buscamos el nombre del paciente
-            snap.forEach(diaSnap => {
-                diaSnap.forEach(turnoSnap => {
-                    // Si el ID del turno contiene el nombre del paciente, lo guardamos
-                    if (turnoSnap.key.includes(nombrePac)) {
-                        if (!turnosFiltrados[diaSnap.key]) turnosFiltrados[diaSnap.key] = {};
-                        turnosFiltrados[diaSnap.key][turnoSnap.key] = turnoSnap.val();
-                    }
-                });
-            });
-            pac.turnos = turnosFiltrados;
-            generarInfo(pac);
-        });
-    } else {
-        generarInfo(pac);
-    }
 }
 // ============================================================
 // =============== 9. ESCUCHAR NOTIFICACIONES =================
@@ -2510,28 +2442,29 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
 // OBTENER DATOS DEL PACIENTE
 // ---------------------------------------------------------------
 async function obtenerDatosPaciente(nombre, rama) {
-    // 1. Obtiene la asignación (donde está el ts) usando la referencia que ya sabes que funciona
+    // 1. Buscamos el paciente (usando una búsqueda más flexible)
+    const nombreLower = nombre.toLowerCase();
+    const pac = cachePacientes[nombreLower] || Object.values(cachePacientes).find(p => p.nombre?.toLowerCase().includes(nombreLower));
+    
+    // 2. Obtiene la asignación (con protección por si no existe)
     const snap = await refAsignaciones.child(nombre).once('value');
-    const asig = snap.val();
+    const asig = snap.val() || {};
     
-    // 2. Obtiene datos del paciente (del cache)
-    const pac = cachePacientes[nombre.toLowerCase()];
+    // 3. Determina el turno de forma inteligente
+    let turnoFinal = pac?.turno || 'No definido';
     
-    // 3. Determina el turno: 
-    // Si es CD/CET, lo saca de 'pac'. 
-    // Si es REHAB, lo saca de la rama externa de turnos.
-    let turnoFinal = pac?.turno || 'MAÑANA';
-    if (rama === 'REHAB') {
-        const snapTurno = await db.ref('/REHAB/turnos').once('value');
-        turnoFinal = snapTurno.val() || 'MAÑANA';
+    if (rama.toUpperCase() === 'REHAB') {
+        // En lugar de traer todo, solo verificamos si tiene turno asignado
+        // Si necesitas saber el día, deberías buscar específicamente en el objeto
+        turnoFinal = "Consultar grilla de turnos (REHAB)";
     }
 
     return {
-        nombre: nombre,
+        nombre: pac?.nombre || nombre,
         modalidad: rama.toUpperCase(),
         turno: turnoFinal,
         profesionales: pac?.profesional || 'No asignado',
-        tsAsignada: asig?.ts || null 
+        tsAsignada: asig.ts || null 
     };
 }
 // ---------------------------------------------------------------
@@ -2573,71 +2506,63 @@ function procesarComandoCUD(chatId) {
 // ---------------------------------------------------------------
 // MOSTRAR FICHA COMPLETA
 // ---------------------------------------------------------------
-async function mostrarFichaCompleta(pac, rama, nombrePac, callback) {
+// BORRA LA OTRA Y DEJA SOLO ESTA FUNCIÓN ÚNICA
+function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
     
-    // Si la rama es 'rehab', buscamos recorriendo la estructura de días
-    if (rama && rama.toLowerCase() === 'rehab') {
-        const snap = await db.ref('/rehab/turnos').once('value');
-        const estructura = snap.val();
+    // Función que arma el texto final (se llama después de cargar turnos o al instante)
+    const generarInfo = (pacienteConTurnos) => {
+        let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
         
-        if (estructura) {
+        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
+        const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
+
+        info += `👤 IDENTIDAD:\n`;
+        orden.forEach(c => { if (pacienteConTurnos[c]) info += `• ${c.toUpperCase()}: ${pacienteConTurnos[c]}\n`; });
+
+        info += `\n📅 GESTIÓN:\n`;
+        if (pacienteConTurnos.cud) info += `• CUD: ${pacienteConTurnos.cud}\n`;
+        if (pacienteConTurnos.turno) info += `• Turno principal: ${pacienteConTurnos.turno}\n`;
+        
+        // Renderizado de turnos si existen
+        if (pacienteConTurnos.turnos && typeof pacienteConTurnos.turnos === 'object') {
+            Object.entries(pacienteConTurnos.turnos).forEach(([dia, horarios]) => {
+                info += `\n[${dia.toUpperCase()}]\n`;
+                Object.entries(horarios).forEach(([hora, valor]) => {
+                    info += `• ${hora}: ${valor}\n`;
+                });
+            });
+        }
+
+        info += `\n🏥 CLÍNICA:\n`;
+        Object.entries(pacienteConTurnos).forEach(([key, value]) => {
+            const lowerKey = key.toLowerCase();
+            if (!ignorar.some(i => lowerKey.includes(i)) && typeof value !== 'object' && !orden.includes(lowerKey) && key !== 'turnos' && key !== 'cud' && key !== 'turno') {
+                info += `• ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
+            }
+        });
+        
+        enviarRespuesta(info);
+    };
+
+    // LÓGICA DE BÚSQUEDA DE TURNOS
+    if (rama && rama.toLowerCase() === 'rehab') {
+        db.ref(`/rehab/turnos`).once('value', snap => {
             let turnosFiltrados = {};
-            // Recorremos días -> turnos y buscamos el nombre del paciente
-            Object.entries(estructura).forEach(([dia, horarios]) => {
-                Object.entries(horarios).forEach(([hora, nombre]) => {
-                    // Verificamos si el valor (nombre) coincide con el nombrePac
-                    if (nombre && nombre.toLowerCase().includes(nombrePac.toLowerCase())) {
-                        if (!turnosFiltrados[dia]) turnosFiltrados[dia] = {};
-                        turnosFiltrados[dia][hora] = nombre;
+            snap.forEach(diaSnap => {
+                diaSnap.forEach(turnoSnap => {
+                    // Buscamos que el nombre del paciente esté en la clave del turno
+                    if (turnoSnap.key.toLowerCase().includes(nombrePac.toLowerCase())) {
+                        if (!turnosFiltrados[diaSnap.key]) turnosFiltrados[diaSnap.key] = {};
+                        turnosFiltrados[diaSnap.key][turnoSnap.key] = turnoSnap.val();
                     }
                 });
             });
-            pac.turnos = turnosFiltrados; 
-        }
-    }
-
-    // --- A PARTIR DE AQUÍ TODO EL FORMATO IGUAL ---
-    const MAPACONSULTORIOS = {
-        "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
-        "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
-        "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
-        "10": "Terapia Ocupacional 2"
-    };
-
-    let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n\n`;
-    
-    const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistflink', 'cuddoclink', 'cuddoc'];
-    const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
-    
-    info += `👤 IDENTIDAD:\n`;
-    orden.forEach(c => { if (pac[c]) info += `• ${c.toUpperCase()}: ${pac[c]}\n`; });
-    
-    info += `\n📅 GESTIÓN:\n`;
-    if (pac.cud) info += `• CUD: ${pac.cud}\n`;
-    if (pac.turno) info += `• Turno: ${pac.turno}\n`;
-    
-    if (pac.turnos && typeof pac.turnos === 'object') {
-        Object.entries(pac.turnos).forEach(([dia, horarios]) => {
-            info += `\n[${dia.toUpperCase()}]\n`;
-            Object.entries(horarios).forEach(([hora, valor]) => {
-                const partes = hora.split('-');
-                const time = partes[0];
-                const consId = partes[1];
-                const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
-                info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
-            });
+            pac.turnos = turnosFiltrados;
+            generarInfo(pac);
         });
+    } else {
+        generarInfo(pac);
     }
-    
-    info += `\n🏥 CLÍNICA:\n`;
-    Object.entries(pac).forEach(([key, value]) => {
-        const lowerKey = key.toLowerCase();
-        if (!ignorar.some(i => lowerKey.includes(i)) && typeof value !== 'object' && !orden.includes(lowerKey) && key !== 'turnos' && key !== 'cud' && key !== 'turno') {
-            info += `• ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
-        }
-    });
-    
-    callback(info);
 }
 
 // ---------------------------------------------------------------
