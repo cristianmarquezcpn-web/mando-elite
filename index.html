@@ -1010,9 +1010,16 @@ async function procesarComandoDominguito(texto, autor, chatId) {
         return;
     }
 
+    // ✅ REDIRECCIÓN: Si el texto contiene "parte diario" o "parte", redirigir a procesarParteDiario
+    const textoLower = texto.toLowerCase().trim();
+    if (textoLower.includes('parte diario') || textoLower.includes('parte')) {
+        console.log("🔄 Redirigiendo a procesarParteDiario desde procesarComandoDominguito");
+        procesarParteDiario(texto, autor, chatId);
+        return;
+    }
+
     const chatContainer = document.getElementById('chat-individual');
     const upper = texto.toUpperCase();
-    const textoLower = texto.toLowerCase().trim();
 
     // Función auxiliar para enviar respuestas
     const enviarRespuesta = (msg) => {
@@ -1071,7 +1078,6 @@ async function procesarComandoDominguito(texto, autor, chatId) {
                     if (pac && pac.cud) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
-                        // ✅ CORREGIDO: Se agregaron los asteriscos de multiplicación
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
                         total++;
                         if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
@@ -2883,7 +2889,6 @@ function dominguitoEscuchaUnico() {
         if (!snap || !snap.key) return;
         
         var chatId = snap.key;
-        
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
         // ✅ Guardar chatId como variable local para el closure
@@ -2915,56 +2920,24 @@ function dominguitoEscuchaUnico() {
                 return;
             }
             
-            // 1b. ✅ PARTE DIARIO PRIMERO (antes que ausencia)
+            // 1b. ✅ PARTE DIARIO - Siempre que incluya "parte" o "novedades"
             if (textoLower.includes('parte') || textoLower.includes('novedades')) {
                 procesarParteDiario(textoOriginal, autor, chatId);
                 return;
             }
             
-            // 1c. ✅ AUSENCIA SOLO si NO es parte diario
-            if ((textoLower.includes('ausencia') || textoLower.includes('inasistencia')) && !textoLower.includes('parte')) {
-                procesarComandoDominguito(textoOriginal, autor, chatId);
-                return;
-            }
-            
-            // 1d. COMANDO CUD
+            // 1c. ✅ CUD
             if (textoLower.includes('cud') || textoLower.includes('vencido')) {
                 procesarComandoCUD(chatId);
                 return;
             }
             
             // -------------------------------------------------------
-            // PASO 2: ¿Es nombre de paciente?
+            // PASO 2: TODO lo demás va a procesarComandoDominguito
+            // (ausencias, nombres de pacientes, reportes, etc.)
             // -------------------------------------------------------
-            var paciente = buscarPaciente(textoLower);
-            if (paciente) {
-                var alertaId = 'alerta' + paciente.nombre.replace(/[^a-zA-Z0-9]/g, '');
-                var alertaEl = document.getElementById(alertaId);
-                
-                if (alertaEl) {
-                    procesarRespuestaTS(paciente, textoOriginal, autor, chatId);
-                } else {
-                    mostrarFichaCompleta(paciente, paciente.modalidad, paciente.nombre, function(respuesta) {
-                        refChatsIndividuales.child(chatId).child('mensajes').push({
-                            autor: '🤖 DOMINGUITO',
-                            texto: respuesta,
-                            ts: Date.now(),
-                            tipo: 'sistema'
-                        });
-                    });
-                }
-                return;
-            }
-            
-            // -------------------------------------------------------
-            // PASO 3: No entendí
-            // -------------------------------------------------------
-            refChatsIndividuales.child(chatId).child('mensajes').push({
-                autor: '🤖 DOMINGUITO',
-                texto: '🤔 No entendí.\n\nPodés escribir:\n• El NOMBRE de un paciente\n• "parte diario" + novedades del día\n• "CUD" → vencimientos\n• "ayuda" → comandos',
-                ts: Date.now(),
-                tipo: 'sistema'
-            });
+            procesarComandoDominguito(textoOriginal, autor, chatId);
+            return;
         });
     });
 }
