@@ -1028,47 +1028,18 @@ function procesarComandoDominguito(texto) {
         });
     };
 
-    // --- PASO 1: Normalizar texto para búsqueda (tolerar comas, tildes, espacios) ---
+    // --- PASO 1: Normalizar texto para búsqueda ---
     function normalizar(t) {
         return t.toLowerCase()
             .replace(/[áäàâ]/g, 'a').replace(/[éëèê]/g, 'e')
             .replace(/[íïìî]/g, 'i').replace(/[óöòô]/g, 'o')
             .replace(/[úüùû]/g, 'u')
-            .replace(/[^a-z0-9\s]/g, ' ')  // Reemplaza comas, puntos, etc por espacio
-            .replace(/\s+/g, ' ')          // Espacios múltiples a uno
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim();
     }
 
-    // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ ---
-    // --- PASO 2: BÚSQUEDA INTELIGENTE EN CACHÉ (REHAB) ---
-if (rama && rama.toLowerCase() === 'rehab') {
-    // 1. Buscamos en toda la rama de turnos
-    db.ref('/rehab/turnos').once('value', snap => {
-        let turnosEncontrados = {};
-        let encontrado = false;
-
-        // 2. Recorremos los días (lunes, martes, etc.)
-        snap.forEach(diaSnap => {
-            // 3. Recorremos cada turno dentro del día
-            diaSnap.forEach(turnoSnap => {
-                const claveTurno = turnoSnap.key; // Ejemplo: "13:00-1-Aguero Bautista"
-                
-                // 4. Verificamos si el nombre del paciente está dentro de la clave
-                // Usamos el nombre del paciente (llaveEncontrada) para buscar
-                if (claveTurno.includes(llaveEncontrada)) {
-                    turnosEncontrados[claveTurno] = turnoSnap.val();
-                    encontrado = true;
-                }
-            });
-        });
-
-        console.log("📦 Turnos filtrados para", llaveEncontrada, ":", turnosEncontrados);
-        pac.turnos = encontrado ? turnosEncontrados : null;
-        
-        mostrarFichaCompleta(pac, rama, llaveEncontrada, enviarRespuesta);
-    });
-}
-    // --- PASO 3: COMANDOS ORIGINALES ---
+    // --- PASO 3: COMANDOS ---
     
     // Comando: CUD
     if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
@@ -1085,7 +1056,6 @@ if (rama && rama.toLowerCase() === 'rehab') {
                     if (pac && pac.cud) {
                         const hoy = new Date();
                         const venc = new Date(pac.cud);
-                        // CORRECCIÓN: Se restauran los asteriscos de multiplicación para calcular los días
                         const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
                         total++;
                         if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
@@ -1138,14 +1108,13 @@ if (rama && rama.toLowerCase() === 'rehab') {
         return;
     }
     
-    // Comando: Paciente específico (búsqueda directa a Firebase si no encontró en caché)
+    // Comando: Paciente específico (Búsqueda centralizada con lógica de REHAB integrada)
     if (upper.includes('PACIENTE')) {
         const nombrePac = texto.replace(/paciente\s/i, '').trim();
         if (nombrePac) {
             const ramas = ['cd', 'cet', 'rehab'];
-            let encontrado = false;
-            let completado = 0;
-            enviarRespuesta(`🔍 Buscando información de "${nombrePac}"...`);
+            enviarRespuesta(`🔍 Buscando a "${nombrePac}"...`);
+            
             ramas.forEach(rama => {
                 db.ref(`/${rama}/pacientes`).once('value', snap => {
                     snap.forEach(child => {
@@ -1155,28 +1124,42 @@ if (rama && rama.toLowerCase() === 'rehab') {
                         
                         if (nombreKey.toLowerCase().includes(nombrePac.toLowerCase()) || 
                             nombreCampo.toLowerCase().includes(nombrePac.toLowerCase())) {
-                            encontrado = true;
-                            let info = `📋 PACIENTE: ${nombreKey}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
-                            if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
-                            if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
-                            if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
-                            enviarRespuesta(info);
+                            
+                            // Lógica REHAB integrada: si es rehab, primero busca turnos
+                            if (rama === 'rehab') {
+                                db.ref('/rehab/turnos').once('value', turnosSnap => {
+                                    let turnosEncontrados = {};
+                                    turnosSnap.forEach(diaSnap => {
+                                        diaSnap.forEach(turnoSnap => {
+                                            if (turnoSnap.key.includes(nombreKey)) {
+                                                turnosEncontrados[turnoSnap.key] = turnoSnap.val();
+                                            }
+                                        });
+                                    });
+                                    // Mostramos con turnos
+                                    let info = `📋 PACIENTE: ${nombreKey} (REHAB)\n━━━━━━━━━━━━━━\n`;
+                                    info += `📍 Sede: REHAB\n`;
+                                    info += `📅 Turnos encontrados: ${Object.keys(turnosEncontrados).length}\n`;
+                                    enviarRespuesta(info);
+                                });
+                            } else {
+                                // Mostramos ficha normal
+                                let info = `📋 PACIENTE: ${nombreKey}\n━━━━━━━━━━━━━━\n📍 Sede: ${rama.toUpperCase()}\n`;
+                                if (pac.cud) info += `📄 CUD: ${pac.cud}\n`;
+                                if (pac.profesional) info += `👨‍⚕️ Profesional: ${pac.profesional}\n`;
+                                if (pac.plan) info += `📋 Plan: ${pac.plan}\n`;
+                                enviarRespuesta(info);
+                            }
                         }
                     });
-                    completado++;
-                    if (completado === ramas.length && !encontrado) {
-                        enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
-                    }
                 });
             });
             return;
         }
     }
     
-    // Respuesta por defecto
-    enviarRespuesta(`✅ Mensaje registrado: "${texto}".\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`);
+    enviarRespuesta(`✅ Mensaje registrado: "${texto}".\n\n¿Necesitás algo más? Consultame "Ayuda".`);
 }
-
 // ============================================================
 // FUNCIÓN AUXILIAR: MUESTRA LA FICHA CLÍNICA FORMATEADA
 // ============================================================
