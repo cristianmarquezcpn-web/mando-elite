@@ -2856,6 +2856,12 @@ function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
 // ENVIAR AYUDA
 // ---------------------------------------------------------------
 function enviarAyuda(chatId) {
+    // ✅ Validar que chatId existe y es string válido
+    if (!chatId || typeof chatId !== 'string' || chatId.length < 3) {
+        console.error("❌ enviarAyuda: chatId inválido", chatId);
+        return;
+    }
+
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
@@ -2871,13 +2877,25 @@ function enviarAyuda(chatId) {
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
     
-    // CORRECCIÓN: Se cambió el evento incorrecto 'childadded' por 'child_added' con su guion bajo reglamentario
-    refChatsIndividuales.on('child_added', function(snap) {
-        const chatId = snap.key;
-        if (!chatId || !chatId.includes('dominguito')) return;
+    refChatsIndividuales.on('childadded', function(snap) {
+        // ✅ VALIDACIÓN CRÍTICA: snap.key debe existir
+        if (!snap || !snap.key) {
+            console.warn("⚠️ childadded sin key válido, ignorando");
+            return;
+        }
         
-        // CORRECCIÓN: Se cambió el evento incorrecto 'childadded' por 'child_added'
-        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
+        const chatId = snap.key;
+        
+        // ✅ chatId debe ser string y contener 'dominguito'
+        if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
+        
+        refChatsIndividuales.child(chatId).child('mensajes').on('childadded', function(snapMsg) {
+            // ✅ VALIDACIÓN CRÍTICA: snapMsg debe tener datos
+            if (!snapMsg || !snapMsg.val) {
+                console.warn("⚠️ mensaje sin datos válidos");
+                return;
+            }
+            
             const msg = snapMsg.val();
             if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo) return;
             
@@ -2887,10 +2905,7 @@ function dominguitoEscuchaUnico() {
             const textoLower = textoOriginal.toLowerCase().trim();
             const autor = msg.autor;
             
-            
             // PASO 1: ¿Es parte diario?
-
-          // 1. COMANDOS EXPLICITOS (Ayuda y Reportes)
             if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
                 enviarAyuda(chatId);
                 return;
@@ -2900,8 +2915,6 @@ function dominguitoEscuchaUnico() {
                 return;
             }
             if (textoLower.includes('ausencia') || textoLower.includes('falta') || textoLower.includes('inasistencia')) {
-                // Aquí deberías tener una función procesarComandoAusencias o similar
-                // Si no la tienes, asegúrate de que procesarComandoDominguito la maneje
                 procesarComandoDominguito(textoOriginal); 
                 return;
             }
@@ -2911,18 +2924,16 @@ function dominguitoEscuchaUnico() {
                 procesarComandoCUD(chatId);
                 return;
             }
+            
             // PASO 3: ¿Es nombre de paciente?
             const paciente = buscarPaciente(textoLower);
             if (paciente) {
-                // Ver si viene de un contexto de alerta (estaba respondiendo a algo)
                 const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
                 const alertaEl = document.getElementById(alertaId);
                 
                 if (alertaEl) {
-                    // Está respondiendo a una alerta activa
                     procesarRespuestaTS(paciente, textoOriginal, autor, chatId);
                 } else {
-                    // Quiere ver la ficha del paciente
                     mostrarFichaCompleta(paciente, paciente.modalidad, paciente.nombre, function(respuesta) {
                         refChatsIndividuales.child(chatId).child('mensajes').push({
                             autor: '🤖 DOMINGUITO',
@@ -2932,13 +2943,6 @@ function dominguitoEscuchaUnico() {
                         });
                     });
                 }
-                return;
-            }
-            
-            // PASO 4: Último intento - ¿está respondiendo a un recordatorio?
-            const ultimoContexto = null; // Podríamos trackear el último recordatorio enviado
-            if (ultimoContexto) {
-                procesarRespuestaTS(ultimoContexto, textoOriginal, autor, chatId);
                 return;
             }
             
