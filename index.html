@@ -1027,16 +1027,16 @@ function procesarComandoDominguito(texto) {
     };
 
     // --- PASO 1: Normalizar texto para búsqueda ---
-    function normalizar(t) {
-        return t.toLowerCase()
-            .replace(/[áäàâ]/g, 'a').replace(/[éëèê]/g, 'e')
-            .replace(/[íïìî]/g, 'i').replace(/[óöòô]/g, 'o')
-            .replace(/[úüùû]/g, 'u')
-            .replace(/[^a-z0-9\s]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
+function normalizar(t) {
+    if (!t) return "";
+    return t.toString().toLowerCase()
+        // 1. Normaliza los caracteres (ej: "á" -> "a")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        // 2. Elimina cualquier cosa que NO sea letra o número (borra comas, puntos, etc.)
+        .replace(/[^a-z0-9\s]/g, '')
+        // 3. Reemplaza espacios múltiples por uno solo y limpia bordes
+        .replace(/\s+/g, ' ').trim();
+}
     // --- PASO 3: COMANDOS ---
     
     // Comando: CUD
