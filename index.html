@@ -398,6 +398,18 @@ let cachePacientes = {};
 let listaPacientesCache = [];    
 let urlArchivoAdjunto = '';    
 
+function validarChatId(chatId) {
+    if (!chatId || typeof chatId !== 'string' || chatId.length < 5) {
+        console.error("❌ chatId inválido detectado:", chatId);
+        return false;
+    }
+    // Verificar que no tenga caracteres prohibidos de Firebase
+    if (/[.$\[\]\/@]/.test(chatId)) {
+        console.error("❌ chatId tiene caracteres prohibidos:", chatId);
+        return false;
+    }
+    return true;
+}
 // ============================================================
 // =============== AUTENTICACIÓN ==============================
 // ============================================================
@@ -796,7 +808,7 @@ function dominguitoNotificarTs(paciente, tipo, mensaje) {
         // Generar ID de chat único (determinista) y seguro
         const participantes = ['dominguito', tsKey].sort();
         const chatId = `chat_${participantes.join('_')}`;
-        
+         if (!validarChatId(chatId)) return;
         // Enviar mensaje privado a la T.S.
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -915,7 +927,7 @@ function seleccionarContacto(nombre, rol, email) {
     
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer) return;
-    
+     if (!validarChatId(chatId)) return;
     // Dejar de escuchar chat anterior
     if (contactoEscuchando) {
         refChatsIndividuales.child(contactoEscuchando).child('mensajes').off();
@@ -926,7 +938,7 @@ function seleccionarContacto(nombre, rol, email) {
     const idEmisor = sanitizarKey(uidActivo);
     const participantes = [idEmisor, idReceptor].sort();
     contactoEscuchando = `chat_${participantes.join('_')}`;
-    
+     if (!validarChatId(chatId)) return;
     // Escuchar mensajes
     refChatsIndividuales.child(contactoEscuchando).child('mensajes').on('value', snap => {
         chatContainer.innerHTML = `
@@ -950,7 +962,7 @@ function seleccionarContacto(nombre, rol, email) {
         });
         chatContainer.scrollTop = chatContainer.scrollHeight;
     });
-    
+     if (!validarChatId(chatId)) return;
     // Si es Dominguito, mensaje de bienvenida
     if (nombre === '🤖 DOMINGUITO') {
         setTimeout(() => {
@@ -972,13 +984,14 @@ function enviarMensajeIndividual() {
 const input = document.getElementById('chat-individual-input');
 const texto = input.value.trim();
 if (!texto || !contactoSeleccionado || !contactoEscuchando) return;
-// Guardar mensaje
+if (!validarChatId(chatId)) return;
 refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
 autor: usuarioActivo,
 texto: texto,
 ts: Date.now(),
 leido: false
 });
+ if (!validarChatId(chatId)) return;
 // Actualizar último mensaje
 refChatsIndividuales.child(contactoEscuchando).update({
 ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
@@ -1014,6 +1027,7 @@ const upper = texto.toUpperCase();
 // Función auxiliar para enviar respuestas
 const enviarRespuesta = (msg) => {
 if (!chatId) return;
+ if (!validarChatId(chatId)) return;
 refChatsIndividuales.child(chatId).child('mensajes').push({
 autor: '🤖 DOMINGUITO',
 texto: msg,
@@ -1106,14 +1120,17 @@ enviarRespuesta(`✅ Mensaje registrado.\n\n¿Necesitás algo más? Consultame "
 function escucharMensajesIndividuales() {
     if (!uidActivo) return;
 
+    const emailSaneado = sanitizarKey(uidActivo);
+     if (!validarChatId(chatId)) return;
     // Escuchar cambios en la lista general de chats
     refChatsIndividuales.on('child_changed', snap => {
         const data = snap.val();
         if (!data || !data.ultimo) return;
 
+        // ✅ FIX: Verificar que el key existe Y es string
+        if (!snap.key || typeof snap.key !== 'string') return;
+        
         // Verificar si el chat involucra al usuario activo
-        // El ID del chat contiene los participantes, verificamos si contiene el email saneado
-        const emailSaneado = sanitizarKey(uidActivo);
         if (!snap.key.includes(emailSaneado)) return;
 
         // Si el último mensaje NO es mío, mostrar alerta
@@ -1121,12 +1138,10 @@ function escucharMensajesIndividuales() {
             const de = data.ultimo.autor;
             
             if (contactoSeleccionado !== de) {
-                // Selector corregido (debe coincidir con el ID generado en renderizarContactos)
                 const notifId = `notif${de.replace(/[^a-zA-Z0-9]/g, '')}`;
                 const notifElement = document.getElementById(notifId);
                 if (notifElement) notifElement.style.display = 'block';
                 
-                // Reproducir sonido
                 const sound = document.getElementById('snd-msg');
                 if (sound) sound.play().catch(e => console.log("Sonido bloqueado por el navegador"));
             }
@@ -1189,6 +1204,7 @@ if (!texto) return;
 const idEmisor = sanitizarKey(uidActivo);
 const participantes = [idEmisor, 'dominguito'].sort();
 const chatId = `chat${participantes.join('')}`;
+ if (!validarChatId(chatId)) return;
 refChatsIndividuales.child(chatId).child('mensajes').push({
 autor: usuarioActivo,
 texto: texto,
@@ -1531,7 +1547,7 @@ function asignarPacienteATS() {
     // Notificar a la T.S. (usando el ID ya limpio)
     const participantes = [sanitizarKey(uidActivo), tsKey].sort();
     const chatId = `chat_${participantes.join('_')}`;
-    
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `📋 Se te ha asignado el paciente: ${selPac.value}\n\nPodés ver su expediente en la pestaña EXPEDIENTES.\n📅 ${new Date().toLocaleDateString()}`,
@@ -2118,7 +2134,7 @@ async function notificarEquipoPaciente(datosPaciente, titulo, mensaje, nivel) {
         const personaKey = persona.email.replace(/\./g, ',');
         const participantes = ['dominguito', personaKey].sort();
         const chatId = `chat${participantes.join('')}`;
-
+         if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: mensajeCompleto,
@@ -2159,7 +2175,7 @@ async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
         console.error("❌ ERROR: chatId es undefined en procesarRespuestaCUD.");
         return;
     }
-
+     if (!validarChatId(chatId)) return;
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2199,7 +2215,7 @@ async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
         `La T.S. gestionó el turno para renovación de CUD.\n\n🗣️ Respuesta: "${textoRespuesta}"\n\n⚠️ El paciente sigue sin CUD vigente hasta que se confirme la renovación física del documento.`,
         'informativo'
     );
-
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `✅ Tu gestión sobre ${paciente} quedó registrada.\n\n📌 Estado actual: ⏳ Pendiente de renovación.\n\n👥 Notifiqué automáticamente a todo el equipo del turno correspondiente.\n\n🔔 Te voy a consultar de nuevo en 7 días para confirmar si ya se resolvió.`,
@@ -2228,7 +2244,7 @@ async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justi
         console.error("❌ ERROR: chatId es undefined en procesarRespuestaAusencia.");
         return;
     }
-
+     if (!validarChatId(chatId)) return;
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2271,7 +2287,7 @@ async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justi
     const respuesta = justificado 
         ? `✅ Registrado. Ausencias de ${paciente} justificadas.\n\n👥 Notifiqué al equipo del turno de sala para que asienten la novedad.\n\n🔔 Si el reposo se extiende por más de 15 días, avisame para congelar o reprogramar el transporte.`
         : `✅ Guardado en el expediente clínico de ${paciente}.\n\n⚠️ Recordá que para cerrar la alerta de radar de forma definitiva necesitaremos que adjunten el certificado médico correspondiente.`;
-
+      if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: respuesta,
@@ -2302,7 +2318,7 @@ function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
         console.error("❌ ERROR: chatId es undefined en procesarRespuestaPendiente.");
         return;
     }
-
+     if (!validarChatId(chatId)) return;
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2320,7 +2336,7 @@ function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
         tipo: 'sistema',
         estado: 'PENDIENTE'
     });
-
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `✅ Entendido. Dejé constancia de que el caso sigue bajo análisis.\n\n📌 Te voy a volver a consultar en 3 días hábiles para ver si lograste avanzar.\n\n⚠️ Evitemos dilatarlo demasiado para no generar alertas críticas en Dirección.`,
@@ -2349,7 +2365,7 @@ function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
         console.error("❌ ERROR: chatId es undefined en procesarRespuestaResuelto.");
         return;
     }
-
+     if (!validarChatId(chatId)) return;
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2383,7 +2399,7 @@ function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
             if (alertaElement.parentNode) alertaElement.remove();
         }, 60000);
     }
-
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `🎉 ¡Impecable trabajo! Marqué el caso de ${paciente} como RESUELTO.\n\n✅ Alerta archivada. El indicador visual desaparecerá del radar en un minuto.\n\nCualquier nueva novedad del grupo familiar, volveme a escribir.`,
@@ -2402,7 +2418,7 @@ function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
         console.error("❌ ERROR: chatId es undefined en registrarRespuestaGenerica.");
         return;
     }
-
+     if (!validarChatId(chatId)) return;
     if (!paciente || paciente === 'Paciente no identificado') {
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2419,7 +2435,7 @@ function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
         ts: Date.now(),
         tipo: 'sistema'
     });
-
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `✅ Registré tu informe en la bitácora de ${paciente}.\n\n📌 Tip: Si querés que dispare una acción automática de radar o aviso de ausencias, acordate de incluir conceptos claros como "saqué turno", "certificado", "pendiente" o "resuelto".`,
@@ -2439,6 +2455,7 @@ function revisarRecordatorios() {
             if (!r || !r.fecha) return;
             if (ahora >= r.fecha) {
                 const chatId = r.chatId;
+                 if (!validarChatId(chatId)) return;
                 if (chatId) {
                     refChatsIndividuales.child(chatId).child('mensajes').push({
                         autor: '🤖 DOMINGUITO',
@@ -2557,7 +2574,7 @@ function procesarParteDiario(texto, autor, chatId) {
     if (alertasCreadas > 0) {
         respuesta += `\n\n🔴 Se notificó al equipo correspondiente.`;
     }
-    
+     if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: respuesta,
@@ -2590,7 +2607,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
         // GESTIÓN DE CUD - Notificar al equipo
         alertasCreadas++;
         notificarEquipoPaciente(paciente, '🔄 CUD EN GESTIÓN', `La T.S. gestionó: "${texto}"\n⚠️ Pendiente de confirmación.`, 'informativo');
-        
+         if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: `✅ Registré tu gestión. Notifiqué al equipo de ${paciente.modalidad}.\n\n⏰ Te consulto en 7 días para confirmar.`,
@@ -2619,7 +2636,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
         }
         
         notificarEquipoPaciente(paciente, '🎉 CASO RESUELTO', `${texto}\n✅ Gestión finalizada. Alerta cerrada.`, 'informativo');
-        
+         if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: `🎉 ¡Excelente! Marqué ${paciente.nombre} como RESUELTO.\n✅ Alerta archivada.\n👥 Equipo notificado.`,
@@ -2628,9 +2645,9 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
         });
         return;
     }
-    
+     
     if (textLower.includes('pendiente') || textLower.includes('todavía') || textLower.includes('esperando') || textLower.includes('no sé')) {
-        // PENDIENTE
+        if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: `✅ Entendido. Dejo ${paciente.nombre} como pendiente.\n⏰ Te vuelvo a consultar en 3 días.`,
@@ -2651,7 +2668,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
     if (textLower.includes('enfermo') || textLower.includes('fiebre') || textLower.includes('médico') || textLower.includes('licencia') || textLower.includes('reposo') || textLower.includes('certificado')) {
         // AUSENCIA JUSTIFICADA
         notificarEquipoPaciente(paciente, '🔷 AUSENCIA JUSTIFICADA', `${texto}\nRegistrado por: ${autor}`, 'informativo');
-        
+        if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: `✅ Ausencia justificada registrada.\n👥 Equipo de ${paciente.modalidad} notificado.`,
@@ -2660,7 +2677,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
         });
         return;
     }
-    
+    if (!validarChatId(chatId)) return;
     // Respuesta genérica
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
@@ -2814,7 +2831,7 @@ function enviarAyuda(chatId) {
         console.error("❌ enviarAyuda: chatId inválido", chatId);
         return;
     }
-    
+    if (!validarChatId(chatId)) return;
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: '🤖 DOMINGUITO',
         texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
@@ -2832,16 +2849,18 @@ function enviarAyuda(chatId) {
 // ============================================================
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
-    
+    if (!validarChatId(chatId)) return;
     refChatsIndividuales.on('child_added', function(snap) {
         if (!snap || !snap.key) return;
         
         var chatId = snap.key;
+        
+        // ✅ FILTRO ESTRICTO: Solo chats que contengan "dominguito"
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        // ✅ Guardar chatId como variable local para el closure
+        // ✅ Guardar para el closure
         var chatIdLocal = chatId;
-        
+        if (!validarChatId(chatId)) return;
         refChatsIndividuales.child(chatIdLocal).child('mensajes').on('child_added', function(snapMsg) {
             
             if (!snapMsg || !snapMsg.val) return;
@@ -2855,36 +2874,32 @@ function dominguitoEscuchaUnico() {
             var textoLower = textoOriginal.toLowerCase().trim();
             var autor = msg.autor;
             
-            // ✅ USAR chatIdLocal siempre (está en el closure)
-            var chatId = chatIdLocal;
-            
             // -------------------------------------------------------
-            // PASO 1: Comandos - ORDEN CORRECTO
+            // PASO 1: Comandos
             // -------------------------------------------------------
             
-            // 1a. AYUDA / SALUDO
+            // 1a. AYUDA
             if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
-                enviarAyuda(chatId);
+                enviarAyuda(chatIdLocal);
                 return;
             }
             
-            // 1b. ✅ PARTE DIARIO - Siempre que incluya "parte" o "novedades"
+            // 1b. PARTE DIARIO
             if (textoLower.includes('parte') || textoLower.includes('novedades')) {
-                procesarParteDiario(textoOriginal, autor, chatId);
+                procesarParteDiario(textoOriginal, autor, chatIdLocal);
                 return;
             }
             
-            // 1c. ✅ CUD
+            // 1c. CUD
             if (textoLower.includes('cud') || textoLower.includes('vencido')) {
-                procesarComandoCUD(chatId);
+                procesarComandoCUD(chatIdLocal);
                 return;
             }
             
             // -------------------------------------------------------
-            // PASO 2: TODO lo demás va a procesarComandoDominguito
-            // (ausencias, nombres de pacientes, reportes, etc.)
+            // PASO 2: TODO lo demás
             // -------------------------------------------------------
-            procesarComandoDominguito(textoOriginal, autor, chatId);
+            procesarComandoDominguito(textoOriginal, autor, chatIdLocal);
             return;
         });
     });
