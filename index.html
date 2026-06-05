@@ -906,76 +906,34 @@ function filtrarContactos() {
         item.style.display = texto.toUpperCase().includes(filtro) ? 'flex' : 'none';
     });
 }
-
-function seleccionarContacto(nombre, rol, email) {
-    contactoSeleccionado = nombre;
+function seleccionarContacto(contacto) {
+    if (!contacto) return;
+    
+    contactoSeleccionado = contacto;
+    
+    // ✅ Si es dominguito, el chatId se calcula acá mismo
+    if (contacto === '🤖 DOMINGUITO') {
+        const idEmisor = sanitizarKey(uidActivo);
+        const participantes = [idEmisor, 'dominguito'].sort();
+        const chatId = `chat${participantes.join('')}`;
+        
+        contactoEscuchando = chatId;
+    } else {
+        // Para contactos normales, el chatId viene del data attribute
+        const chatId = contacto.dataset ? contacto.dataset.chatId : null;
+        contactoEscuchando = chatId || contacto;
+    }
+    
+    // 💡 AHORA SÍ, contactoEscuchando tiene valor siempre
+    cargarHistorialChatIndividual(contactoEscuchando);
     
     // Actualizar UI
-    document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
-    document.querySelectorAll('#lista-contactos .contacto-item').forEach(item => {
-        if (item.textContent.includes(nombre)) item.classList.add('activo');
-    });
+    document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+    if (contacto.classList) contacto.classList.add('active');
     
-    // Ocultar notificación
-    const notifId = `notif${nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const notif = document.getElementById(notifId);
-    if (notif) notif.style.display = 'none';
-    
-    // Mostrar input
-    const inputArea = document.getElementById('input-chat-area');
-    if (inputArea) inputArea.style.display = 'flex';
-    
-    const chatContainer = document.getElementById('chat-individual');
-    if (!chatContainer) return;
-     if (!validarChatId(chatId)) return;
-    // Dejar de escuchar chat anterior
-    if (contactoEscuchando) {
-        refChatsIndividuales.child(contactoEscuchando).child('mensajes').off();
-    }
-    
-    // Generar ID de chat determinista saneado
-    const idReceptor = sanitizarKey(email || nombre);
-    const idEmisor = sanitizarKey(uidActivo);
-    const participantes = [idEmisor, idReceptor].sort();
-    contactoEscuchando = `chat_${participantes.join('_')}`;
-     if (!validarChatId(chatId)) return;
-    // Escuchar mensajes
-    refChatsIndividuales.child(contactoEscuchando).child('mensajes').on('value', snap => {
-        chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
-                💬 Chat con: <b>${nombre}</b> <span style="color:#64748b;">(${rol})</span>
-            </div>`;
-        
-        snap.forEach(child => {
-            const m = child.val();
-            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-            if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-domingo';
-            if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
-            
-            chatContainer.innerHTML += `
-                <div class="msg ${claseMsg}">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
-                    ${m.texto}
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleTimeString()}</div>
-                </div>
-            `;
-        });
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    });
-     if (!validarChatId(chatId)) return;
-    // Si es Dominguito, mensaje de bienvenida
-    if (nombre === '🤖 DOMINGUITO') {
-        setTimeout(() => {
-            if (chatContainer.children.length <= 1) {
-                refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
-                    autor: '🤖 DOMINGUITO',
-                    texto: `¡Hola ${usuarioActivo}! 👋\n\nSoy Dominguito. Podés pedirme:\n• "CUD" → Vencimientos\n• "Ausencias" → Reporte de faltas\n• "Ayuda" → Comandos`,
-                    ts: Date.now(),
-                    tipo: 'sistema'
-                });
-            }
-        }, 500);
-    }
+    const notifId = `notif${contacto.replace ? contacto.replace(/[^a-zA-Z0-9]/g, '') : ''}`;
+    const notifElement = document.getElementById(notifId);
+    if (notifElement) notifElement.style.display = 'none';
 }
 // ============================================================
 // =============== 7. ENVIAR MENSAJE INDIVIDUAL ===============
@@ -1121,19 +1079,16 @@ function escucharMensajesIndividuales() {
     if (!uidActivo) return;
 
     const emailSaneado = sanitizarKey(uidActivo);
-     if (!validarChatId(chatId)) return;
-    // Escuchar cambios en la lista general de chats
-    refChatsIndividuales.on('child_changed', snap => {
+
+    refChatsIndividuales.on('childchanged', snap => {
         const data = snap.val();
         if (!data || !data.ultimo) return;
-
-        // ✅ FIX: Verificar que el key existe Y es string
         if (!snap.key || typeof snap.key !== 'string') return;
-        
-        // Verificar si el chat involucra al usuario activo
         if (!snap.key.includes(emailSaneado)) return;
 
-        // Si el último mensaje NO es mío, mostrar alerta
+        // ✅ DECLARAR chatId aquí (NO existe antes de esta línea)
+        const chatId = snap.key;
+
         if (data.ultimo.autor !== usuarioActivo && data.ultimo.autor !== '🤖 DOMINGUITO') {
             const de = data.ultimo.autor;
             
