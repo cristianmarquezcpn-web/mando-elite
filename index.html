@@ -969,183 +969,136 @@ function seleccionarContacto(nombre, rol, email) {
 // =============== 7. ENVIAR MENSAJE INDIVIDUAL ===============
 // ============================================================
 function enviarMensajeIndividual() {
-    const input = document.getElementById('chat-individual-input');
-    const texto = input.value.trim();
-    
-    if (!texto || !contactoSeleccionado || !contactoEscuchando) return;
-    
-    // Guardar mensaje
-    refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
-        autor: usuarioActivo,
-        texto: texto,
-        ts: Date.now(),
-        leido: false
-    });
-    
-    // Actualizar último mensaje
-    refChatsIndividuales.child(contactoEscuchando).update({
-        ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
-    });
-    
-    input.value = '';
-    
-    // Si es para Dominguito, procesar comando
-    if (contactoSeleccionado === '🤖 DOMINGUITO') {
-        procesarComandoDominguito(texto);
-    }
+const input = document.getElementById('chat-individual-input');
+const texto = input.value.trim();
+if (!texto || !contactoSeleccionado || !contactoEscuchando) return;
+// Guardar mensaje
+refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
+autor: usuarioActivo,
+texto: texto,
+ts: Date.now(),
+leido: false
+});
+// Actualizar último mensaje
+refChatsIndividuales.child(contactoEscuchando).update({
+ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
+});
+input.value = '';
+// Si es para Dominguito, procesar comando PASANDO EL CHATID
+if (contactoSeleccionado === '🤖 DOMINGUITO') {
+procesarComandoDominguito(texto, usuarioActivo, contactoEscuchando);
 }
+}    
 
 // ============================================================
 // =============== 8. PROCESAR COMANDOS DE DOMINGUITO =========
 // ============================================================
 async function procesarComandoDominguito(texto, autor, chatId) {
-    // ✅ FIX: Si no hay chatId, intentar con el que está escuchando
-    if (!chatId && typeof contactoEscuchando !== 'undefined' && contactoEscuchando) {
-        chatId = contactoEscuchando;
-    }
-    
-    // ✅ VALIDACIÓN
-    if (!chatId || typeof chatId !== 'string') {
-        console.error("❌ procesarComandoDominguito: chatId inválido", chatId);
-        return;
-    }
+// ✅ FIX: Si chatId viene vacío, usamos el global
+if (!chatId && typeof contactoEscuchando !== 'undefined' && contactoEscuchando) {
+chatId = contactoEscuchando;
+}
+// ✅ VALIDACIÓN ESTRICTA
+if (!chatId || typeof chatId !== 'string' || chatId.length < 5) {
+console.error("❌ procesarComandoDominguito: chatId inválido", chatId);
+return;
+}
+const textoLower = texto.toLowerCase().trim();
+// ✅ Redirigir parte diario
+if (textoLower.includes('parte diario') || textoLower.includes('parte') || textoLower.includes('novedades')) {
+procesarParteDiario(texto, autor, chatId);
+return;
+}
+const chatContainer = document.getElementById('chat-individual');
+const upper = texto.toUpperCase();
+// Función auxiliar para enviar respuestas
+const enviarRespuesta = (msg) => {
+if (!chatId) return;
+refChatsIndividuales.child(chatId).child('mensajes').push({
+autor: '🤖 DOMINGUITO',
+texto: msg,
+ts: Date.now(),
+tipo: 'sistema'
 
-    // ✅ REDIRECCIÓN: Si el texto contiene "parte diario" o "parte", redirigir a procesarParteDiario
-    const textoLower = texto.toLowerCase().trim();
-    if (textoLower.includes('parte diario') || textoLower.includes('parte')) {
-        console.log("🔄 Redirigiendo a procesarParteDiario desde procesarComandoDominguito");
-        procesarParteDiario(texto, autor, chatId);
-        return;
-    }
-
-    const chatContainer = document.getElementById('chat-individual');
-    const upper = texto.toUpperCase();
-
-    // Función auxiliar para enviar respuestas
-    const enviarRespuesta = (msg) => {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: msg,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-    };
-
-    // --- PASO 1: BÚSQUEDA INTELIGENTE EN CACHÉ ---
-    if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
-        const normalizado = normalizar(texto);
-        const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
-
-        const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
-            const nombreNormalizado = normalizar(llave);
-            
-            // 1. Exacta
-            if (nombreNormalizado === normalizado) return true;
-            
-            // 2. Inclusión (uno contiene al otro)
-            if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
-            
-            // 3. Por palabra suelta
-            const palabrasPaciente = nombreNormalizado.split(' ');
-            return palabrasInput.some(p => 
-                palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
-            );
-        });
-
-        if (llaveEncontrada) {
-            const pac = cachePacientes[llaveEncontrada];
-            console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
-            
-            mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
-            return; 
-        }
-    }
-
-    // --- PASO 2: COMANDOS ---
-    
-    // Comando: CUD
-    if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
-        enviarRespuesta("🔍 Escaneando todos los CUDs...");
-        const ramas = ['cd', 'cet', 'rehab'];
-        let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
-        let total = 0;
-        let completado = 0;
-        
-        ramas.forEach(rama => {
-            db.ref(`/${rama}/pacientes`).once('value', snap => {
-                snap.forEach(child => {
-                    const pac = child.val();
-                    if (pac && pac.cud) {
-                        const hoy = new Date();
-                        const venc = new Date(pac.cud);
-                        const diff = Math.floor((venc - hoy) / (1000 * 60 * 60 * 24));
-                        total++;
-                        if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
-                        else if (diff <= 90) respuesta += `⚠️ ${child.key}: Vence en ${diff} días\n`;
-                        else respuesta += `✅ ${child.key}: Vigente (${diff} días restantes)\n`;
-                    }
-                });
-                completado++;
-                if (completado === ramas.length) {
-                    if (total === 0) respuesta += "✅ No se encontraron CUDs registrados.";
-                    enviarRespuesta(respuesta);
-                }
-            });
-        });
-        return;
-    }
-    
-    // Comando: Ausencias
-    if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
-        enviarRespuesta("📉 Verificando ausencias...");
-        db.ref('/seguimientopacientes').once('value', snap => {
-            let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━\n";
-            let encontrados = false;
-            snap.forEach(child => {
-                const nombre = child.key;
-                let faltas = 0;
-                child.forEach(dia => {
-                    const val = dia.val();
-                    if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
-                });
-                if (faltas >= 5) {
-                    encontrados = true;
-                    respuesta += `🚨 ${nombre}: ${faltas} faltas\n`;
-                }
-            });
-            enviarRespuesta(encontrados ? respuesta : respuesta + "✅ Todos los pacientes con asistencia normal.");
-        });
-        return;
-    }
-
-    // Comando: Ayuda
-    if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
-        enviarRespuesta(`📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Escribir Nombre] - Ver ficha clínica completa\n• "CUD" - Ver vencimientos de todos los pacientes\n• "Ausencias" - Pacientes con +5 faltas en el mes\n• "Reporte" - Resumen del día\n• "Paciente [nombre]" - Info resumida\n• "Ayuda" - Esta lista`);
-        return;
-    }
-    
-    // Comando: Reporte
-    if (upper.includes('REPORTE') || upper.includes('RESUMEN')) {
-        enviarRespuesta(`📊 REPORTE DEL DÍA\n━━━━━━━━━━━━━━━━\n📅 ${new Date().toLocaleDateString()}\n👤 Usuario: ${usuarioActivo}\n🕐 ${new Date().toLocaleTimeString()}\n\n✅ Sistema operando con normalidad.`);
-        return;
-    }
-    
-    // Comando: Paciente específico (usando buscarPaciente global)
-    if (upper.includes('PACIENTE')) {
-        const nombrePac = texto.replace(/paciente\s/i, '').trim();
-        if (nombrePac) {
-            const pac = buscarPaciente(nombrePac);
-            if (pac) {
-                mostrarFichaCompleta(pac, pac.modalidad, pac.nombre, enviarRespuesta);
-            } else {
-                enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
-            }
-            return;
-        }
-    }
-    
-    // Respuesta por defecto
-    enviarRespuesta(`✅ Mensaje registrado.\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`);
+});
+};
+// --- PASO 1: BÚSQUEDA INTELIGENTE EN CACHÉ ---
+if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
+const normalizado = normalizar(texto);
+const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
+const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
+const nombreNormalizado = normalizar(llave);
+// 1. Exacta
+if (nombreNormalizado === normalizado) return true;
+// 2. Inclusión (uno contiene al otro)
+if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
+// 3. Por palabra suelta
+const palabrasPaciente = nombreNormalizado.split(' ');
+return palabrasInput.some(p =>
+palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
+);
+});
+if (llaveEncontrada) {
+const pac = cachePacientes[llaveEncontrada];
+console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
+mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
+return;
+}
+}
+// --- PASO 2: COMANDOS ---
+// Comando: CUD
+if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
+enviarRespuesta("🔍 Escaneando todos los CUDs...");
+procesarComandoCUD(chatId);
+return;
+}
+// Comando: Ausencias
+if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
+enviarRespuesta("📉 Verificando ausencias...");
+db.ref('/seguimiento_pacientes').once('value', snap => {
+let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━━━\n";
+let encontrados = false;
+snap.forEach(child => {
+const nombre = child.key;
+let faltas = 0;
+child.forEach(dia => {
+const val = dia.val();
+if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
+});
+if (faltas >= 5) {
+encontrados = true;
+respuesta += `🚨 ${nombre}: ${faltas} faltas\n`;
+}
+});
+enviarRespuesta(encontrados ? respuesta : respuesta + "✅ Todos los pacientes con asistencia normal.");
+});
+return;
+}
+// Comando: Ayuda
+if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
+enviarAyuda(chatId);
+return;
+}
+// Comando: Reporte
+if (upper.includes('REPORTE') || upper.includes('RESUMEN')) {
+enviarRespuesta(`📊 REPORTE DEL DÍA\n━━━━━━━━━━━━━━━━\n📅 ${new Date().toLocaleDateString()}\n👤 Usuario: ${usuarioActivo}\n🕐 ${new Date().toLocaleTimeString()}\n\n✅ Sistema operando con normalidad.`);
+return;
+}
+// Comando: Paciente específico
+if (upper.includes('PACIENTE')) {
+const nombrePac = texto.replace(/paciente\s/i, '').trim();
+if (nombrePac) {
+const pac = buscarPaciente(nombrePac);
+if (pac) {
+mostrarFichaCompleta(pac, pac.modalidad, pac.nombre || pac.id, enviarRespuesta);
+} else {
+enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
+}
+return;
+}
+}
+// Respuesta por defecto
+enviarRespuesta(`✅ Mensaje registrado.\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`)
 }
 // ============================================================
 // =============== 9. ESCUCHAR NOTIFICACIONES =================
@@ -1229,27 +1182,22 @@ function cerrarModalDominguito() {
     const modal = document.getElementById('modal-dominguito');
     if (modal) modal.style.display = 'none';
 }
-
 function enviarADominguito() {
-    const input = document.getElementById('in-domingo-modal');
-    const texto = input.value.trim();
-    if (!texto) return;
-    
-    // CORRECCIÓN AQUÍ: Sanitiza uidActivo antes de usarlo
-    const idEmisor = sanitizarKey(uidActivo);
-    const participantes = [idEmisor, 'dominguito'].sort();
-    
-    const chatId = `chat_${participantes.join('_')}`;
-    
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: usuarioActivo,
-        texto: texto,
-        ts: Date.now()
-    });
-    
-    input.value = '';
-    procesarComandoDominguito(texto);
-}
+const input = document.getElementById('in-domingo-modal');
+const texto = input.value.trim();
+if (!texto) return;
+const idEmisor = sanitizarKey(uidActivo);
+const participantes = [idEmisor, 'dominguito'].sort();
+const chatId = `chat${participantes.join('')}`;
+refChatsIndividuales.child(chatId).child('mensajes').push({
+autor: usuarioActivo,
+texto: texto,
+ts: Date.now()
+});
+input.value = '';
+// ✅ FIX: Pasar el chatId calculado
+procesarComandoDominguito(texto, usuarioActivo, chatId);
+}    
 // ============================================================
 // =============== 12. GRUPOS TIPO WHATSAPP ===================
 // ============================================================
@@ -2225,7 +2173,7 @@ async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
     const datosPaciente = await obtenerDatosPaciente(paciente);
     if (!datosPaciente) return;
 
-    refExpedientes.child(paciente).push({
+    refExpedientes.child(sanitizarKey(paciente)).push({
         autor: '🤖 DOMINGUITO',
         msg: `📋 T.S. reportó gestión de CUD:\n"${textoRespuesta}"\n⏰ Pendiente de confirmación de renovación.`,
         ts: Date.now(),
@@ -2294,7 +2242,7 @@ async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justi
     const datosPaciente = await obtenerDatosPaciente(paciente);
     if (!datosPaciente) return;
 
-    refExpedientes.child(paciente).push({
+    refExpedientes.child(sanitizarKey(paciente)).push({
         autor: '🤖 DOMINGUITO',
         msg: `📋 Reporte de ausencias:\n"${textoRespuesta}"\n${justificado ? '✅ Ausencias justificadas clínicamente.' : '⚠️ Ausencias reportadas sin justificativo.'}`,
         ts: Date.now(),
@@ -2365,7 +2313,7 @@ function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
         return;
     }
 
-    refExpedientes.child(paciente).push({
+    refExpedientes.child(sanitizarKey(paciente)).push({
         autor: '🤖 DOMINGUITO',
         msg: `📋 T.S. reportó caso en espera: "${textoRespuesta}"\n⏳ Pendiente de resolución. Próximo chequeo automático en 3 días.`,
         ts: Date.now(),
@@ -2412,7 +2360,7 @@ function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
         return;
     }
 
-    refExpedientes.child(paciente).push({
+    refExpedientes.child(sanitizarKey(paciente)).push({
         autor: '🤖 DOMINGUITO',
         msg: `✅ CASO RESUELTO CON ÉXITO:\n"${textoRespuesta}"\n🎉 Gestión finalizada por el área social. Alerta cerrada.`,
         ts: Date.now(),
@@ -2465,7 +2413,7 @@ function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
         return;
     }
 
-    refExpedientes.child(paciente).push({
+    refExpedientes.child(sanitizarKey(paciente)).push({
         autor: '🤖 DOMINGUITO',
         msg: `📋 T.S. asentó informe general: "${textoRespuesta}"\n🗂️ Registro guardado en archivo pasivo.`,
         ts: Date.now(),
@@ -2592,7 +2540,7 @@ function procesarParteDiario(texto, autor, chatId) {
         }
         
         // Notificar al equipo
-        notificarEquipo(paciente, paciente.modalidad, 
+        notificarEquipoPaciente(paciente, paciente.modalidad, 
             tipo === 'alta' ? '🎉 ALTA REGISTRADA' : 
             tipo === 'faltajustificada' ? '🔷 AUSENCIA JUSTIFICADA' :
             tipo === 'falta' ? '⚠️ AUSENCIA SIN JUSTIFICAR' :
@@ -2641,7 +2589,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
     if (textLower.includes('turno') || textLower.includes('saqué') || textLower.includes('reservé') || textLower.includes('agendé') || textLower.includes('junta')) {
         // GESTIÓN DE CUD - Notificar al equipo
         alertasCreadas++;
-        notificarEquipo(paciente, '🔄 CUD EN GESTIÓN', `La T.S. gestionó: "${texto}"\n⚠️ Pendiente de confirmación.`, 'informativo');
+        notificarEquipoPaciente(paciente, '🔄 CUD EN GESTIÓN', `La T.S. gestionó: "${texto}"\n⚠️ Pendiente de confirmación.`, 'informativo');
         
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2670,7 +2618,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
             setTimeout(() => alertaEl.remove(), 60000);
         }
         
-        notificarEquipo(paciente, '🎉 CASO RESUELTO', `${texto}\n✅ Gestión finalizada. Alerta cerrada.`, 'informativo');
+        notificarEquipoPaciente(paciente, '🎉 CASO RESUELTO', `${texto}\n✅ Gestión finalizada. Alerta cerrada.`, 'informativo');
         
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
@@ -2702,7 +2650,7 @@ async function procesarRespuestaTS(paciente, texto, autor, chatId) {
     
     if (textLower.includes('enfermo') || textLower.includes('fiebre') || textLower.includes('médico') || textLower.includes('licencia') || textLower.includes('reposo') || textLower.includes('certificado')) {
         // AUSENCIA JUSTIFICADA
-        notificarEquipo(paciente, '🔷 AUSENCIA JUSTIFICADA', `${texto}\nRegistrado por: ${autor}`, 'informativo');
+        notificarEquipoPaciente(paciente, '🔷 AUSENCIA JUSTIFICADA', `${texto}\nRegistrado por: ${autor}`, 'informativo');
         
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
