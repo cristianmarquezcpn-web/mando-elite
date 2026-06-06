@@ -334,13 +334,14 @@
 // CONFIGURACIÓN FIREBASE
 // ============================================================
 const firebaseConfig = {
-    apiKey:"AIzaSyAugXXxbwKFByhDbLZslk2HAUTzrzd8",
-    authDomain:"clinicaintegral-5c488.firebaseapp.com",
-    databaseURL:"https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
-    projectId:"clinicaintegral-5c488",
-    storageBucket:"clinicaintegral-5c488.appspot.com",
-    appId:"1:184090967634:web:09715937b33ea48288698b"
+    apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
+    authDomain: "clinicaintegral-5c488.firebaseapp.com",
+    databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
+    projectId: "clinicaintegral-5c488",
+    storageBucket: "clinicaintegral-5c488.appspot.com",
+    appId: "1:184090967634:web:09715937b33ea48288698b"
 };
+
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
@@ -400,24 +401,39 @@ function cerrarSesion() {
 }
 
 function validarUsuario(user) {
+    // 1. PRIORIDAD ABSOLUTA: El Admin entra siempre, no importa nada más
     if (user.email === "cristianmarquezcpn@gmail.com") {
         accesoConcedido(user.email, { rol: "admin", nombre: "Cristian (Director)" });
         return;
     }
+
+    // 2. Si no es admin, buscamos en la base real de EMPLEADOS usando el email (campo 'm')
     db.ref('SISTEMA_PERSONAL/empleados').orderByChild('m').equalTo(user.email).once('value', snap => {
         if (snap.exists()) {
+            // Si lo encuentra, extraemos los datos
             snap.forEach(child => {
                 const empleado = child.val();
-                const datos = { nombre: empleado.n, rol: empleado.rol || "EMPLEADO" };
+                // Mapeo: Convertimos 'n' a 'nombre'
+                const datos = {
+                    nombre: empleado.n, 
+                    rol: empleado.rol || "EMPLEADO"
+                };
                 accesoConcedido(user.email, datos);
             });
         } else {
-            alert("❌ Acceso denegado: El email no está en la base de personal.");
-            auth.signOut();
+            // 3. Si no está en empleados, chequeamos el antiguo sistema (por si acaso)
+            refUsuarios.child(sanitizarKey(user.email)).once('value', snap => {
+                const datos = snap.val();
+                if (datos) {
+                    accesoConcedido(user.email, datos);
+                } else {
+                    alert("❌ Acceso denegado: El email no está en la base de personal.");
+                    auth.signOut();
+                }
+            });
         }
     });
 }
-
 function accesoConcedido(email, datos) {
     const bloqueo = document.getElementById('bloqueo-mando');
     if (bloqueo) bloqueo.style.display = 'none';
@@ -429,12 +445,53 @@ function accesoConcedido(email, datos) {
     const userTag = document.getElementById('user-tag');
     if (userTag) userTag.innerText = `👤 ${usuarioActivo} | ${rangoActivo}`;
     
+    // Registrar online
     const uidKey = sanitizarKey(uidActivo);
     refOnline.child(uidKey).set({ nombre: usuarioActivo, rol: rangoActivo, ultimo: Date.now() });
     refOnline.child(uidKey).onDisconnect().remove();
     
+    // Verificar PIN para chat global
+    verificarPinChatGlobal();
+    
+    // Iniciar todo según rol
     iniciarApp();
 }
+function activarModoEspia(emailEspia) {
+    // 1. Buscamos los datos de ese usuario en la base de datos
+    const emailKey = sanitizarKey(emailEspia);
+    refUsuarios.child(emailKey).once('value', snap => {
+        const datos = snap.val();
+        if (datos) {
+            console.log("🕵️ MODO ESPÍA ACTIVADO: " + datos.nombre);
+            // 2. Sobrescribimos las variables globales de sesión
+            uidActivo = "alejandritabelli@hotmail.com";
+            usuarioActivo = "alejandra belli";
+            rangoActivo = "user";
+            
+            // 3. Actualizamos la interfaz
+            document.getElementById('user-tag').innerText = `🕵️ ESPÍANDO A: ${datos.nombre} | ${datos.rol}`;
+            
+            // 4. Recargamos los componentes que dependen de la identidad
+            cargarContactos(); // Ahora debería mostrar lo que ella ve
+            // renderPizarraLocal(); // Si tuvieras esta función, llámala también
+            alert("Ahora estás navegando como: " + datos.nombre);
+        } else {
+            alert("No se encontró el usuario en la base de datos.");
+        }
+    });
+}    
+
+function verificarPinChatGlobal() {
+    const pinCorrecto = "2611";
+    const pinIngresado = prompt("🔐 Ingresá el PIN de seguridad para acceder al chat global:");
+    
+    if (pinIngresado !== pinCorrecto) {
+        alert("❌ PIN incorrecto. Chat global bloqueado.");
+        return false;
+    }
+    return true;
+}
+
 
 // ============================================================
 // INICIAR APLICACIÓN
