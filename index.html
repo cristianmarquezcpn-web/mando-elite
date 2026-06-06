@@ -678,7 +678,6 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // DOMINGUITO - LLAMADA A LA API
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
-
 async function enviarADominguitoAPI(texto, autor, chatId) {
     const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
     const escribiendo = document.createElement('div');
@@ -688,11 +687,16 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
     try {
-        const res = await fetch(DOMINGUITOAPI + '/procesar', {
+        const res = await fetch('https://dominguito-san-juan.vercel.app/api/procesar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
+            body: JSON.stringify({ texto, autor, chatId })
         });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+        
         const data = await res.json();
         escribiendo.remove();
         
@@ -719,7 +723,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         });
     }
 }
-
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
