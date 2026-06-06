@@ -334,12 +334,12 @@
 // CONFIGURACIÓN FIREBASE
 // ============================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAugXXxbwKFByhDbLZslk2HAUTzrzd8",
-    authDomain: "clinicaintegral-5c488.firebaseapp.com",
-    databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
-    projectId: "clinicaintegral-5c488",
-    storageBucket: "clinicaintegral-5c488.appspot.com",
-    appId: "1:184090967634:web:09715937b33ea48288698b"
+    apiKey:"AIzaSyAugXXxbwKFByhDbLZslk2HAUTzrzd8",
+    authDomain:"clinicaintegral-5c488.firebaseapp.com",
+    databaseURL:"https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
+    projectId:"clinicaintegral-5c488",
+    storageBucket:"clinicaintegral-5c488.appspot.com",
+    appId:"1:184090967634:web:09715937b33ea48288698b"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -404,7 +404,7 @@ function validarUsuario(user) {
         accesoConcedido(user.email, { rol: "admin", nombre: "Cristian (Director)" });
         return;
     }
-    db.ref('SISTEMAPERSONAL/empleados').orderByChild('m').equalTo(user.email).once('value', snap => {
+    db.ref('SISTEMA_PERSONAL/empleados').orderByChild('m').equalTo(user.email).once('value', snap => {
         if (snap.exists()) {
             snap.forEach(child => {
                 const empleado = child.val();
