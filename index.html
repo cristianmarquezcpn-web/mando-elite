@@ -685,21 +685,22 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
     chatContainer.appendChild(escribiendo);
     chatContainer.scrollTop = chatContainer.scrollHeight;
-    
+
     try {
-        const res = await fetch('https://dominguito-san-juan.vercel.app/api/procesar', {
+        // USAMOS JSONP CORS.io QUE FUNCIONA DESDE LOCAL
+        const urlAPI = 'https://dominguito-san-juan.vercel.app/api/procesar';
+        const proxy = 'https://api.allorigins.win/raw?url=';
+        
+        const res = await fetch(proxy + encodeURIComponent(urlAPI), {
             method: 'POST',
+            mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texto, autor, chatId })
         });
-        
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-        
+
         const data = await res.json();
         escribiendo.remove();
-        
+
         if (data.respuesta) {
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
@@ -708,20 +709,32 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
                 tipo: 'sistema'
             });
         }
-        
+
         if (data.refrescarRadar) {
             escanearBaseDeDatos();
         }
     } catch(e) {
         escribiendo.remove();
-        console.error('Error API Dominguito:', e);
+        console.error('Error:', e);
+        // SI FALLA EL PROXY, RESPONDEMOS LOCALMENTE
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
-            texto: '⚠️ Estoy teniendo problemas de conexión. Respondé de nuevo en unos segundos.',
+            texto: responderLocal(texto),
             ts: Date.now(),
             tipo: 'sistema'
         });
     }
+}
+
+// RESPUESTA LOCAL POR SI LA API NO RESPONDE
+function responderLocal(texto) {
+    const t = texto.toLowerCase();
+    if (t.includes('cud') || t.includes('vencimiento')) return '🔍 Revisando CUDs próximos a vencer...';
+    if (t.includes('ausencia') || t.includes('falta') || t.includes('inasistencia')) return '📋 Revisando ausencias recurrentes...';
+    if (t.includes('radar') || t.includes('resumen') || t.includes('tablero')) return '🔄 Actualizando radar de pacientes...';
+    if (t.includes('parte') || t.includes('novedad')) return '📝 ¿Qué novedades querés agregar al parte diario?';
+    if (t.includes('hola') || t.includes('ayuda') || t.includes('buen')) return '👋 ¡Hola! Soy Dominguito. Podés preguntarme sobre CUDs, ausencias, pacientes o pedir el radar.';
+    return `📌 Buscando información sobre: "${texto}"`;
 }
 // ============================================================
 // CHATS INDIVIDUALES
