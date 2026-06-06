@@ -13,60 +13,60 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         :root { 
-            --bg: #f0f2f5; --card: #ffffff; --primary: #1a2a6c; 
-            --accent: #3b82f6; --urgente: #ef4444; --verde: #10b981; 
-            --oro: #f59e0b; --dark: #0f172a; --whatsapp: #25D366;
-            --ts-color: #8b5cf6;
+            --bg: f0f2f5; --card: ffffff; --primary: 1a2a6c; 
+            --accent: 3b82f6; --urgente: ef4444; --verde: 10b981; 
+            --oro: f59e0b; --dark: 0f172a; --whatsapp: 25D366;
+            --ts-color: 8b5cf6;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+         { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
         @media (max-width: 1000px) { 
             body { flex-direction: column; height: auto; overflow-y: auto; display: block; } 
-            .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; } 
+            .col-radar, .col-pizarra, .col-comms { width: 100% !important; height: auto !important; min-height: 50vh; border-right: none; border-bottom: 2px solid e2e8f0; } 
             .btn-pro, input, select { min-height: 44px; font-size: 14px; }
             .header { flex-direction: column; gap: 10px; align-items: flex-start; }
         }
 
-        .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid #334155; }
+        .col-radar { width: 280px; background: var(--dark); color: white; display: flex; flex-direction: column; border-right: 1px solid 334155; }
         .radar-feed { flex: 1; overflow-y: auto; padding: 15px; }
-        .radar-card { background: #1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
-        .radar-card:hover { transform: scale(1.02); background: #334155; }
+        .radar-card { background: 1e293b; border-left: 4px solid var(--urgente); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
+        .radar-card:hover { transform: scale(1.02); background: 334155; }
         
         .col-pizarra { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: var(--bg); }
-        .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        #lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .glass-panel { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid e2e8f0; }
+        lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .task-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .prio-ALTA { border-left: 8px solid var(--urgente); }
         .prio-MEDIA { border-left: 8px solid var(--oro); }
         
-        .col-comms { width: 400px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-        .tab-btn { flex: 1; padding: 15px 0; border: none; background: #f8fafc; cursor: pointer; font-weight: 800; color: #64748b; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .col-comms { width: 400px; background: white; border-left: 1px solid e2e8f0; display: flex; flex-direction: column; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: f8fafc; cursor: pointer; font-weight: 800; color: 64748b; border-bottom: 2px solid transparent; transition: 0.2s; }
         .tab-btn.activa { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .tab-btn:hover { background: #f1f5f9; }
+        .tab-btn:hover { background: f1f5f9; }
         
-        .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
+        .chat-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: f8fafc; }
         .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; max-width: 90%; word-wrap: break-word; }
         .msg-me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 0; }
-        .msg-them { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
-        .msg-bot { background: #eff6ff; border: 1px solid var(--accent); color: #1e3a8a; align-self: flex-start; width: 100%; border-radius: 8px; }
-        .msg-domingo { background: linear-gradient(135deg, #1a2a6c, #3b82f6); color: white; align-self: flex-start; border-bottom-left-radius: 0; }
-        .msg-sistema { background: #1e293b; color: white; align-self: center; font-size: 11px; padding: 5px 15px; border-radius: 20px; text-align: center; }
+        .msg-them { background: white; border: 1px solid e2e8f0; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-bot { background: eff6ff; border: 1px solid var(--accent); color: 1e3a8a; align-self: flex-start; width: 100%; border-radius: 8px; }
+        .msg-domingo { background: linear-gradient(135deg, 1a2a6c, 3b82f6); color: white; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-sistema { background: 1e293b; color: white; align-self: center; font-size: 11px; padding: 5px 15px; border-radius: 20px; text-align: center; }
         
-        .contacto-item { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-        .contacto-item:hover { background: #f1f5f9; }
-        .contacto-item.activo { background: #eff6ff; border-left: 4px solid var(--accent); }
+        .contacto-item { padding: 12px 15px; border-bottom: 1px solid e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .contacto-item:hover { background: f1f5f9; }
+        .contacto-item.activo { background: eff6ff; border-left: 4px solid var(--accent); }
         .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; color: white; flex-shrink: 0; }
         .no-leido { width: 10px; height: 10px; border-radius: 50%; background: var(--urgente); animation: pulse 2s infinite; }
 
-        input, select, textarea { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; width: 100%; font-size: 13px; outline: none; }
+        input, select, textarea { background: f8fafc; border: 1px solid e2e8f0; padding: 10px; border-radius: 8px; width: 100%; font-size: 13px; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         .btn-pro { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; }
         .btn-pro:hover { opacity: 0.9; transform: scale(1.02); }
         .btn-pro:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        #bloqueo-mando { position:fixed; inset:0; background: var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white; flex-direction: column; gap: 20px; }
+        bloqueo-mando { position:fixed; inset:0; background: var(--dark); z-index:50000; display:flex; align-items:center; justify-content:center; color:white; flex-direction: column; gap: 20px; }
         .toast { position: fixed; bottom: 20px; right: 20px; background: var(--dark); color: white; padding: 15px 25px; border-radius: 12px; z-index: 99999; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
         .badge-rojo { background: var(--urgente); color: white; }
@@ -80,8 +80,7 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
         .modal-content { background: white; border-radius: 20px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
 
-        /* Panel flotante de RRHH corregido */
-        #panel-liquidacion {
+        panel-liquidacion {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -102,78 +101,74 @@
 
 <div id="bloqueo-mando">
     <h2 style="font-size: 28px; margin: 0;">🔐 DOMINGUITO</h2>
-    <p style="color: #94a3b8; margin: 0;">Sistema de Comunicación Interna</p>
-    <button onclick="loginGoogle()" style="padding: 16px 32px; background: #4285f4; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(66,133,244,0.4); transition: 0.2s;">
+    <p style="color: 94a3b8; margin: 0;">Sistema de Comunicación Interna</p>
+    <button onclick="loginGoogle()" style="padding: 16px 32px; background: 4285f4; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(66,133,244,0.4); transition: 0.2s;">
         🟢 Entrar con Google
     </button>
-    <div style="font-size: 12px; color: #64748b;">Solo personal autorizado</div>
+    <div style="font-size: 12px; color: 64748b;">Solo personal autorizado</div>
 </div>
 
 <div class="col-radar">
-    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+    <div style="padding:20px; font-weight:800; font-size: 14px; letter-spacing: 1px; border-bottom: 1px solid 334155; display: flex; justify-content: space-between; align-items: center;">
         <span>👁️ DOMINGUITO</span>
         <span id="online-count" style="font-size: 11px; color: var(--verde);">● 0 online</span>
     </div>
     <div style="display: flex; gap: 10px; padding: 10px 15px;">
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">🚨 CUDs</div>
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">🚨 CUDs</div>
             <div id="stat-cuds" style="font-size: 20px; font-weight: 900; color: var(--urgente);">0</div>
         </div>
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">📉 AUSENCIAS</div>
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">📉 AUSENCIAS</div>
             <div id="stat-aus" style="font-size: 20px; font-weight: 900; color: var(--oro);">0</div>
         </div>
-        <div style="flex: 1; background: #334155; padding: 8px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">💬 MSGS</div>
+        <div style="flex: 1; background: 334155; padding: 8px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 9px; color: 94a3b8; font-weight: bold;">💬 MSGS</div>
             <div id="stat-msg" style="font-size: 20px; font-weight: 900; color: var(--accent);">0</div>
         </div>
     </div>
     <div id="radar-feed" class="radar-feed">
-        <div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Iniciando vigilancia...</div>
+        <div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">🔍 Iniciando vigilancia...</div>
     </div>
 </div>
 
-<div id="panel-liquidacion" style="display:none; margin-top: 16px; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 20px;">
+<div id="panel-liquidacion" style="display:none; margin-top: 16px; background: 0f172a; border: 1px solid 1e293b; border-radius: 12px; padding: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 20px;">💰</span>
-            <h3 style="margin: 0; font-size: 16px; color: #f1f5f9;">Mis Liquidaciones</h3>
-            <span id="badge-liquidacion-nueva" style="display:none; background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">NUEVA</span>
+            <h3 style="margin: 0; font-size: 16px; color: f1f5f9;">Mis Liquidaciones</h3>
+            <span id="badge-liquidacion-nueva" style="display:none; background: ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">NUEVA</span>
         </div>
         <div style="display: flex; gap: 8px;">
-            <button onclick="cargarDatosPrivados(usuarioActivo)" style="background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600;">🔄 Refrescar</button>
-            <button onclick="cerrarPanelLiquidacion()" style="background: transparent; color: #94a3b8; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 11px;">✕ Cerrar</button>
+            <button onclick="cargarDatosPrivados(usuarioActivo)" style="background: 3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600;">🔄 Refrescar</button>
+            <button onclick="cerrarPanelLiquidacion()" style="background: transparent; color: 94a3b8; border: 1px solid 334155; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 11px;">✕ Cerrar</button>
         </div>
     </div>
-
     <div id="tabla-container" style="min-height: 60px;">
-        <p style="font-size: 12px; color: #64748b; text-align: center; padding: 20px;">Hacé clic en "Refrescar" para ver tus datos</p>
+        <p style="font-size: 12px; color: 64748b; text-align: center; padding: 20px;">Hacé clic en "Refrescar" para ver tus datos</p>
     </div>
-
-    <div id="datos-pago-container" style="margin-top: 12px; padding: 12px; background: #1e293b; border-radius: 8px; display: none;">
-        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">🏦 Datos de pago registrados:</div>
-        <div id="datos-pago" style="font-size: 13px; color: #f1f5f9; font-weight: 600;"></div>
+    <div id="datos-pago-container" style="margin-top: 12px; padding: 12px; background: 1e293b; border-radius: 8px; display: none;">
+        <div style="font-size: 11px; color: 94a3b8; margin-bottom: 6px;">🏦 Datos de pago registrados:</div>
+        <div id="datos-pago" style="font-size: 13px; color: f1f5f9; font-weight: 600;"></div>
     </div>
-
-    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #1e293b;">
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid 1e293b;">
         <details>
-            <summary style="font-size: 12px; color: #94a3b8; cursor: pointer; font-weight: 600;">📜 Historial completo</summary>
-            <div id="historial-liquidaciones" style="margin-top: 8px; font-size: 11px; color: #64748b;">
+            <summary style="font-size: 12px; color: 94a3b8; cursor: pointer; font-weight: 600;">📜 Historial completo</summary>
+            <div id="historial-liquidaciones" style="margin-top: 8px; font-size: 11px; color: 64748b;">
                 <p style="text-align: center; padding: 10px;">Cargando historial...</p>
             </div>
         </details>
     </div>
-
     <div style="margin-top: 16px; display: none;" id="confirmar-lectura-container">
-        <button onclick="confirmarLecturaLiquidacion()" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">
+        <button onclick="confirmarLecturaLiquidacion()" style="width: 100%; padding: 10px; background: 10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">
             ✅ Confirmar que vi mi liquidación
         </button>
     </div>
 </div>
 
-<button id="btn-abrir-liquidacion" onclick="abrirPanelLiquidacion()" style="position: fixed; bottom: 20px; right: 20px; background: #3b82f6; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 22px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+<button id="btn-abrir-liquidacion" onclick="abrirPanelLiquidacion()" style="position: fixed; bottom: 20px; right: 20px; background: 3b82f6; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 22px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); z-index: 1000; display: flex; align-items: center; justify-content: center;">
     💰
-    <span id="badge-flotante-liquidacion" style="display:none; position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 9px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">1</span>
+    <span id="badge-flotante-liquidacion" style="display:none; position: absolute; top: -4px; right: -4px; background: ef4444; color: white; font-size: 9px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">1</span>
 </button>    
     
 <div class="col-pizarra">
@@ -184,28 +179,28 @@
         </div>
         <div style="display:flex; gap:5px; flex-wrap: wrap;">
             <button class="btn-pro" style="background:var(--verde); font-size:10px;" onclick="abrirChatDominguito()">💬 DOMINGUITO</button>
-            <button class="btn-pro" style="background:#64748b; font-size:10px;" onclick="cerrarSesion()">🚪 SALIR</button>
+            <button class="btn-pro" style="background:64748b; font-size:10px;" onclick="cerrarSesion()">🚪 SALIR</button>
         </div>
     </div>
     
     <div class="glass-panel" id="panel-ts" style="display:none; border-top: 5px solid var(--ts-color);">
         <h3 style="margin-top:0; color: var(--ts-color);">👩‍⚕️ MI TABLERO - T.S.</h3>
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
-            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
-                <div style="font-size:9px; color:#94a3b8;">PACIENTES</div>
+            <div style="background:f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:94a3b8;">PACIENTES</div>
                 <div id="stat-mispacientes" style="font-size:24px; font-weight:900; color:var(--ts-color);">0</div>
             </div>
-            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
-                <div style="font-size:9px; color:#94a3b8;">CUDs A VENCER</div>
+            <div style="background:f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:94a3b8;">CUDs A VENCER</div>
                 <div id="stat-miscuds" style="font-size:24px; font-weight:900; color:var(--oro);">0</div>
             </div>
-            <div style="background:#f8fafc; padding:10px; border-radius:8px; text-align:center;">
-                <div style="font-size:9px; color:#94a3b8;">ALERTAS HOY</div>
+            <div style="background:f8fafc; padding:10px; border-radius:8px; text-align:center;">
+                <div style="font-size:9px; color:94a3b8;">ALERTAS HOY</div>
                 <div id="stat-misalertas" style="font-size:24px; font-weight:900; color:var(--urgente);">0</div>
             </div>
         </div>
         <div id="ts-pendientes" style="max-height:200px; overflow-y:auto;">
-            <div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;">Cargando pacientes asignados...</div>
+            <div style="text-align:center; padding:15px; color:94a3b8; font-size:12px;">Cargando pacientes asignados...</div>
         </div>
     </div>
 
@@ -221,7 +216,6 @@
 
     <div class="glass-panel">
         <input type="text" id="t-desc" placeholder="Escribí una orden o misión para el equipo...">
-        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
             <input type="date" id="t-vence">
             <select id="t-prio-val">
@@ -230,7 +224,6 @@
                 <option value="ALTA">🔥 URGENTE</option>
             </select>
         </div>
-        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px">
             <select id="t-dest-val">
                 <option value="TODOS">📢 A TODOS</option>
@@ -243,14 +236,6 @@
             </select>
             <input type="text" id="t-drive-val" placeholder="Link (opcional)">
         </div>
-
-        <div style="margin-top:8px;">
-            <input type="file" id="input-archivo-tarea" style="display:none;" onchange="manejarSeleccionArchivo(this)">
-            <button type="button" onclick="document.getElementById('input-archivo-tarea').click()" class="btn-pro" style="width:100%; background:#6366f1; color:white;">
-                📎 ADJUNTAR ARCHIVO
-            </button>
-        </div>
-
         <button class="btn-pro" style="width:100%; margin-top:10px; background: var(--verde);" onclick="crearTarea()">📨 ENVIAR ORDEN</button>
     </div>    
     <div style="display:flex; gap:10px;">
@@ -260,7 +245,6 @@
             <option value="TODAS">📋 Todas</option>
         </select>
     </div>
-    
     <div id="lista-tareas"></div>
 </div>
 
@@ -272,47 +256,47 @@
     </div>
 
     <div id="vista-chats" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-        <div style="display: flex; border-bottom: 1px solid #e2e8f0;">
+        <div style="display: flex; border-bottom: 1px solid e2e8f0;">
             <input type="text" id="busc-contacto" placeholder="🔍 Buscar contacto..." onkeyup="filtrarContactos()" style="border: none; padding: 15px; border-radius: 0;">
         </div>
         <div id="lista-contactos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;"></div>
         <div id="chat-individual" class="chat-content" style="flex: 1;">
-            <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un contacto para chatear</div>
+            <div style="text-align:center; color:94a3b8; font-size:12px; margin-top:20px;">Seleccioná un contacto para chatear</div>
         </div>
-        <div id="input-chat-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0; display:none;">
+        <div id="input-chat-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0; display:none;">
             <input type="text" id="chat-individual-input" placeholder="Escribí un mensaje..." onkeypress="if(event.key==='Enter') enviarMensajeIndividual()">
             <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeIndividual()">➤</button>
         </div>
     </div>
 
     <div id="vista-grupos" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
-        <div style="padding:10px; border-bottom: 1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+        <div style="padding:10px; border-bottom: 1px solid e2e8f0; background:f8fafc; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:600; font-size:13px;">👥 Mis Grupos</span>
             <button class="btn-pro" style="background:var(--ts-color); font-size:10px;" onclick="mostrarModalCrearGrupo()">+ NUEVO GRUPO</button>
         </div>
         <div id="lista-grupos" style="overflow-y: auto; flex: 0 0 auto; max-height: 200px;">
-            <div style="text-align:center; padding:20px; color:#64748b; font-size:12px;">Cargando grupos...</div>
+            <div style="text-align:center; padding:20px; color:64748b; font-size:12px;">Cargando grupos...</div>
         </div>
         <div id="chat-grupo" class="chat-content" style="flex: 1;">
-            <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo para chatear</div>
+            <div style="text-align:center; color:94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo para chatear</div>
         </div>
-        <div id="input-grupo-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0; display:none;">
+        <div id="input-grupo-area" style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0; display:none;">
             <input type="text" id="chat-grupo-input" placeholder="Escribí un mensaje al grupo..." onkeypress="if(event.key==='Enter') enviarMensajeGrupo()">
             <button class="btn-pro" style="width: 50px;" onclick="enviarMensajeGrupo()">➤</button>
         </div>
     </div>
 
     <div id="vista-expedientes" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
-        <div style="padding: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+        <div style="padding: 10px; border-bottom: 1px solid e2e8f0; background: f8fafc;">
             <input type="text" id="busc-paciente" placeholder="🔍 Buscar paciente..." onkeyup="filtrarPacientes()" style="margin-bottom: 5px;">
             <select id="sel-paciente" onchange="cargarExpedientePaciente()">
                 <option value="">Seleccioná un paciente...</option>
             </select>
         </div>
         <div id="chat-dominguito" class="chat-content">
-            <div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente para ver su expediente clínico</div>
+            <div style="text-align:center; color:94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente para ver su expediente clínico</div>
         </div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0;">
             <input type="text" id="in-dominguito" placeholder="Agregar novedad al expediente..." onkeypress="if(event.key==='Enter') enviarReporteDominguito()">
             <button class="btn-pro" style="width: 50px;" onclick="enviarReporteDominguito()">➤</button>
             <button class="btn-pro" style="background: var(--urgente); width: 40px; font-size: 10px;" onclick="exportarPDF()">📄</button>
@@ -326,7 +310,7 @@
             <span style="font-weight: 800;">🤖 DOMINGUITO - Asistente</span>
             <button onclick="cerrarModalDominguito()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
         </div>
-        <div id="chat-domingo-modal" class="chat-content" style="background: #f8f9fa;">
+        <div id="chat-domingo-modal" class="chat-content" style="background: f8f9fa;">
             <div class="msg msg-domingo">
                 <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
                 ¡Hola! Soy Dominguito, tu asistente. 
@@ -338,50 +322,41 @@
                 • Te recuerde tareas pendientes
             </div>
         </div>
-        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid #e2e8f0;">
+        <div style="padding:10px; display:flex; gap:5px; border-top: 1px solid e2e8f0;">
             <input type="text" id="in-domingo-modal" placeholder="Escribí tu mensaje para Dominguito..." onkeypress="if(event.key==='Enter') enviarADominguito()">
             <button class="btn-pro" style="width: 50px;" onclick="enviarADominguito()">➤</button>
         </div>
     </div>
 </div>
+
 <script>
+// ============================================================
+// CONFIGURACIÓN FIREBASE
+// ============================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAugXXx_b_wKFByhDbLZslk2HA_UTzrzd8",
+    apiKey: "AIzaSyAugXXxbwKFByhDbLZslk2HAUTzrzd8",
     authDomain: "clinicaintegral-5c488.firebaseapp.com",
     databaseURL: "https://clinicaintegral-5c488-default-rtdb.firebaseio.com",
     projectId: "clinicaintegral-5c488",
     storageBucket: "clinicaintegral-5c488.appspot.com",
     appId: "1:184090967634:web:09715937b33ea48288698b"
 };
-
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
 // ============================================================
-// =============== FUNCIÓN DE SANEAMIENTO =====================
+// REFERENCIAS FIREBASE
 // ============================================================
-function sanitizarKey(key) {
-    if (!key) return "vacio";
-    // Firebase no permite: . # $ [ ] / @
-    // Reemplazamos caracteres prohibidos por guion bajo
-    return key.toString().replace(/[.#$[\]\/@]/g, '_');
-}
-
-// ============================================================
-// =============== REFERENCIAS FIREBASE =======================
-// ============================================================
-const refUsuarios = db.ref('/usuarios');
+const refOnline = db.ref('/SISTEMA_MANDO/online');
 const refPizarra = db.ref('/SISTEMA_MANDO/pizarra');
-const refChatGlobal = db.ref('/SISTEMA_MANDO/chat');
 const refChatsIndividuales = db.ref('/SISTEMA_MANDO/chatsindividuales');
 const refExpedientes = db.ref('/SISTEMA_MANDO/expedientesinteractivos');
 const refAsignaciones = db.ref('/SISTEMA_MANDO/asignacionests');
-const refOnline = db.ref('/SISTEMA_MANDO/online');
 const refGrupos = db.ref('/SISTEMA_MANDO/grupos');
 
 // ============================================================
-// =============== VARIABLES GLOBALES =========================
+// VARIABLES GLOBALES
 // ============================================================
 let uidActivo = "";
 let usuarioActivo = "";
@@ -395,23 +370,13 @@ let listaContactos = [];
 let misGrupos = [];
 let cacheTareas = {};
 let cachePacientes = {};
-let listaPacientesCache = [];    
-let urlArchivoAdjunto = '';    
 
-function validarChatId(chatId) {
-    if (!chatId || typeof chatId !== 'string' || chatId.length < 5) {
-        console.error("❌ chatId inválido detectado:", chatId);
-        return false;
-    }
-    // Verificar que no tenga caracteres prohibidos de Firebase
-    if (/[.$\[\]\/@]/.test(chatId)) {
-        console.error("❌ chatId tiene caracteres prohibidos:", chatId);
-        return false;
-    }
-    return true;
+function sanitizarKey(key) {
+    if (!key) return "vacio";
+    return key.toString().replace(/[.$[\]\/@]/g, '');
 }
-// ============================================================
-// =============== AUTENTICACIÓN ==============================
+============================================================
+// AUTENTICACIÓN
 // ============================================================
 auth.onAuthStateChanged(user => {
     const bloqueo = document.getElementById('bloqueo-mando');
@@ -437,39 +402,24 @@ function cerrarSesion() {
 }
 
 function validarUsuario(user) {
-    // 1. PRIORIDAD ABSOLUTA: El Admin entra siempre, no importa nada más
     if (user.email === "cristianmarquezcpn@gmail.com") {
         accesoConcedido(user.email, { rol: "admin", nombre: "Cristian (Director)" });
         return;
     }
-
-    // 2. Si no es admin, buscamos en la base real de EMPLEADOS usando el email (campo 'm')
-    db.ref('SISTEMA_PERSONAL/empleados').orderByChild('m').equalTo(user.email).once('value', snap => {
+    db.ref('SISTEMAPERSONAL/empleados').orderByChild('m').equalTo(user.email).once('value', snap => {
         if (snap.exists()) {
-            // Si lo encuentra, extraemos los datos
             snap.forEach(child => {
                 const empleado = child.val();
-                // Mapeo: Convertimos 'n' a 'nombre'
-                const datos = {
-                    nombre: empleado.n, 
-                    rol: empleado.rol || "EMPLEADO"
-                };
+                const datos = { nombre: empleado.n, rol: empleado.rol || "EMPLEADO" };
                 accesoConcedido(user.email, datos);
             });
         } else {
-            // 3. Si no está en empleados, chequeamos el antiguo sistema (por si acaso)
-            refUsuarios.child(sanitizarKey(user.email)).once('value', snap => {
-                const datos = snap.val();
-                if (datos) {
-                    accesoConcedido(user.email, datos);
-                } else {
-                    alert("❌ Acceso denegado: El email no está en la base de personal.");
-                    auth.signOut();
-                }
-            });
+            alert("❌ Acceso denegado: El email no está en la base de personal.");
+            auth.signOut();
         }
     });
 }
+
 function accesoConcedido(email, datos) {
     const bloqueo = document.getElementById('bloqueo-mando');
     if (bloqueo) bloqueo.style.display = 'none';
@@ -481,87 +431,34 @@ function accesoConcedido(email, datos) {
     const userTag = document.getElementById('user-tag');
     if (userTag) userTag.innerText = `👤 ${usuarioActivo} | ${rangoActivo}`;
     
-    // Registrar online
     const uidKey = sanitizarKey(uidActivo);
     refOnline.child(uidKey).set({ nombre: usuarioActivo, rol: rangoActivo, ultimo: Date.now() });
     refOnline.child(uidKey).onDisconnect().remove();
     
-    // Verificar PIN para chat global
-    verificarPinChatGlobal();
-    
-    // Iniciar todo según rol
     iniciarApp();
 }
-function activarModoEspia(emailEspia) {
-    // 1. Buscamos los datos de ese usuario en la base de datos
-    const emailKey = sanitizarKey(emailEspia);
-    refUsuarios.child(emailKey).once('value', snap => {
-        const datos = snap.val();
-        if (datos) {
-            console.log("🕵️ MODO ESPÍA ACTIVADO: " + datos.nombre);
-            // 2. Sobrescribimos las variables globales de sesión
-            uidActivo = "alejandritabelli@hotmail.com";
-            usuarioActivo = "alejandra belli";
-            rangoActivo = "user";
-            
-            // 3. Actualizamos la interfaz
-            document.getElementById('user-tag').innerText = `🕵️ ESPÍANDO A: ${datos.nombre} | ${datos.rol}`;
-            
-            // 4. Recargamos los componentes que dependen de la identidad
-            cargarContactos(); // Ahora debería mostrar lo que ella ve
-            // renderPizarraLocal(); // Si tuvieras esta función, llámala también
-            alert("Ahora estás navegando como: " + datos.nombre);
-        } else {
-            alert("No se encontró el usuario en la base de datos.");
-        }
-    });
-}    
-
-function verificarPinChatGlobal() {
-    const pinCorrecto = "2611";
-    const pinIngresado = prompt("🔐 Ingresá el PIN de seguridad para acceder al chat global:");
-    
-    if (pinIngresado !== pinCorrecto) {
-        alert("❌ PIN incorrecto. Chat global bloqueado.");
-        return false;
-    }
-    return true;
-}
 
 // ============================================================
-// =============== INICIAR APLICACIÓN =========================
+// INICIAR APLICACIÓN
 // ============================================================
-// Asegurate de que esta función esté definida FUERA de iniciarApp
 async function cargarCachePacientes() {
     const ramas = ['cd', 'cet', 'rehab'];
-    // Limpiamos los globales antes de llenar
     cachePacientes = {}; 
-    
-    // Usamos un bucle for...of para esperar cada rama
     for (const rama of ramas) {
         const snap = await db.ref(`/${rama}/pacientes`).once('value');
         snap.forEach(child => {
             const pac = child.val();
             if (pac && child.key) {
-                cachePacientes[child.key] = {
-                    ...pac,
-                    id: child.key,
-                    modalidad: rama.toUpperCase()
-                };
+                cachePacientes[child.key] = { ...pac, id: child.key, modalidad: rama.toUpperCase() };
             }
         });
     }
-    const total = Object.keys(cachePacientes).length;
-    console.log(`✅ ${total} pacientes cacheados para Dominguito`);
+    console.log(`✅ ${Object.keys(cachePacientes).length} pacientes cacheados`);
 }
 
-// ESTA ES TU FUNCIÓN INICIARAPP (Reemplazala por esta estructura)
 async function iniciarApp() {
-    console.log("🚀 Iniciando carga de datos...");
-    
+    console.log("🚀 Iniciando DOMINGUITO...");
     await cargarCachePacientes();
-
-    console.log("🚀 DOMINGUITO iniciado - Usuario:", usuarioActivo, "Rol:", rangoActivo);
     
     const esAdmin = uidActivo === "cristianmarquezcpn@gmail.com" || rangoActivo === "ADMIN";
     const esTs = rangoActivo.includes("T.S.") || rangoActivo.includes("TRABAJADOR");
@@ -587,43 +484,22 @@ async function iniciarApp() {
     });
     
     cargarContactos();
-    escucharMensajesIndividuales();
     cargarGrupos();
-    
-    // CAMBIO IMPORTANTE: reemplazar iniciarDominguito() por iniciarSistemaCompleto()
     iniciarSistemaCompleto();
-    
-    iniciarEscuchaLiquidacionesMejorado(usuarioActivo);
     
     refOnline.on('value', snap => {
         const count = snap.numChildren();
         const onlineTag = document.getElementById('online-count');
         if (onlineTag) onlineTag.textContent = `● ${count} online`;
     });
-
+    
     if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
     }
-    
-    console.log("✅ Aplicación iniciada completamente");
 }
-function limpiarNombre(texto) {
-    // Lista de palabras que el sistema debe ignorar antes del nombre
-    const palabrasBasura = [
-        "informacion de", "información de", "paciente", "buscar a", "buscá a", 
-        "buscame a", "datos de", "ficha de"
-    ];
-    
-    let nombreLimpio = texto.toLowerCase();
-    palabrasBasura.forEach(p => {
-        nombreLimpio = nombreLimpio.replace(p, "").trim();
-    });
-    
-    // Quita signos de puntuación extra al inicio si quedaron
-    return nombreLimpio.replace(/^[:\s\-]+/, "").trim();
-}
+
 // ============================================================
-// =============== 3. RADAR / ESCANEO DE PACIENTES ============
+// RADAR
 // ============================================================
 function escanearBaseDeDatos() {
     const feed = document.getElementById('radar-feed');
@@ -634,20 +510,17 @@ function escanearBaseDeDatos() {
     const ramas = ['cd', 'cet', 'rehab'];
     const hoy = new Date().toISOString().split('T')[0];
 
-    if (feed) feed.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Escaneando pacientes...</div>';
+    if (feed) feed.innerHTML = '<div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">🔍 Escaneando pacientes...</div>';
 
     let ramasCompletadas = 0;
 
-    // 1. Escaneo de CUDs
     ramas.forEach(ramaNombre => {
         db.ref(`/${ramaNombre}/pacientes`).once('value', snap => {
             snap.forEach(childPac => {
                 const nombre = childPac.key;
                 const pac = childPac.val();
-
-                // Lógica de caché y selectores
-                if (!listaPacientesCache.includes(nombre)) {
-                    listaPacientesCache.push(nombre);
+                
+                if (!document.querySelector(`sel-paciente option[value="${nombre}"]`)) {
                     if (selectPac) {
                         const opt = document.createElement('option');
                         opt.value = nombre; opt.text = nombre;
@@ -662,45 +535,16 @@ function escanearBaseDeDatos() {
 
                 if (pac && pac.cud) {
                     const venc = new Date(pac.cud);
-                    const diff = Math.floor((venc - new Date()) / (1000 * 60 * 60 * 24));
-
+                    const diff = Math.floor((venc - new Date()) / (1000  60  60  24));
                     if (diff <= 0) {
                         contadorCuds++;
-                        const msg = `Vencido el ${pac.cud} (hace ${Math.abs(diff)} días)`;
-                        renderizarAlerta(nombre, '🚨 CUD VENCIDO', msg, 'urgente');
-                        
-                        // Anti-spam directo
-                        if (localStorage.getItem(`notif_cud_vencido_${sanitizarKey(nombre)}`) !== hoy) {
-                            dominguitoNotificarTs(nombre, '🚨 CUD VENCIDO', msg);
-                            localStorage.setItem(`notif_cud_vencido_${sanitizarKey(nombre)}`, hoy);
-                        }
-
-                        // Pizarra
-                        const idTarea = `cud_vencido_${sanitizarKey(nombre)}`;
-                        refPizarra.child(idTarea).once('value', snapshot => {
-                            if (!snapshot.exists()) {
-                                ['T.S.', 'DIRECTORES', 'COORD'].forEach(dest => {
-                                    refPizarra.child(`${idTarea}_${sanitizarKey(dest)}`).set({
-                                        desc: `🚨 PRIORIDAD ABSOLUTA: El CUD de ${nombre} está VENCIDO.`,
-                                        prio: 'ALTA', destinatario: dest, autor: '🤖 DOMINGUITO',
-                                        estado: 'ACTIVAS', fecha: new Date().toISOString(), ts: Date.now()
-                                    });
-                                });
-                            }
-                        });
+                        renderizarAlerta(nombre, '🚨 CUD VENCIDO', `Vencido el ${pac.cud} (hace ${Math.abs(diff)} días)`, 'urgente');
                     } else if (diff <= 90) {
                         contadorCuds++;
-                        const msg = `Vence: ${pac.cud} (${diff} días)`;
-                        renderizarAlerta(nombre, '⚠️ CUD PRÓXIMO', msg, 'alerta');
-                        
-                        if (localStorage.getItem(`notif_cud_prox_${sanitizarKey(nombre)}`) !== hoy) {
-                            dominguitoNotificarTs(nombre, '⚠️ CUD PRÓXIMO A VENCER', msg);
-                            localStorage.setItem(`notif_cud_prox_${sanitizarKey(nombre)}`, hoy);
-                        }
+                        renderizarAlerta(nombre, '⚠️ CUD PRÓXIMO', `Vence: ${pac.cud} (${diff} días)`, 'alerta');
                     }
                 }
             });
-
             ramasCompletadas++;
             if (ramasCompletadas === ramas.length && document.getElementById('stat-cuds')) {
                 document.getElementById('stat-cuds').textContent = contadorCuds;
@@ -708,7 +552,6 @@ function escanearBaseDeDatos() {
         });
     });
 
-    // 2. Escaneo de ausencias
     db.ref('/seguimiento_pacientes').once('value', snap => {
         snap.forEach(child => {
             const nombre = child.key;
@@ -717,30 +560,20 @@ function escanearBaseDeDatos() {
                 const val = dia.val();
                 if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
             });
-
             if (faltas >= 5) {
                 contadorAus++;
-                const msg = `Acumula ${faltas} inasistencias.`;
-                renderizarAlerta(nombre, '🚨 AUSENCIAS', msg, 'urgente');
-                
-                if (localStorage.getItem(`notif_ausencia_${sanitizarKey(nombre)}`) !== hoy) {
-                    dominguitoNotificarTs(nombre, '📉 ALERTA DE AUSENCIAS', msg);
-                    localStorage.setItem(`notif_ausencia_${sanitizarKey(nombre)}`, hoy);
-                }
+                renderizarAlerta(nombre, '🚨 AUSENCIAS', `Acumula ${faltas} inasistencias.`, 'urgente');
             }
         });
         if (document.getElementById('stat-aus')) document.getElementById('stat-aus').textContent = contadorAus;
     });
 }
-// ============================================================
-// =============== 4. RENDERIZAR ALERTA EN RADAR ==============
-// ============================================================
+
 function renderizarAlerta(paciente, tipo, msg, severidad) {
     const feed = document.getElementById('radar-feed');
     if (!feed) return;
     
-    // Limpiar mensaje inicial
-    const inicial = feed.querySelector('div[style*="Escaneando"]');
+    const inicial = feed.querySelector('div[style="Escaneando"]');
     if (inicial) feed.innerHTML = "";
     
     const idUnico = 'alerta' + (paciente + tipo).replace(/[^a-zA-Z0-9]/g, '');
@@ -754,7 +587,6 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
     card.style.borderLeft = `4px solid ${color}`;
     card.style.animation = 'slideUp 0.3s ease';
     card.onclick = () => {
-        // Abrir expediente del paciente
         switchTab(3);
         const selExp = document.getElementById('sel-paciente');
         if (selExp) {
@@ -769,113 +601,94 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
     
     card.innerHTML = `
         <div style="font-size:10px; font-weight:900; color:${color}">${tipo}</div>
-        <div style="font-size:13px; margin:4px 0; font-weight:800; color:#fff;">${paciente}</div>
-        <div style="font-size:11px; color:#94a3b8;">${msg}</div>
-        <div style="font-size:9px; color:#64748b; margin-top:5px;">🕐 ${new Date().toLocaleTimeString()}</div>
+        <div style="font-size:13px; margin:4px 0; font-weight:800; color:fff;">${paciente}</div>
+        <div style="font-size:11px; color:94a3b8;">${msg}</div>
+        <div style="font-size:9px; color:64748b; margin-top:5px;">🕐 ${new Date().toLocaleTimeString()}</div>
     `;
     
     feed.prepend(card);
     
-    // Limitar a 50 alertas
     while (feed.children.length > 50) {
         feed.removeChild(feed.lastChild);
     }
     
-    // Sonido si es urgente
     if (severidad === 'urgente') {
         const snd = document.getElementById('snd-radar');
         if (snd) snd.play().catch(() => {});
-        
-        // Notificación del navegador
         mostrarNotificacion(tipo, `${paciente}: ${msg}`);
     }
 }
 
 // ============================================================
-// =============== 5. DOMINGUITO NOTIFICADOR A T.S. ===========
+// DOMINGUITO - LLAMADA A LA API
 // ============================================================
-function dominguitoNotificarTs(paciente, tipo, mensaje) {
-    refAsignaciones.child(sanitizarKey(paciente)).once('value', snap => {
-        const asignacion = snap.val();
-        if (!asignacion || !asignacion.ts) {
-            console.log(`⚠️ ${paciente} no tiene T.S. asignada`);
-            return;
+const DOMINGUITOAPI = 'https://dominguito-api.vercel.app/api';
+
+async function enviarADominguitoAPI(texto, autor, chatId) {
+    const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
+    const escribiendo = document.createElement('div');
+    escribiendo.className = 'msg msg-bot';
+    escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
+    chatContainer.appendChild(escribiendo);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    try {
+        const res = await fetch(DOMINGUITOAPI + '/procesar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
+        });
+        const data = await res.json();
+        escribiendo.remove();
+        
+        if (data.respuesta) {
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: data.respuesta,
+                ts: Date.now(),
+                tipo: 'sistema'
+            });
         }
         
-        const tsEmail = asignacion.ts;
-        const tsKey = sanitizarKey(tsEmail);
-        
-        // Generar ID de chat único (determinista) y seguro
-        const participantes = ['dominguito', tsKey].sort();
-        const chatId = `chat_${participantes.join('_')}`;
-         if (!validarChatId(chatId)) return;
-        // Enviar mensaje privado a la T.S.
+        if (data.refrescarRadar) {
+            escanearBaseDeDatos();
+        }
+    } catch(e) {
+        escribiendo.remove();
+        console.error('Error API Dominguito:', e);
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
-            texto: `${tipo}\n\nPaciente: ${paciente}\n${mensaje}\n\n📅 ${new Date().toLocaleString()}\n\nPodés responder a este mensaje para dejar constancia.`,
-            ts: Date.now(),
-            tipo: 'alerta',
-            paciente: paciente,
-            requiereAccion: true
-        });
-        
-        // Registrar en el expediente del paciente
-        refExpedientes.child(sanitizarKey(paciente)).push({
-            autor: '🤖 DOMINGUITO',
-            msg: `🔔 Notificación enviada a T.S. ${tsEmail}: ${tipo} - ${mensaje}`,
+            texto: '⚠️ Estoy teniendo problemas de conexión. Respondé de nuevo en unos segundos.',
             ts: Date.now(),
             tipo: 'sistema'
         });
-        
-        console.log(`✅ Dominguito notificó a ${tsEmail} sobre ${paciente}`);
-    });
+    }
 }
 
 // ============================================================
-// =============== 6. CHATS INDIVIDUALES ======================
+// CHATS INDIVIDUALES
 // ============================================================
 function cargarContactos() {
-    listaContactos = []; 
+    listaContactos = [{ nombre: "🤖 DOMINGUITO", rol: "Asistente IA", email: "dominguito" }];
 
-    // 1. Agregar a Dominguito
-    listaContactos.push({
-        nombre: "🤖 DOMINGUITO",
-        rol: "Asistente IA",
-        email: "dominguito"
-    });
-
-    // 2. Carga de empleados (SISTEMA NUEVO)
     db.ref('SISTEMA_PERSONAL/empleados').once('value', snapEmpleados => {
         snapEmpleados.forEach(child => {
             const emp = child.val();
             if (emp && emp.n && emp.n !== usuarioActivo) {
                 if (!listaContactos.find(c => c.nombre === emp.n)) {
-                    
-                    // Traductor de campo
-                    const rolReal = emp.profesion || emp.rol || 'Empleado';
-                    
-                    listaContactos.push({
-                        nombre: emp.n,
-                        rol: rolReal,
-                        email: emp.m
-                    });
+                    listaContactos.push({ nombre: emp.n, rol: emp.profesion || emp.rol || 'Empleado', email: emp.m });
                 }
             }
         });
-
-        // 3. Renderizar y disparar evento
         renderizarContactos();
-        console.log(`Total de contactos cargados: ${listaContactos.length}`);
-
-        const eventoCargaLista = new CustomEvent('listaContactosLista', { detail: listaContactos });
-        window.dispatchEvent(eventoCargaLista);
-    }); // <--- Este cierra correctamente el .once('value', ...)
+    });
 }
+
 function renderizarContactos() {
     const container = document.getElementById('lista-contactos');
     if (!container) return;
     
-    const colores = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+    const colores = ['3b82f6', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899', '14b8a6', 'f97316'];
     
     container.innerHTML = listaContactos.map((c, i) => {
         const inicial = c.nombre.replace('🤖 ', '').charAt(0).toUpperCase();
@@ -884,11 +697,11 @@ function renderizarContactos() {
         const notifId = `notif${c.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
         
         return `
-            <div class="contacto-item ${activo}" onclick="seleccionarContacto('${c.nombre}', '${c.rol}', '${c.email}')">
+            <div class="contacto-item ${activo}" onclick="seleccionarContacto('${c.nombre}', '${c.email}')">
                 <div class="avatar" style="background: ${color}">${inicial}</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.nombre}</div>
-                    <div style="font-size: 10px; color: #64748b;">${c.rol}</div>
+                    <div style="font-weight: 600; font-size: 13px;">${c.nombre}</div>
+                    <div style="font-size: 10px; color: 64748b;">${c.rol}</div>
                 </div>
                 <div class="no-leido" id="${notifId}" style="display: none;"></div>
             </div>
@@ -900,217 +713,120 @@ function filtrarContactos() {
     const input = document.getElementById('busc-contacto');
     if (!input) return;
     const filtro = input.value.toUpperCase();
-    
-    document.querySelectorAll('#lista-contactos .contacto-item').forEach(item => {
+    document.querySelectorAll('lista-contactos .contacto-item').forEach(item => {
         const texto = item.textContent || '';
         item.style.display = texto.toUpperCase().includes(filtro) ? 'flex' : 'none';
     });
 }
-function seleccionarContacto(contacto) {
-    if (!contacto) return;
-    
+
+function seleccionarContacto(contacto, email) {
     contactoSeleccionado = contacto;
     
-    // ✅ Si es dominguito, el chatId se calcula acá mismo
-    if (contacto === '🤖 DOMINGUITO') {
-        const idEmisor = sanitizarKey(uidActivo);
-        const participantes = [idEmisor, 'dominguito'].sort();
-        const chatId = `chat${participantes.join('')}`;
-        
-        contactoEscuchando = chatId;
-    } else {
-        // Para contactos normales, el chatId viene del data attribute
-        const chatId = contacto.dataset ? contacto.dataset.chatId : null;
-        contactoEscuchando = chatId || contacto;
-    }
+    const idEmisor = sanitizarKey(uidActivo);
+    const idDestino = email && email !== 'dominguito' ? sanitizarKey(email) : 'dominguito';
+    const participantes = [idEmisor, idDestino].sort();
+    contactoEscuchando = `chat${participantes.join('')}`;
     
-    // 💡 AHORA SÍ, contactoEscuchando tiene valor siempre
+    document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
+    const items = document.querySelectorAll('lista-contactos .contacto-item');
+    items.forEach(el => {
+        if (el.textContent.includes(contacto)) el.classList.add('activo');
+    });
+    
+    const inputArea = document.getElementById('input-chat-area');
+    if (inputArea) inputArea.style.display = 'flex';
+    
     cargarHistorialChatIndividual(contactoEscuchando);
+}
+
+function cargarHistorialChatIndividual(chatId) {
+    const chatContainer = document.getElementById('chat-individual');
+    if (!chatContainer || !chatId) return;
     
-    // Actualizar UI
-    document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-    if (contacto.classList) contacto.classList.add('active');
+    chatContainer.innerHTML = `
+        <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+            💬 <b>${contactoSeleccionado}</b>
+        </div>`;
     
-    const notifId = `notif${contacto.replace ? contacto.replace(/[^a-zA-Z0-9]/g, '') : ''}`;
-    const notifElement = document.getElementById(notifId);
-    if (notifElement) notifElement.style.display = 'none';
-}
-// ============================================================
-// =============== 7. ENVIAR MENSAJE INDIVIDUAL ===============
-// ============================================================
-function enviarMensajeIndividual() {
-const input = document.getElementById('chat-individual-input');
-const texto = input.value.trim();
-if (!texto || !contactoSeleccionado || !contactoEscuchando) return;
-if (!validarChatId(chatId)) return;
-refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
-autor: usuarioActivo,
-texto: texto,
-ts: Date.now(),
-leido: false
-});
- if (!validarChatId(chatId)) return;
-// Actualizar último mensaje
-refChatsIndividuales.child(contactoEscuchando).update({
-ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
-});
-input.value = '';
-// Si es para Dominguito, procesar comando PASANDO EL CHATID
-if (contactoSeleccionado === '🤖 DOMINGUITO') {
-procesarComandoDominguito(texto, usuarioActivo, contactoEscuchando);
-}
-}    
-
-// ============================================================
-// =============== 8. PROCESAR COMANDOS DE DOMINGUITO =========
-// ============================================================
-async function procesarComandoDominguito(texto, autor, chatId) {
-// ✅ FIX: Si chatId viene vacío, usamos el global
-if (!chatId && typeof contactoEscuchando !== 'undefined' && contactoEscuchando) {
-chatId = contactoEscuchando;
-}
-// ✅ VALIDACIÓN ESTRICTA
-if (!chatId || typeof chatId !== 'string' || chatId.length < 5) {
-console.error("❌ procesarComandoDominguito: chatId inválido", chatId);
-return;
-}
-const textoLower = texto.toLowerCase().trim();
-// ✅ Redirigir parte diario
-if (textoLower.includes('parte diario') || textoLower.includes('parte') || textoLower.includes('novedades')) {
-procesarParteDiario(texto, autor, chatId);
-return;
-}
-const chatContainer = document.getElementById('chat-individual');
-const upper = texto.toUpperCase();
-// Función auxiliar para enviar respuestas
-const enviarRespuesta = (msg) => {
-if (!chatId) return;
- if (!validarChatId(chatId)) return;
-refChatsIndividuales.child(chatId).child('mensajes').push({
-autor: '🤖 DOMINGUITO',
-texto: msg,
-ts: Date.now(),
-tipo: 'sistema'
-
-});
-};
-// --- PASO 1: BÚSQUEDA INTELIGENTE EN CACHÉ ---
-if (typeof cachePacientes !== 'undefined' && Object.keys(cachePacientes).length > 0) {
-const normalizado = normalizar(texto);
-const palabrasInput = normalizado.split(' ').filter(p => p.length > 2);
-const llaveEncontrada = Object.keys(cachePacientes).find(llave => {
-const nombreNormalizado = normalizar(llave);
-// 1. Exacta
-if (nombreNormalizado === normalizado) return true;
-// 2. Inclusión (uno contiene al otro)
-if (nombreNormalizado.includes(normalizado) || normalizado.includes(nombreNormalizado)) return true;
-// 3. Por palabra suelta
-const palabrasPaciente = nombreNormalizado.split(' ');
-return palabrasInput.some(p =>
-palabrasPaciente.some(pp => pp.includes(p) || p.includes(pp))
-);
-});
-if (llaveEncontrada) {
-const pac = cachePacientes[llaveEncontrada];
-console.log("✅ Dominguito encontró al paciente:", llaveEncontrada, pac);
-mostrarFichaCompleta(pac, pac.modalidad, llaveEncontrada, enviarRespuesta);
-return;
-}
-}
-// --- PASO 2: COMANDOS ---
-// Comando: CUD
-if (upper.includes('CUD') || upper.includes('VENCIDO') || upper.includes('CERTIFICADO')) {
-enviarRespuesta("🔍 Escaneando todos los CUDs...");
-procesarComandoCUD(chatId);
-return;
-}
-// Comando: Ausencias
-if (upper.includes('AUSENCIA') || upper.includes('FALTA') || upper.includes('INASISTENCIA')) {
-enviarRespuesta("📉 Verificando ausencias...");
-db.ref('/seguimiento_pacientes').once('value', snap => {
-let respuesta = "📋 REPORTE DE AUSENCIAS:\n━━━━━━━━━━━━━━━━━━\n";
-let encontrados = false;
-snap.forEach(child => {
-const nombre = child.key;
-let faltas = 0;
-child.forEach(dia => {
-const val = dia.val();
-if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
-});
-if (faltas >= 5) {
-encontrados = true;
-respuesta += `🚨 ${nombre}: ${faltas} faltas\n`;
-}
-});
-enviarRespuesta(encontrados ? respuesta : respuesta + "✅ Todos los pacientes con asistencia normal.");
-});
-return;
-}
-// Comando: Ayuda
-if (upper.includes('AYUDA') || upper.includes('COMANDO') || upper.includes('HOLA') || upper.includes('BUEN')) {
-enviarAyuda(chatId);
-return;
-}
-// Comando: Reporte
-if (upper.includes('REPORTE') || upper.includes('RESUMEN')) {
-enviarRespuesta(`📊 REPORTE DEL DÍA\n━━━━━━━━━━━━━━━━\n📅 ${new Date().toLocaleDateString()}\n👤 Usuario: ${usuarioActivo}\n🕐 ${new Date().toLocaleTimeString()}\n\n✅ Sistema operando con normalidad.`);
-return;
-}
-// Comando: Paciente específico
-if (upper.includes('PACIENTE')) {
-const nombrePac = texto.replace(/paciente\s/i, '').trim();
-if (nombrePac) {
-const pac = buscarPaciente(nombrePac);
-if (pac) {
-mostrarFichaCompleta(pac, pac.modalidad, pac.nombre || pac.id, enviarRespuesta);
-} else {
-enviarRespuesta(`❌ Paciente "${nombrePac}" no encontrado en ninguna sede.`);
-}
-return;
-}
-}
-// Respuesta por defecto
-enviarRespuesta(`✅ Mensaje registrado.\n\n¿Necesitás algo más? Consultame "Ayuda" para ver los comandos disponibles.`)
-}
-// ============================================================
-// =============== 9. ESCUCHAR NOTIFICACIONES =================
-// ============================================================
-function escucharMensajesIndividuales() {
-    if (!uidActivo) return;
-
-    const emailSaneado = sanitizarKey(uidActivo);
-
-    refChatsIndividuales.on('childchanged', snap => {
-        const data = snap.val();
-        if (!data || !data.ultimo) return;
-        if (!snap.key || typeof snap.key !== 'string') return;
-        if (!snap.key.includes(emailSaneado)) return;
-
-        // ✅ DECLARAR chatId aquí (NO existe antes de esta línea)
-        const chatId = snap.key;
-
-        if (data.ultimo.autor !== usuarioActivo && data.ultimo.autor !== '🤖 DOMINGUITO') {
-            const de = data.ultimo.autor;
+    refChatsIndividuales.child(chatId).child('mensajes').off();
+    refChatsIndividuales.child(chatId).child('mensajes').on('value', snap => {
+        chatContainer.innerHTML = `
+            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+                💬 <b>${contactoSeleccionado}</b>
+            </div>`;
+        
+        snap.forEach(child => {
+            const m = child.val();
+            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+            if (m.tipo === 'sistema' || m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
             
-            if (contactoSeleccionado !== de) {
-                const notifId = `notif${de.replace(/[^a-zA-Z0-9]/g, '')}`;
-                const notifElement = document.getElementById(notifId);
-                if (notifElement) notifElement.style.display = 'block';
-                
-                const sound = document.getElementById('snd-msg');
-                if (sound) sound.play().catch(e => console.log("Sonido bloqueado por el navegador"));
-            }
-        }
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
+                    ${m.texto}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${m.ts ? new Date(m.ts).toLocaleTimeString() : ''}</div>
+                </div>
+            `;
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 }
+
+function enviarMensajeIndividual() {
+    const input = document.getElementById('chat-individual-input');
+    const texto = input.value.trim();
+    if (!texto || !contactoEscuchando) return;
+    
+    refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
+        autor: usuarioActivo,
+        texto: texto,
+        ts: Date.now()
+    });
+    
+    refChatsIndividuales.child(contactoEscuchando).update({
+        ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
+    });
+    input.value = '';
+    
+    if (contactoSeleccionado === '🤖 DOMINGUITO') {
+        enviarADominguitoAPI(texto, usuarioActivo, contactoEscuchando);
+    }
+}
+
+function enviarADominguito() {
+    const input = document.getElementById('in-domingo-modal');
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    const idEmisor = sanitizarKey(uidActivo);
+    const participantes = [idEmisor, 'dominguito'].sort();
+    const chatId = `chat${participantes.join('')}`;
+    
+    refChatsIndividuales.child(chatId).child('mensajes').push({
+        autor: usuarioActivo,
+        texto: texto,
+        ts: Date.now()
+    });
+    input.value = '';
+    
+    enviarADominguitoAPI(texto, usuarioActivo, chatId);
+}
+
+function abrirChatDominguito() {
+    const modal = document.getElementById('modal-dominguito');
+    if (modal) modal.style.display = 'flex';
+}
+
+function cerrarModalDominguito() {
+    const modal = document.getElementById('modal-dominguito');
+    if (modal) modal.style.display = 'none';
+}
+
 // ============================================================
-// =============== 10. NOTIFICACIONES =========================
+// NOTIFICACIONES
 // ============================================================
 function mostrarNotificacion(titulo, mensaje) {
-    // Toast en pantalla
     mostrarToast(`${titulo}: ${mensaje}`);
-    
-    // Notification API del navegador
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification(titulo, {
             body: mensaje.length > 100 ? mensaje.substring(0, 100) + '...' : mensaje,
@@ -1138,57 +854,18 @@ function mostrarToast(mensaje) {
 }
 
 // ============================================================
-// =============== 11. MODAL DOMINGUITO =======================
-// ============================================================
-function abrirChatDominguito() {
-    const modal = document.getElementById('modal-dominguito');
-    if (modal) {
-        modal.style.display = 'flex';
-        seleccionarContacto('🤖 DOMINGUITO', 'Asistente IA', 'dominguito');
-    }
-}
-
-function cerrarModalDominguito() {
-    const modal = document.getElementById('modal-dominguito');
-    if (modal) modal.style.display = 'none';
-}
-function enviarADominguito() {
-const input = document.getElementById('in-domingo-modal');
-const texto = input.value.trim();
-if (!texto) return;
-const idEmisor = sanitizarKey(uidActivo);
-const participantes = [idEmisor, 'dominguito'].sort();
-const chatId = `chat${participantes.join('')}`;
- if (!validarChatId(chatId)) return;
-refChatsIndividuales.child(chatId).child('mensajes').push({
-autor: usuarioActivo,
-texto: texto,
-ts: Date.now()
-});
-input.value = '';
-// ✅ FIX: Pasar el chatId calculado
-procesarComandoDominguito(texto, usuarioActivo, chatId);
-}    
-// ============================================================
-// =============== 12. GRUPOS TIPO WHATSAPP ===================
+// GRUPOS
 // ============================================================
 function cargarGrupos() {
     refGrupos.on('value', snap => {
         misGrupos = [];
-        
         snap.forEach(child => {
             const grupo = child.val();
-            const grupoId = child.key;
             const miembros = grupo.miembros || {};
-            
-            // Verificamos si soy miembro (por nombre o por UID)
-            const esMiembro = miembros[usuarioActivo] || miembros[uidActivo] || miembros[uidActivo.replace(/\./g, ',')];
-            
-            if (esMiembro) {
-                misGrupos.push({ id: grupoId, ...grupo });
+            if (miembros[usuarioActivo] || miembros[uidActivo]) {
+                misGrupos.push({ id: child.key, ...grupo });
             }
         });
-        
         renderizarGrupos();
     });
 }
@@ -1198,7 +875,7 @@ function renderizarGrupos() {
     if (!container) return;
     
     if (misGrupos.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b; font-size:12px;">No estás en ningún grupo. Creá uno.</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:64748b; font-size:12px;">No estás en ningún grupo. Creá uno.</div>';
         return;
     }
     
@@ -1209,10 +886,10 @@ function renderizarGrupos() {
         
         return `
             <div class="contacto-item ${activo}" onclick="seleccionarGrupo('${g.id}')">
-                <div class="avatar" style="background: #8b5cf6;">👥</div>
+                <div class="avatar" style="background: 8b5cf6;">👥</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${g.nombre}</div>
-                    <div style="font-size: 10px; color: #64748b;">${miembrosCount} miembros • ${ultMsg}</div>
+                    <div style="font-weight: 600; font-size: 13px;">${g.nombre}</div>
+                    <div style="font-size: 10px; color: 64748b;">${miembrosCount} miembros • ${ultMsg}</div>
                 </div>
             </div>
         `;
@@ -1223,7 +900,7 @@ function seleccionarGrupo(grupoId) {
     grupoSeleccionado = grupoId;
     
     document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
-    document.querySelectorAll('#lista-grupos .contacto-item').forEach(item => {
+    document.querySelectorAll('lista-grupos .contacto-item').forEach(item => {
         if (item.textContent.includes(misGrupos.find(g => g.id === grupoId)?.nombre || '')) {
             item.classList.add('activo');
         }
@@ -1235,19 +912,15 @@ function seleccionarGrupo(grupoId) {
     const chatContainer = document.getElementById('chat-grupo');
     if (!chatContainer) return;
     
-    if (grupoEscuchando) {
-        refGrupos.child(grupoEscuchando).child('mensajes').off();
-    }
-    
+    if (grupoEscuchando) refGrupos.child(grupoEscuchando).child('mensajes').off();
     grupoEscuchando = grupoId;
     
     refGrupos.child(grupoId).child('mensajes').on('value', snap => {
         const grupo = misGrupos.find(g => g.id === grupoId);
-        
         chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                 <span>👥 <b>${grupo?.nombre || 'Grupo'}</b> (${Object.keys(grupo?.miembros || {}).length} miembros)</span>
-                <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#3b82f6;">ℹ️</button>
+                <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:3b82f6;">ℹ️</button>
             </div>`;
         
         snap.forEach(child => {
@@ -1270,7 +943,6 @@ function seleccionarGrupo(grupoId) {
 function enviarMensajeGrupo() {
     const input = document.getElementById('chat-grupo-input');
     const texto = input.value.trim();
-    
     if (!texto || !grupoSeleccionado) return;
     
     refGrupos.child(grupoSeleccionado).child('mensajes').push({
@@ -1285,15 +957,12 @@ function enviarMensajeGrupo() {
     
     input.value = '';
 }
-window.addEventListener('listaContactosLista', (e) => {
-    const contactos = e.detail; 
+
+function mostrarModalCrearGrupo() {
+    const contactosDisponibles = listaContactos.filter(c => c.email !== 'dominguito' && c.nombre !== usuarioActivo);
     
-    // Filtramos los que no deben aparecer
-    const contactosDisponibles = contactos.filter(c => c.email !== 'dominguito' && c.nombre !== usuarioActivo);
-
-    // Evitamos duplicar el modal si el usuario hace doble clic
     if (document.querySelector('.modal-overlay')) return;
-
+    
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
@@ -1303,46 +972,37 @@ window.addEventListener('listaContactosLista', (e) => {
             <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
             <div style="margin-bottom:15px;">
                 <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
-                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid ddd; border-radius:8px;">
             </div>
             <div style="margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros (${contactosDisponibles.length} disponibles):</label>
-                <div style="max-height:250px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:8px;">
+                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
+                <div style="max-height:250px; overflow-y:auto; border:1px solid e2e8f0; border-radius:8px; padding:8px;">
                     ${contactosDisponibles.map(c => `
-                        <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid #f1f5f9; font-size:13px; cursor:pointer;">
+                        <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid f1f5f9; font-size:13px; cursor:pointer;">
                             <input type="checkbox" class="check-miembro" value="${c.nombre}">
                             <span>${c.nombre}</span>
-                            <span style="color:#94a3b8; font-size:10px;">(${c.rol})</span>
+                            <span style="color:94a3b8; font-size:10px;">(${c.rol})</span>
                         </label>
                     `).join('')}
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
-                <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
-                <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
+                <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
+                <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
-});
-function mostrarModalCrearGrupo() {
-    // Solo pedimos cargar los datos. 
-    // Cuando el servidor responda, el EventListener de arriba dibujará el modal automáticamente.
-    cargarContactos(); 
 }
 
 function crearGrupoDesdeModal() {
     const nombre = document.getElementById('input-nombre-grupo').value.trim();
     const checkboxes = document.querySelectorAll('.check-miembro:checked');
-    
     if (!nombre) return alert("El nombre del grupo es obligatorio");
     
     const nuevoGrupo = refGrupos.push();
     const miembrosObj = {};
-    
-    // Agregar seleccionados por nombre
     checkboxes.forEach(cb => miembrosObj[cb.value] = true);
-    // El creador también es miembro por nombre
     miembrosObj[usuarioActivo] = true;
     
     nuevoGrupo.set({
@@ -1364,8 +1024,6 @@ function abrirInfoGrupo(grupoId) {
     if (!grupo) return;
     
     const miembrosArr = Object.keys(grupo.miembros || {});
-    const soyAdmin = grupo.admins && (grupo.admins[usuarioActivo] || grupo.admins[uidActivo]);
-    
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
@@ -1376,63 +1034,25 @@ function abrirInfoGrupo(grupoId) {
             <div style="margin-bottom:15px;">
                 <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
                 <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
-                    ${miembrosArr.map(nombreMiembro => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
-                            <span style="font-size:12px;">${nombreMiembro}</span>
-                            ${soyAdmin && nombreMiembro !== usuarioActivo ? 
-                                `<button onclick="eliminarMiembroGrupo('${grupoId}','${nombreMiembro}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:10px;">✕</button>` 
-                                : ''}
+                    ${miembrosArr.map(nm => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid f1f5f9;">
+                            <span style="font-size:12px;">${nm}</span>
                         </div>
                     `).join('')}
                 </div>
             </div>
-            ${soyAdmin ? `
-                <div style="margin-bottom:15px;">
-                    <b style="font-size:12px;">Agregar miembro:</b>
-                    <div style="display:flex; gap:5px; margin-top:8px;">
-                        <input type="text" id="input-nuevo-miembro" placeholder="Nombre..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:12px;">
-                        <button onclick="agregarMiembroGrupo('${grupoId}')" style="padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:12px;">+</button>
-                    </div>
-                </div>
-            ` : ''}
             <div style="display:flex; gap:8px; margin-top:15px;">
-                <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
-                <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer; color: #000;">CERRAR</button>
+                <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
+                <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:e2e8f0; border:none; border-radius:8px; cursor:pointer; color: 000;">CERRAR</button>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
-};
-
-function agregarMiembroGrupo(grupoId) {
-    const input = document.getElementById('input-nuevo-miembro');
-    const nombre = input.value.trim();
-    if (!nombre) return alert("Ingresá un nombre");
-    
-    refGrupos.child(grupoId).child('miembros').update({ [nombre]: true });
-    input.value = '';
-    mostrarToast(`✅ ${nombre} agregado`);
-    
-    refGrupos.child(grupoId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `📢 ${nombre} se ha unido al grupo.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-}
-
-function eliminarMiembroGrupo(grupoId, nombre) {
-    if (confirm(`¿Eliminar a ${nombre} del grupo?`)) {
-        refGrupos.child(grupoId).child('miembros').child(nombre).remove();
-        mostrarToast(`✕ ${nombre} eliminado del grupo`);
-        document.querySelector('.modal-overlay')?.remove();
-    }
 }
 
 function salirDelGrupo(grupoId) {
     if (confirm("¿Salir del grupo?")) {
         const refMiembros = refGrupos.child(grupoId).child('miembros');
-        // Limpiamos tanto el nombre como el UID (por si acaso quedó guardado)
         refMiembros.child(usuarioActivo).remove();
         refMiembros.child(uidActivo.replace(/\./g, ',')).remove();
         
@@ -1440,39 +1060,30 @@ function salirDelGrupo(grupoId) {
         grupoEscuchando = null;
         
         const chatContainer = document.getElementById('chat-grupo');
-        if (chatContainer) chatContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo</div>';
+        if (chatContainer) chatContainer.innerHTML = '<div style="text-align:center; color:94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo</div>';
         
         document.querySelector('.modal-overlay')?.remove();
         mostrarToast("👋 Saliste del grupo");
     }
 }
+
 // ============================================================
-// =============== 13. ASIGNACIÓN DE PACIENTES A T.S. =========
+// ASIGNACIÓN DE T.S.
 // ============================================================
 function cargarTsDisponibles() {
     const selTs = document.getElementById('sel-ts-asignar');
     if (!selTs) return;
-
-    // Limpiamos el selector
+    
     selTs.innerHTML = '<option value="">Seleccionar T.S...</option>';
-
-    // Buscamos en el nuevo sistema
+    
     db.ref('SISTEMA_PERSONAL/empleados').once('value', snap => {
         snap.forEach(child => {
             const emp = child.val();
-            
-            // Verificamos que tenga datos de 'profesion'
             if (emp && emp.profesion) {
                 const profUpper = emp.profesion.toUpperCase();
-                
-                // Filtro para detectar T.S. basándonos en el campo 'profesion'
                 if (profUpper.includes('T.S.') || profUpper.includes('TRABAJADOR SOCIAL') || profUpper.includes('TS')) {
                     const opt = document.createElement('option');
-                    
-                    // Definimos el ID (usamos el mail 'emp.m' si existe, si no, la key)
-                    const idParaValor = emp.m || child.key;
-                    
-                    opt.value = sanitizarKey(idParaValor);
+                    opt.value = sanitizarKey(emp.m || child.key);
                     opt.text = `${emp.n || 'Sin nombre'} (${emp.profesion})`;
                     selTs.add(opt);
                 }
@@ -1480,37 +1091,21 @@ function cargarTsDisponibles() {
         });
     });
 }
+
 function asignarPacienteATS() {
     const selPac = document.getElementById('sel-paciente-asignar');
     const selTs = document.getElementById('sel-ts-asignar');
-    
-    if (!selPac || !selTs || !selPac.value || !selTs.value) {
-        return alert("Seleccioná un paciente y una T.S.");
-    }
+    if (!selPac || !selTs || !selPac.value || !selTs.value) return alert("Seleccioná un paciente y una T.S.");
     
     const pacKey = sanitizarKey(selPac.value);
-    // IMPORTANTE: selTs.value YA ESTÁ LIMPIO. No lo vuelvas a sanitizar.
-    const tsKey = selTs.value; 
+    const tsKey = selTs.value;
     
-    // Guardar en Firebase
     refAsignaciones.child(pacKey).set({
         ts: tsKey,
         asignadoPor: usuarioActivo,
         fecha: Date.now()
     });
     
-    // Notificar a la T.S. (usando el ID ya limpio)
-    const participantes = [sanitizarKey(uidActivo), tsKey].sort();
-    const chatId = `chat_${participantes.join('_')}`;
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `📋 Se te ha asignado el paciente: ${selPac.value}\n\nPodés ver su expediente en la pestaña EXPEDIENTES.\n📅 ${new Date().toLocaleDateString()}`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-    
-    // Registrar en el expediente del paciente
     refExpedientes.child(pacKey).push({
         autor: '🤖 DOMINGUITO',
         msg: `📌 Paciente asignado a T.S. ${selTs.options[selTs.selectedIndex].text} por ${usuarioActivo}`,
@@ -1529,24 +1124,20 @@ function cargarAsignaciones() {
         if (!container) return;
         
         if (Object.keys(asignaciones).length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">Sin asignaciones aún</div>';
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:94a3b8;">Sin asignaciones aún</div>';
             return;
         }
         
         let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
-        html += '<tr style="background:#f1f5f9;"><th style="padding:8px; text-align:left;">Paciente</th><th style="padding:8px; text-align:left;">T.S.</th><th style="padding:8px; text-align:left;">Acción</th></tr>';
+        html += '<tr style="background:f1f5f9;"><th style="padding:8px; text-align:left;">Paciente</th><th style="padding:8px; text-align:left;">T.S.</th><th style="padding:8px; text-align:left;">Acción</th></tr>';
         
         Object.keys(asignaciones).forEach(paciente => {
-            const asignacion = asignaciones[paciente];
-            html += `
-                <tr>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:600;">${paciente}</td>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${asignacion.ts}</td>
-                    <td style="padding:8px; border-bottom:1px solid #e2e8f0;">
-                        <button onclick="quitarAsignacion('${paciente}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px;">✕</button>
-                    </td>
-                </tr>
-            `;
+            const a = asignaciones[paciente];
+            html += `<tr><td style="padding:8px; border-bottom:1px solid e2e8f0; font-weight:600;">${paciente}</td>
+                <td style="padding:8px; border-bottom:1px solid e2e8f0;">${a.ts}</td>
+                <td style="padding:8px; border-bottom:1px solid e2e8f0;">
+                    <button onclick="quitarAsignacion('${paciente}')" style="background:ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px;">✕</button>
+                </td></tr>`;
         });
         
         html += '</table>';
@@ -1562,14 +1153,13 @@ function quitarAsignacion(paciente) {
 }
 
 // ============================================================
-// =============== 14. PANEL DE T.S. ==========================
+// PANEL T.S.
 // ============================================================
 function cargarPacientesDeTs(emailTs) {
     refAsignaciones.off('value');
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
-        // Filtramos siempre contra el ID "limpio"
         const tsBuscada = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
@@ -1602,7 +1192,6 @@ function cargarPanelTs(emailTs) {
     refAsignaciones.on('value', snap => {
         const asignaciones = snap.val() || {};
         const misPacientes = [];
-        // Filtramos siempre contra el ID "limpio"
         const tsBuscada = sanitizarKey(emailTs);
         
         Object.keys(asignaciones).forEach(paciente => {
@@ -1612,7 +1201,7 @@ function cargarPanelTs(emailTs) {
         });
         
         if (misPacientes.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:15px; color:#94a3b8;">No tenés pacientes asignados aún</div>';
+            container.innerHTML = '<div style="text-align:center; padding:15px; color:94a3b8;">No tenés pacientes asignados aún</div>';
             return;
         }
         
@@ -1621,12 +1210,12 @@ function cargarPanelTs(emailTs) {
         misPacientes.forEach(p => {
             html += `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; 
-                            background:white; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0;
+                            background:white; border-radius:8px; margin-bottom:5px; border:1px solid e2e8f0;
                             cursor:pointer;" onclick="irAExpedientePaciente('${p}')">
                     <div>
                         <div style="font-weight:600; font-size:12px;">${p}</div>
                     </div>
-                    <div style="font-size:10px; color:#3b82f6;">📋 Ver expediente ➤</div>
+                    <div style="font-size:10px; color:3b82f6;">📋 Ver expediente ➤</div>
                 </div>
             `;
         });
@@ -1649,7 +1238,7 @@ function irAExpedientePaciente(paciente) {
 }
 
 // ============================================================
-// =============== 15. EXPEDIENTES PACIENTES ==================
+// EXPEDIENTES
 // ============================================================
 function filtrarPacientes() {
     const input = document.getElementById('busc-paciente');
@@ -1672,24 +1261,21 @@ function cargarExpedientePaciente() {
     pacienteSeleccionado = sel.value;
     
     if (!pacienteSeleccionado) {
-        chatContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente para ver su expediente clínico</div>';
+        chatContainer.innerHTML = '<div style="text-align:center; color:94a3b8; font-size:11px; margin-top:20px;">Seleccioná un paciente para ver su expediente clínico</div>';
         return;
     }
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    // Limpiar listener previo
     refExpedientes.child(pacKey).off();
-    
     refExpedientes.child(pacKey).on('value', snap => {
         const msgs = snap.val() || {};
         
         chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
+            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
                 📋 EXPEDIENTE: <b style="color:var(--primary);">${pacienteSeleccionado}</b>
             </div>`;
         
-        // Ordenar por timestamp
         const mensajesArray = Object.values(msgs).sort((a, b) => (a.ts || 0) - (b.ts || 0));
         
         mensajesArray.forEach(m => {
@@ -1718,7 +1304,7 @@ function enviarReporteDominguito() {
     if (!input || !input.value.trim()) return;
 
     const pacKey = sanitizarKey(pacienteSeleccionado);
-
+    
     refExpedientes.child(pacKey).push({ 
         autor: usuarioActivo, 
         rol: rangoActivo, 
@@ -1739,7 +1325,7 @@ function exportarPDF() {
     
     const opciones = {
         margin: 10,
-        filename: `Expediente_${pacienteSeleccionado}.pdf`,
+        filename: `Expediente${pacienteSeleccionado}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -1751,26 +1337,10 @@ function exportarPDF() {
         alert("Error: Librería de PDF no cargada.");
     }
 }
+
 // ============================================================
-// =============== 16. PIZARRA DE ÓRDENES =====================
+// PIZARRA DE ÓRDENES
 // ============================================================
-
-async function manejarSeleccionArchivo(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    mostrarToast("⏳ Subiendo archivo...");
-    const url = await subirACloudinary(file);
-    
-    if (url) {
-        urlArchivoAdjunto = url;
-        mostrarToast("📎 Archivo adjunto listo");
-    } else {
-        mostrarToast("❌ Error al subir el archivo");
-    }
-}
-
-// --- PIZARRA DE ÓRDENES ---
 function renderPizarraLocal() {
     const container = document.getElementById('lista-tareas');
     if (!container) return;
@@ -1793,7 +1363,7 @@ function renderPizarraLocal() {
     container.innerHTML = "";
     
     if (filtradas.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
+        container.innerHTML = '<div style="text-align:center; color:94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
         return;
     }
     
@@ -1803,17 +1373,16 @@ function renderPizarraLocal() {
         card.style.opacity = t.estado === 'CONFIRMADO' ? '0.6' : '1';
         
         card.innerHTML = `
-            <div style="font-size:9px; color:#64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
+            <div style="font-size:9px; color:64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
                 <span>📅 ${t.vence || 'Sin fecha'} | 👤 ${t.emisor}</span>
                 <span>
                     <span class="badge ${t.prio === 'ALTA' ? 'badge-rojo' : 'badge-verde'}">${t.prio}</span>
-                    <span style="background:#3b82f6; color:white; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
+                    <span style="background:3b82f6; color:white; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
                 </span>
             </div>
-            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:#94a3b8;' : ''}">${t.desc}</h3>
-            ${t.archivo ? `<div style="margin-bottom:8px;"><a href="${t.archivo}" target="_blank" style="font-size:11px; color:var(--accent);">📄 Ver archivo adjunto</a></div>` : ''}
+            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:94a3b8;' : ''}">${t.desc}</h3>
             
-            <div id="coments-${t.id}" style="margin:8px 0; background:#f8fafc; padding:5px; border-radius:4px; font-size:10px;">
+            <div id="coments-${t.id}" style="margin:8px 0; background:f8fafc; padding:5px; border-radius:4px; font-size:10px;">
                 ${t.comentarios ? Object.values(t.comentarios).map(c => `<div><b>${c.autor}:</b> ${c.texto}</div>`).join('') : ''}
             </div>
             
@@ -1823,8 +1392,8 @@ function renderPizarraLocal() {
             </div>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                <button class="btn-pro" style="background:#e2e8f0; color:#333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
-                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '#64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
+                <button class="btn-pro" style="background:e2e8f0; color:333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
+                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
                     ${t.estado === 'CONFIRMADO' ? '↩️ REABRIR' : '✅ COMPLETAR'}
                 </button>
             </div>
@@ -1846,7 +1415,7 @@ function crearTarea() {
         vence,
         prio,
         destino,
-        archivo: urlArchivoAdjunto || '',
+        archivo: '',
         emisor: usuarioActivo,
         ts: Date.now(),
         estado: 'PENDIENTE',
@@ -1856,12 +1425,8 @@ function crearTarea() {
     
     refPizarra.push(tarea);
     
-    // Resetear
-    urlArchivoAdjunto = '';
     document.getElementById('t-desc').value = '';
     document.getElementById('t-drive-val').value = '';
-    // Si tuvieras un elemento para limpiar el input de archivo manualmente:
-    // document.getElementById('input-archivo-tarea').value = '';
     
     mostrarToast(`📨 Orden enviada a: ${destino}`);
 }
@@ -1889,28 +1454,22 @@ function cambiarEstadoTarea(id, nuevoEstado) {
     refPizarra.child(id).update({ estado: nuevoEstado });
     mostrarToast(nuevoEstado === 'CONFIRMADO' ? '✅ Tarea completada' : '↩️ Tarea reabierta');
 }
+
 // ============================================================
-// =============== 17. SWITCH DE TABS =========================
+// SWITCH DE TABS
 // ============================================================
 function switchTab(tab) {
-    const tab1 = document.getElementById('tab1');
-    const tab2 = document.getElementById('tab2');
-    const tab3 = document.getElementById('tab3');
+    document.getElementById('tab1').className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
+    document.getElementById('tab2').className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
+    document.getElementById('tab3').className = tab === 3 ? 'tab-btn activa' : 'tab-btn';
     
-    if (tab1) tab1.className = tab === 1 ? 'tab-btn activa' : 'tab-btn';
-    if (tab2) tab2.className = tab === 2 ? 'tab-btn activa' : 'tab-btn';
-    if (tab3) tab3.className = tab === 3 ? 'tab-btn activa' : 'tab-btn';
-    
-    const vistaChats = document.getElementById('vista-chats');
-    const vistaGrupos = document.getElementById('vista-groups') || document.getElementById('vista-grupos'); // Soporte para variaciones de ID
-    const vistaExpedientes = document.getElementById('vista-expedientes');
-    
-    if (vistaChats) vistaChats.style.display = tab === 1 ? 'flex' : 'none';
-    if (vistaGrupos) vistaGrupos.style.display = tab === 2 ? 'flex' : 'none';
-    if (vistaExpedientes) vistaExpedientes.style.display = tab === 3 ? 'flex' : 'none';
+    document.getElementById('vista-chats').style.display = tab === 1 ? 'flex' : 'none';
+    document.getElementById('vista-grupos').style.display = tab === 2 ? 'flex' : 'none';
+    document.getElementById('vista-expedientes').style.display = tab === 3 ? 'flex' : 'none';
 }
+
 // ============================================================
-// =============== RRHH / LIQUIDACIONES (DOMINGUITO) ==========
+// LIQUIDACIONES (RRHH)
 // ============================================================
 function abrirPanelLiquidacion() {
     const panel = document.getElementById('panel-liquidacion');
@@ -1927,27 +1486,27 @@ function cargarDatosPrivados(nombre) {
     const container = document.getElementById('tabla-container');
     const datosPagoCont = document.getElementById('datos-pago-container');
     const spanDatos = document.getElementById('datos-pago');
-    container.innerHTML = "<p style='font-size:12px; color:#64748b;'>🔄 Cargando información...</p>";
+    container.innerHTML = "<p style='font-size:12px; color:64748b;'>🔄 Cargando información...</p>";
 
     db.ref('/liquidacionescongeladas').orderByChild('nombre').equalTo(nombre).limitToLast(1).once('value', snap => {
         let html = '';
         if (!snap.exists()) {
-            html = "<p style='font-size:12px; color:#64748b;'>No hay liquidaciones recientes.</p>";
+            html = "<p style='font-size:12px; color:64748b;'>No hay liquidaciones recientes.</p>";
         } else {
             snap.forEach(child => {
                 const l = child.val();
                 html = `
                 <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
-                    <tr style="background:#1e293b;">
-                        <th style="padding:8px; color:#94a3b8;">Detalle</th>
-                        <th style="padding:8px; color:#94a3b8; text-align:right;">Total</th>
+                    <tr style="background:1e293b;">
+                        <th style="padding:8px; color:94a3b8;">Detalle</th>
+                        <th style="padding:8px; color:94a3b8; text-align:right;">Total</th>
                     </tr>
                     <tr>
-                        <td style="padding:8px; border-bottom:1px solid #1e293b;">
+                        <td style="padding:8px; border-bottom:1px solid 1e293b;">
                             <b>${l.puesto || 'General'}</b><br>
-                            <span style="font-size:10px; color:#64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
+                            <span style="font-size:10px; color:64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
                         </td>
-                        <td style="padding:8px; border-bottom:1px solid #1e293b; text-align:right; font-weight:bold; color:#10b981;">
+                        <td style="padding:8px; border-bottom:1px solid 1e293b; text-align:right; font-weight:bold; color:10b981;">
                             ${Number(l.total || 0).toLocaleString('es-AR')} ARS
                         </td>
                     </tr>
@@ -1958,12 +1517,12 @@ function cargarDatosPrivados(nombre) {
 
         db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
             let hayDeuda = false;
-            let facturasHtml = '<div style="margin-top:10px; border-top:1px solid #1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
+            let facturasHtml = '<div style="margin-top:10px; border-top:1px solid 1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
             snapFact.forEach(child => {
                 const f = child.val();
                 if (f.estado === 'PENDIENTE') {
                     hayDeuda = true;
-                    facturasHtml += `<li style="font-size:11px; color:#f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
+                    facturasHtml += `<li style="font-size:11px; color:f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
                 }
             });
             container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
@@ -1979,60 +1538,21 @@ function cargarHistorialLiquidaciones(nombre) {
         snap.forEach(c => items.push(c.val()));
         items.sort((a,b) => (b.periodo||'').localeCompare(a.periodo||''));
         items.forEach(l => {
-            html += `<tr><td style="padding:4px; border-bottom:1px solid #1e293b;">${l.periodo}</td><td style="padding:4px; border-bottom:1px solid #1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td></tr>`;
+            html += `<tr><td style="padding:4px; border-bottom:1px solid 1e293b;">${l.periodo}</td>
+                <td style="padding:4px; border-bottom:1px solid 1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td></tr>`;
         });
         container.innerHTML = html + '</table>';
     });
 }
 
-function iniciarEscuchaLiquidacionesMejorado(nombreUsuario) {
-    db.ref('/liquidacionescongeladas').orderByChild('nombre').equalTo(nombreUsuario).on('child_added', snap => {
-        document.getElementById('badge-liquidacion-nueva').style.display = 'inline-block';
-        document.getElementById('badge-flotante-liquidacion').style.display = 'flex';
-        document.getElementById('confirmar-lectura-container').style.display = 'block';
-    });
-}
-
-function confirmarLecturaLiquidacion() {
-    db.ref('/liquidacionesconfirmadas').push({ nombre: usuarioActivo, ts: Date.now() });
-    document.getElementById('confirmar-lectura-container').style.display = 'none';
-    alert("✅ Confirmado");
-}
 function cerrarPanelLiquidacion() {
     const panel = document.getElementById('panel-liquidacion');
-    const container = document.getElementById('tabla-container');
-    const spanDatos = document.getElementById('datos-pago');
-    
     if (panel) panel.style.display = 'none';
-    if (container) container.innerHTML = '';
-    if (spanDatos) spanDatos.innerText = '';
-    
-    console.log("Panel RRHH cerrado.");
-}    
-// ---------------------------------------------------------------
-// MAPA DE CONSULTORIOS (para Rehab)
-// ---------------------------------------------------------------
-const MAPACONSULTORIOS = {
-    "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
-    "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
-    "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
-    "10": "Terapia Ocupacional 2"
-};
+}
 
-// ---------------------------------------------------------------
-// DICCIONARIO DE PARTE DIARIO
-// ---------------------------------------------------------------
-const CLAVESDIARIO = {
-    falta: ['faltó', 'ausente', 'no vino', 'no asistió', 'se ausentó', 'falto', 'inasistencia', 'no aparece', 'ausencia', 'no se presentó'],
-    tarde: ['tarde', 'demoró', 'llegó tarde', 'atrasado', 'se atrasó', 'demorado', 'retraso', 'demora'],
-    incidente: ['incidente', 'problema', 'conflicto', 'pelea', 'discusión', 'accidente', 'se cayó', 'se golpeó', 'crisis', 'descompensado', 'brote', 'agresión'],
-    justificado: ['justifica', 'aviso', 'médico', 'certificado', 'familia avisó', 'llamó', 'licencia', 'reposo', 'justificado', 'avisó', 'constancia'],
-    derivacion: ['derivar', 'derivación', 'pase a', 'trasladar', 'cambio de', 'nuevo profesional', 'derivado', 'interconsulta'],
-    alta: ['alta', 'egreso', 'finalizó', 'terminó tratamiento', 'completó', 'alta médica', 'egresó']
-};
-// ---------------------------------------------------------------
-// BUSCADOR FLEXIBLE (tolera tildes, espacios, apellido primero)
-// ---------------------------------------------------------------
+// ============================================================
+// BUSCADOR DE PACIENTES
+// ============================================================
 function normalizar(texto) {
     return texto.toLowerCase()
         .replace(/[áäàâ]/g, 'a').replace(/[éëèê]/g, 'e')
@@ -2045,18 +1565,15 @@ function buscarPaciente(texto) {
     const normalizado = normalizar(texto);
     const palabras = normalizado.split(' ').filter(p => p.length > 2);
     
-    // 1. Exacta
     const exacta = Object.keys(cachePacientes).find(k => normalizar(k) === normalizado);
     if (exacta) return cachePacientes[exacta];
     
-    // 2. Inclusión
     const inclusion = Object.keys(cachePacientes).find(k => {
         const n = normalizar(k);
         return n.includes(normalizado) || normalizado.includes(n);
     });
     if (inclusion) return cachePacientes[inclusion];
     
-    // 3. Por palabra suelta (ej: "juan" encuentra "Juan Pérez")
     const porPalabra = Object.keys(cachePacientes).find(k => {
         const n = normalizar(k);
         return palabras.some(p => n.includes(p));
@@ -2066,758 +1583,30 @@ function buscarPaciente(texto) {
     return null;
 }
 
-// ---------------------------------------------------------------
-// NOTIFICAR AL EQUIPO
-// ---------------------------------------------------------------
-async function notificarEquipoPaciente(datosPaciente, titulo, mensaje, nivel) {
-    const { nombre, modalidad, turno, profesionales, tsAsignada } = datosPaciente;
-
-    // 1️⃣ Buscar dinámicamente quiénes son los profesionales activos para esta regla
-    const equipoDinamico = await obtenerEquipoPorModalidadYTurno(modalidad, turno);
-
-    let listaNombresEquipo = equipoDinamico.map(e => `• ${e.nombre} (${e.rol})`).join('\n');
-    if (!listaNombresEquipo) listaNombresEquipo = '• Sin profesionales asignados en este turno';
-
-    // Construir la cabecera informativa limpia
-    const CABECERA = `📋 PACIENTE: ${nombre}\n📍 ${modalidad} - Turno ${turno}\n👨‍⚕️ Especialista: ${profesionales}\n👥 Equipo de Guardia Detectado:\n${listaNombresEquipo}\n`;
-
-    const mensajeCompleto = `${CABECERA}\n${titulo}\n\n${mensaje}\n\n🕐 ${new Date().toLocaleString()}`;
-
-    // 2️⃣ Enviar a cada integrante detectado su alerta individual en el chat con Dominguito
-    equipoDinamico.forEach(persona => {
-        if (!persona.email) return;
-        const personaKey = persona.email.replace(/\./g, ',');
-        const participantes = ['dominguito', personaKey].sort();
-        const chatId = `chat${participantes.join('')}`;
-         if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: mensajeCompleto,
-            ts: Date.now(),
-            tipo: 'alerta',
-            paciente: nombre,
-            requiereAccion: true,
-            nivel: nivel || 'informativo'
-        });
-    });
-
-    // 3️⃣ Notificar además al canal grupal de la modalidad si existe
-    const grupoModalidad = `grupo${modalidad.toLowerCase()}${turno.toLowerCase()}`;
-    refGrupos.child(grupoModalidad).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `🔔 ${titulo}\n\nPaciente: ${nombre}\n${mensaje}`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        paciente: nombre
-    });
-
-    // 4️⃣ Registrar la bitácora en el expediente general del paciente
-    refExpedientes.child(nombre).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📢 Notificación de alerta enviada automáticamente al personal de ${modalidad} (${turno}).\n\n${titulo}: ${mensaje}`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    console.log(`✅ Equipo de ${nombre} notificado de forma dinámica (${nivel})`);
-}
+// ============================================================
+// MAPA DE CONSULTORIOS
+// ============================================================
+const MAPACONSULTORIOS = {
+    "1": "Psicopedagogía 1", "2": "Psicopedagogía 2", "3": "Psicopedagogía 3",
+    "4": "Psicopedagogía 4", "5": "Kinesiología", "6": "Fonoaudiología",
+    "7": "Psicología 1", "8": "Psicología 2", "9": "Terapia Ocupacional 1", 
+    "10": "Terapia Ocupacional 2"
+};
 
 // ============================================================
-// =============== 18a. PROCESAR RESPUESTA CUD ================
-// ============================================================
-async function procesarRespuestaCUD(paciente, textoRespuesta, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarRespuestaCUD.");
-        return;
-    }
-     if (!validarChatId(chatId)) return;
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente me estás hablando? Decime el nombre para registrar tu gestión.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    const datosPaciente = await obtenerDatosPaciente(paciente);
-    if (!datosPaciente) return;
-
-    refExpedientes.child(sanitizarKey(paciente)).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. reportó gestión de CUD:\n"${textoRespuesta}"\n⏰ Pendiente de confirmación de renovación.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'ENGESTION'
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = '4px solid #f59e0b';
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:#f59e0b;">⚠️ CUD EN GESTIÓN</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">🔄 Turno gestionado - Pendiente de renovación</div>
-            <div style="font-size:9px; color:#f59e0b; margin-top:5px;">⏰ Recordatorio automático en 7 días</div>
-        `;
-    }
-
-    notificarEquipoPaciente(
-        datosPaciente,
-        '🔄 CUD EN GESTIÓN',
-        `La T.S. gestionó el turno para renovación de CUD.\n\n🗣️ Respuesta: "${textoRespuesta}"\n\n⚠️ El paciente sigue sin CUD vigente hasta que se confirme la renovación física del documento.`,
-        'informativo'
-    );
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Tu gestión sobre ${paciente} quedó registrada.\n\n📌 Estado actual: ⏳ Pendiente de renovación.\n\n👥 Notifiqué automáticamente a todo el equipo del turno correspondiente.\n\n🔔 Te voy a consultar de nuevo en 7 días para confirmar si ya se resolvió.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    const fechaRecordatorio = Date.now() + (7 * 24 * 60 * 60 * 1000);
-    db.ref('/SISTEMA_MANDO/recordatorios').push({
-        paciente: paciente,
-        tipo: 'CUD',
-        fecha: fechaRecordatorio,
-        mensaje: `⏰ Hace 7 días se gestionó el CUD de ${paciente}. ¿Ya se renovó el documento?`,
-        creado: Date.now(),
-        chatId: chatId
-    });
-
-    mostrarToast(`✅ Dominguito registró gestión de CUD de ${paciente}`);
-}
-
-// ============================================================
-// =============== 18b. PROCESAR RESPUESTA AUSENCIA ===========
-// ============================================================
-async function procesarRespuestaAusencia(paciente, textoRespuesta, chatId, justificado) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarRespuestaAusencia.");
-        return;
-    }
-     if (!validarChatId(chatId)) return;
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente me hablás? Necesito el nombre exacto para asentar la novedad.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    const datosPaciente = await obtenerDatosPaciente(paciente);
-    if (!datosPaciente) return;
-
-    refExpedientes.child(sanitizarKey(paciente)).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 Reporte de ausencias:\n"${textoRespuesta}"\n${justificado ? '✅ Ausencias justificadas clínicamente.' : '⚠️ Ausencias reportadas sin justificativo.'}`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        justificado: justificado
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = `4px solid ${justificado ? '#10b981' : '#f59e0b'}`;
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:${justificado ? '#10b981' : '#f59e0b'};">${justificado ? '✅ AUSENCIAS JUSTIFICADAS' : '⚠️ AUSENCIAS INFORMADAS'}</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">${textoRespuesta}</div>
-        `;
-    }
-
-    notificarEquipoPaciente(
-        datosPaciente,
-        justificado ? '✅ AUSENCIAS JUSTIFICADAS' : '⚠️ AUSENCIAS REPORTADAS',
-        `La T.S. informó sobre las inasistencias:\n"${textoRespuesta}"\n\n${justificado ? '🟢 Justificado por razones de salud.' : '🟡 Sin justificación - Requiere seguimiento activo de sala.'}\n\nPor favor, registrar en el parte diario de asistencia de la fecha.`,
-        justificado ? 'informativo' : 'alerta'
-    );
-
-    const respuesta = justificado 
-        ? `✅ Registrado. Ausencias de ${paciente} justificadas.\n\n👥 Notifiqué al equipo del turno de sala para que asienten la novedad.\n\n🔔 Si el reposo se extiende por más de 15 días, avisame para congelar o reprogramar el transporte.`
-        : `✅ Guardado en el expediente clínico de ${paciente}.\n\n⚠️ Recordá que para cerrar la alerta de radar de forma definitiva necesitaremos que adjunten el certificado médico correspondiente.`;
-      if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: respuesta,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    if (!justificado) {
-        const fechaRecordatorio = Date.now() + (3 * 24 * 60 * 60 * 1000);
-        db.ref('/SISTEMA_MANDO/recordatorios').push({
-            paciente: paciente,
-            tipo: 'AUSENCIA',
-            fecha: fechaRecordatorio,
-            mensaje: `⏰ Hace 3 días se reportaron ausencias de ${paciente} sin justificar. ¿Ya enviaron el certificado?`,
-            creado: Date.now(),
-            chatId: chatId
-        });
-    }
-
-    mostrarToast(`✅ Dominguito registró ausencias de ${paciente}`);
-}
-
-// ============================================================
-// =============== 18c. PROCESAR "PENDIENTE" ==================
-// ============================================================
-function procesarRespuestaPendiente(paciente, textoRespuesta, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarRespuestaPendiente.");
-        return;
-    }
-     if (!validarChatId(chatId)) return;
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿De qué paciente? Decime el nombre completo por favor.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(sanitizarKey(paciente)).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. reportó caso en espera: "${textoRespuesta}"\n⏳ Pendiente de resolución. Próximo chequeo automático en 3 días.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'PENDIENTE'
-    });
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Entendido. Dejé constancia de que el caso sigue bajo análisis.\n\n📌 Te voy a volver a consultar en 3 días hábiles para ver si lograste avanzar.\n\n⚠️ Evitemos dilatarlo demasiado para no generar alertas críticas en Dirección.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    const fechaRecordatorio = Date.now() + (3 * 24 * 60 * 60 * 1000);
-    db.ref('/SISTEMA_MANDO/recordatorios').push({
-        paciente: paciente,
-        tipo: 'PENDIENTE',
-        fecha: fechaRecordatorio,
-        mensaje: `⏰ Control automático: Hace 3 días la T.S. dejó pendiente el caso de ${paciente}. ¿Se destrabó la situación?`,
-        creado: Date.now(),
-        chatId: chatId
-    });
-
-    mostrarToast(`⏳ Dominguito registró ${paciente} como pendiente`);
-}
-
-// ============================================================
-// =============== 18d. PROCESAR "RESUELTO" ===================
-// ============================================================
-function procesarRespuestaResuelto(paciente, textoRespuesta, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarRespuestaResuelto.");
-        return;
-    }
-     if (!validarChatId(chatId)) return;
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 ¿Qué paciente se resolvió? Indicame el nombre para poder archivar la alerta.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(sanitizarKey(paciente)).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `✅ CASO RESUELTO CON ÉXITO:\n"${textoRespuesta}"\n🎉 Gestión finalizada por el área social. Alerta cerrada.`,
-        ts: Date.now(),
-        tipo: 'sistema',
-        estado: 'RESUELTO'
-    });
-
-    const alertaId = `alerta${paciente.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const alertaElement = document.getElementById(alertaId);
-    if (alertaElement) {
-        alertaElement.style.borderLeft = '4px solid #10b981';
-        alertaElement.style.opacity = '0.5';
-        alertaElement.innerHTML = `
-            <div style="font-size:10px; font-weight:900; color:#10b981;">✅ RESUELTO Y CERRADO</div>
-            <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente}</div>
-            <div style="font-size:11px; color:#94a3b8;">${textoRespuesta}</div>
-        `;
-
-        setTimeout(() => {
-            if (alertaElement.parentNode) alertaElement.remove();
-        }, 60000);
-    }
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `🎉 ¡Impecable trabajo! Marqué el caso de ${paciente} como RESUELTO.\n\n✅ Alerta archivada. El indicador visual desaparecerá del radar en un minuto.\n\nCualquier nueva novedad del grupo familiar, volveme a escribir.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-
-    mostrarToast(`🎉 Caso de ${paciente} resuelto`);
-}
-
-// ============================================================
-// =============== 18e. RESPUESTA GENÉRICA ====================
-// ============================================================
-function registrarRespuestaGenerica(paciente, textoRespuesta, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en registrarRespuestaGenerica.");
-        return;
-    }
-     if (!validarChatId(chatId)) return;
-    if (!paciente || paciente === 'Paciente no identificado') {
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🤔 Hola. No logré interpretar bien el caso.\n\nRecordá que para que procese correctamente, tus reportes deben incluir palabras como:\n• "Saqué turno" o "junta" (Gestiones de CUD)\n• "Enfermo" o "reposo" (Justificación de ausencias)\n• "Pendiente" (Si requiere más tiempo)\n• "Ya está" o "listo" (Para archivar y cerrar el caso)`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-
-    refExpedientes.child(sanitizarKey(paciente)).push({
-        autor: '🤖 DOMINGUITO',
-        msg: `📋 T.S. asentó informe general: "${textoRespuesta}"\n🗂️ Registro guardado en archivo pasivo.`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Registré tu informe en la bitácora de ${paciente}.\n\n📌 Tip: Si querés que dispare una acción automática de radar o aviso de ausencias, acordate de incluir conceptos claros como "saqué turno", "certificado", "pendiente" o "resuelto".`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-}
-
-// ============================================================
-// =============== 18f. REVISAR RECORDATORIOS =================
-// ============================================================
-function revisarRecordatorios() {
-    db.ref('/SISTEMA_MANDO/recordatorios').once('value', snap => {
-        const ahora = Date.now();
-        snap.forEach(child => {
-            const r = child.val();
-            if (!r || !r.fecha) return;
-            if (ahora >= r.fecha) {
-                const chatId = r.chatId;
-                 if (!validarChatId(chatId)) return;
-                if (chatId) {
-                    refChatsIndividuales.child(chatId).child('mensajes').push({
-                        autor: '🤖 DOMINGUITO',
-                        texto: `⏰ RECORDATORIO PROGRAMADO\n\n${r.mensaje}\n\nPor favor respondé para actualizar el estado.`,
-                        ts: Date.now(),
-                        tipo: 'sistema',
-                        requiereAccion: true
-                    });
-                }
-                child.ref.remove();
-            }
-        });
-    });
-}
-
-// ---------------------------------------------------------------
-// PROCESAR PARTE DIARIO
-// ---------------------------------------------------------------
-function procesarParteDiario(texto, autor, chatId) {
-    // ✅ VALIDACIÓN CRÍTICA
-    if (!chatId || typeof chatId !== 'string') {
-        console.error("❌ procesarParteDiario: chatId inválido, ignorando mensaje", chatId);
-        return;
-    }
-
-    const lineas = texto.split('\n').filter(l => l.trim());
-    const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    
-    let pacientesProcesados = 0;
-    let alertasCreadas = 0;
-    let resumen = { faltas: 0, tardes: 0, incidentes: 0, altas: 0, derivaciones: 0 };
-    
-    lineas.forEach(linea => {
-        const lineaLower = linea.toLowerCase().trim();
-        if (lineaLower === 'parte diario' || lineaLower === 'parte' || lineaLower === 'novedades') return;
-        
-        // Buscar paciente en la línea
-        const paciente = buscarPaciente(linea);
-        if (!paciente) return;
-        
-        pacientesProcesados++;
-        
-        // Clasificar
-        let tipo = 'novedad';
-        let justificado = CLAVESDIARIO.justificado.some(p => lineaLower.includes(p));
-        
-        if (CLAVESDIARIO.falta.some(p => lineaLower.includes(p))) {
-            tipo = 'falta';
-            if (justificado) tipo = 'faltajustificada';
-            resumen.faltas++;
-        } else if (CLAVESDIARIO.tarde.some(p => lineaLower.includes(p))) {
-            tipo = 'tarde';
-            resumen.tardes++;
-        } else if (CLAVESDIARIO.incidente.some(p => lineaLower.includes(p))) {
-            tipo = 'incidente';
-            resumen.incidentes++;
-        } else if (CLAVESDIARIO.alta.some(p => lineaLower.includes(p))) {
-            tipo = 'alta';
-            resumen.altas++;
-        } else if (CLAVESDIARIO.derivacion.some(p => lineaLower.includes(p))) {
-            tipo = 'derivacion';
-            resumen.derivaciones++;
-        }
-        
-        // Guardar en expediente
-        const emoji = { falta: '❌', faltajustificada: '🔷', tarde: '⏰', incidente: '⚠️', alta: '🎉', derivacion: '🔄' }[tipo] || '📌';
-        const justifStr = justificado ? '🔷 Justificado' : '❌ Sin justificar';
-        
-        refExpedientes.child(paciente.nombre).push({
-            autor: `📋 PARTE DIARIO (${autor})`,
-            msg: `${emoji} ${fecha}\n${linea.trim()}\n${justifStr}\n📍 ${paciente.modalidad}`,
-            ts: Date.now(),
-            tipo: 'partediario',
-            clasificacion: tipo,
-            justificado: justificado
-        });
-        
-        // Crear alerta visual en radar si corresponde
-        if ((tipo === 'falta' || tipo === 'tarde') && !justificado) {
-            alertasCreadas++;
-            const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const existe = document.getElementById(alertaId);
-            if (!existe) {
-                const radar = document.getElementById('radarAlertas');
-                if (radar) {
-                    const div = document.createElement('div');
-                    div.id = alertaId;
-                    div.className = 'radar-card';
-                    div.style.cssText = 'border-left: 4px solid #ef4444; padding: 12px; margin: 8px 0; background: #1e293b; border-radius: 8px;';
-                    div.innerHTML = `
-                        <div style="font-size:10px; font-weight:900; color:#ef4444;">⚠️ ${tipo === 'falta' ? 'AUSENCIA' : 'TARDANZA'} SIN JUSTIFICAR</div>
-                        <div style="font-size:13px; margin:4px 0; font-weight:800;">${paciente.nombre}</div>
-                        <div style="font-size:11px; color:#94a3b8;">${linea.trim()}</div>
-                        <div style="font-size:10px; color:#64748b; margin-top:4px;">📋 Reportado por: ${autor}</div>
-                    `;
-                    radar.prepend(div);
-                }
-            }
-        }
-        
-        // Notificar al equipo
-        notificarEquipoPaciente(paciente, paciente.modalidad, 
-            tipo === 'alta' ? '🎉 ALTA REGISTRADA' : 
-            tipo === 'faltajustificada' ? '🔷 AUSENCIA JUSTIFICADA' :
-            tipo === 'falta' ? '⚠️ AUSENCIA SIN JUSTIFICAR' :
-            tipo === 'tarde' ? '⏰ TARDANZA REGISTRADA' :
-            tipo === 'incidente' ? '⚠️ INCIDENTE REPORTADO' : '📌 NOVEDAD',
-            `${linea.trim()}\n\nRegistrado por: ${autor}`,
-            tipo === 'falta' && !justificado ? 'alerta' : 'informativo'
-        );
-    });
-    
-    // Responder al usuario
-    let respuesta = `✅ PARTE DIARIO REGISTRADO\n📅 ${fecha}\n👤 ${autor}\n\n📊 Resumen:\n• Pacientes procesados: ${pacientesProcesados}\n• Ausencias: ${resumen.faltas}\n• Tardes: ${resumen.tardes}\n• Incidentes: ${resumen.incidentes}\n• Altas: ${resumen.altas}\n• Derivaciones: ${resumen.derivaciones}\n• Alertas generadas: ${alertasCreadas}`;
-    
-    if (alertasCreadas > 0) {
-        respuesta += `\n\n🔴 Se notificó al equipo correspondiente.`;
-    }
-     if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: respuesta,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-}
-// ---------------------------------------------------------------
-// PROCESAR RESPUESTA DE T.S. (cuando le responde a Dominguito)
-// ---------------------------------------------------------------
-async function procesarRespuestaTS(paciente, texto, autor, chatId) {
-    if (!chatId) {
-        console.error("❌ ERROR: chatId es undefined en procesarRespuestaTS.");
-        return;
-    }
-
-    const textLower = texto.toLowerCase();
-    let alertasCreadas = 0; 
-    
-    // Guardar en expediente
-    refExpedientes.child(paciente.nombre).push({
-        autor: autor || 'T.S.',
-        msg: texto,
-        ts: Date.now(),
-        tipo: 'respuesta'
-    });
-    
-    // Clasificar automáticamente
-    if (textLower.includes('turno') || textLower.includes('saqué') || textLower.includes('reservé') || textLower.includes('agendé') || textLower.includes('junta')) {
-        // GESTIÓN DE CUD - Notificar al equipo
-        alertasCreadas++;
-        notificarEquipoPaciente(paciente, '🔄 CUD EN GESTIÓN', `La T.S. gestionó: "${texto}"\n⚠️ Pendiente de confirmación.`, 'informativo');
-         if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `✅ Registré tu gestión. Notifiqué al equipo de ${paciente.modalidad}.\n\n⏰ Te consulto en 7 días para confirmar.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        
-        db.ref('/SISTEMA_MANDO/recordatorios').push({
-            paciente: paciente.nombre,
-            tipo: 'CUD',
-            fecha: Date.now() + (7 * 24 * 60 * 60 * 1000),
-            mensaje: `⏰ Hace 7 días gestionaste el CUD de ${paciente.nombre}. ¿Ya se renovó?`,
-            chatId: chatId
-        });
-        return;
-    }
-    
-    if (textLower.includes('resolvió') || textLower.includes('renovó') || textLower.includes('tramitó') || textLower.includes('ya está') || textLower.includes('listo') || textLower.includes('terminé') || textLower.includes('finalizó')) {
-        // RESUELTO - Cerrar alerta
-        const alertaId = `alerta${paciente.nombre.replace(/[^a-zA-Z0-9]/g, '')}`;
-        const alertaEl = document.getElementById(alertaId);
-        if (alertaEl) {
-            alertaEl.style.borderLeft = '4px solid #10b981';
-            alertaEl.style.opacity = '0.5';
-            setTimeout(() => alertaEl.remove(), 60000);
-        }
-        
-        notificarEquipoPaciente(paciente, '🎉 CASO RESUELTO', `${texto}\n✅ Gestión finalizada. Alerta cerrada.`, 'informativo');
-         if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `🎉 ¡Excelente! Marqué ${paciente.nombre} como RESUELTO.\n✅ Alerta archivada.\n👥 Equipo notificado.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-     
-    if (textLower.includes('pendiente') || textLower.includes('todavía') || textLower.includes('esperando') || textLower.includes('no sé')) {
-        if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `✅ Entendido. Dejo ${paciente.nombre} como pendiente.\n⏰ Te vuelvo a consultar en 3 días.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        
-        db.ref('/SISTEMA_MANDO/recordatorios').push({
-            paciente: paciente.nombre,
-            tipo: 'PENDIENTE',
-            fecha: Date.now() + (3 * 24 * 60 * 60 * 1000),
-            mensaje: `⏰ Hace 3 días dejaste pendiente a ${paciente.nombre}. ¿Avanzó algo?`,
-            chatId: chatId
-        });
-        return;
-    }
-    
-    if (textLower.includes('enfermo') || textLower.includes('fiebre') || textLower.includes('médico') || textLower.includes('licencia') || textLower.includes('reposo') || textLower.includes('certificado')) {
-        // AUSENCIA JUSTIFICADA
-        notificarEquipoPaciente(paciente, '🔷 AUSENCIA JUSTIFICADA', `${texto}\nRegistrado por: ${autor}`, 'informativo');
-        if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: `✅ Ausencia justificada registrada.\n👥 Equipo de ${paciente.modalidad} notificado.`,
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
-        return;
-    }
-    if (!validarChatId(chatId)) return;
-    // Respuesta genérica
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `✅ Registré tu respuesta en el expediente de ${paciente.nombre}.\n\n📌 Tip: Si es una gestión, decime "saqué turno". Si está resuelto, decime "listo".`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
-}
-// ---------------------------------------------------------------
-// OBTENER DATOS DEL PACIENTE
-// ---------------------------------------------------------------
-async function obtenerDatosPaciente(nombre, rama) {
-    // 1. Buscamos el paciente (usando una búsqueda más flexible)
-    const nombreLower = nombre.toLowerCase();
-    const pac = cachePacientes[nombreLower] || Object.values(cachePacientes).find(p => p.nombre?.toLowerCase().includes(nombreLower));
-    
-    // 2. Obtiene la asignación (con protección por si no existe)
-    const snap = await refAsignaciones.child(nombre).once('value');
-    const asig = snap.val() || {};
-    
-    // 3. Determina el turno de forma inteligente
-    let turnoFinal = pac?.turno || 'No definido';
-    
-    if (rama.toUpperCase() === 'REHAB') {
-        // En lugar de traer todo, solo verificamos si tiene turno asignado
-        // Si necesitas saber el día, deberías buscar específicamente en el objeto
-        turnoFinal = "Consultar grilla de turnos (REHAB)";
-    }
-
-    return {
-        nombre: pac?.nombre || nombre,
-        modalidad: rama.toUpperCase(),
-        turno: turnoFinal,
-        profesionales: pac?.profesional || 'No asignado',
-        tsAsignada: asig.ts || null 
-    };
-}
-// ---------------------------------------------------------------
-// PROCESAR COMANDO CUD
-// ---------------------------------------------------------------
-function procesarComandoCUD(chatId) {
-    // ✅ VALIDACIÓN AGREGADA
-    if (!chatId || typeof chatId !== 'string') {
-        console.error("❌ procesarComandoCUD: chatId inválido", chatId);
-        return;
-    }
-
-    const ramas = ['cd', 'cet', 'rehab'];
-    let respuesta = "📋 REPORTE DE CUDs:\n━━━━━━━━━━━━━━\n";
-    let total = 0;
-    let completado = 0;
-    
-    ramas.forEach(rama => {
-        db.ref(`/${rama}/pacientes`).once('value', snap => {
-            snap.forEach(child => {
-                const pac = child.val();
-                if (pac && pac.cud) {
-                    const venc = new Date(pac.cud);
-                    // CORRECCIÓN: Se restauran los asteriscos de multiplicación perdidos
-                    const diff = Math.floor((venc - new Date()) / (1000 * 60 * 60 * 24));
-                    total++;
-                    if (diff <= 0) respuesta += `❌ ${child.key}: VENCIDO (${pac.cud})\n`;
-                    else if (diff <= 90) respuesta += `⚠️ ${child.key}: Vence en ${diff} días\n`;
-                }
-            });
-            completado++;
-            if (completado === ramas.length) {
-                if (total === 0) respuesta += "✅ No se encontraron CUDs.";
-                refChatsIndividuales.child(chatId).child('mensajes').push({
-                    autor: '🤖 DOMINGUITO',
-                    texto: respuesta,
-                    ts: Date.now(),
-                    tipo: 'sistema'
-                });
-            }
-        });
-    });
-}
-// ============================================================
-// =============== MOSTRAR FICHA COMPLETA (ÚNICA) =============
-// ============================================================
-function mostrarFichaCompleta(pac, rama, nombrePac, enviarRespuesta) {
-    
-    const generarInfo = (pacienteConTurnos) => {
-        let info = `📋 FICHA CLÍNICA: ${nombrePac}\n━━━━━━━━━━━━━━━━━━\n📍 Sede: ${(rama || 'DESCONOCIDA').toUpperCase()}\n\n`;
-        
-        const ignorar = ['factura', 'pagos', 'monto', 'saldo', 'id', 'nombre', 'facturacion', 'detalle', 'cloudinary', 'link', 'asistf_link', 'cuddoc_link', 'cuddoc'];
-        const orden = ['dni', 'edad', 'padre', 'tel', 'direccion', 'telefono'];
-
-        info += `👤 IDENTIDAD:\n`;
-        orden.forEach(c => { if (pacienteConTurnos[c]) info += `• ${c.toUpperCase()}: ${pacienteConTurnos[c]}\n`; });
-
-        info += `\n📅 GESTIÓN:\n`;
-        if (pacienteConTurnos.cud) info += `• CUD: ${pacienteConTurnos.cud}\n`;
-        if (pacienteConTurnos.turno) info += `• Turno principal: ${pacienteConTurnos.turno}\n`;
-        
-        if (pacienteConTurnos.turnos && typeof pacienteConTurnos.turnos === 'object') {
-            Object.entries(pacienteConTurnos.turnos).forEach(([dia, horarios]) => {
-                info += `\n[${dia.toUpperCase()}]\n`;
-                Object.entries(horarios).forEach(([hora, valor]) => {
-                    const partes = hora.split('-');
-                    const time = partes[0];
-                    const consId = partes[1];
-                    const consultorio = consId && MAPACONSULTORIOS[consId] ? MAPACONSULTORIOS[consId] : (consId ? `Consult. ${consId}` : '');
-                    info += `• ${time}: ${valor} ${consultorio ? `(${consultorio})` : ''}\n`;
-                });
-            });
-        }
-
-        info += `\n🏥 CLÍNICA:\n`;
-        Object.entries(pacienteConTurnos).forEach(([key, value]) => {
-            const lowerKey = key.toLowerCase();
-            if (!ignorar.some(i => lowerKey.includes(i)) && typeof value !== 'object' && !orden.includes(lowerKey) && key !== 'turnos' && key !== 'cud' && key !== 'turno') {
-                info += `• ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
-            }
-        });
-        
-        enviarRespuesta(info);
-    };
-
-    // BÚSQUEDA DE TURNOS
-    if (rama && rama.toLowerCase() === 'rehab') {
-        db.ref(`/rehab/turnos`).once('value', snap => {
-            let turnosFiltrados = {};
-            snap.forEach(diaSnap => {
-                diaSnap.forEach(turnoSnap => {
-                    // Buscar en el VALOR del turno (REHAB guarda nombre en valor, key es horario)
-                    const valorTurno = turnoSnap.val();
-                    const nombreLimpio = nombrePac.toLowerCase().replace(/\s+/g, ' ').trim();
-                    const coincideKey = turnoSnap.key.toLowerCase().replace(/\s+/g, '').includes(nombreLimpio.replace(/\s+/g, ''));
-                    const coincideValor = typeof valorTurno === 'string' && valorTurno.toLowerCase().replace(/\s+/g, ' ').includes(nombreLimpio);
-                    
-                    if (coincideKey || coincideValor) {
-                        if (!turnosFiltrados[diaSnap.key]) turnosFiltrados[diaSnap.key] = {};
-                        turnosFiltrados[diaSnap.key][turnoSnap.key] = turnoSnap.val();
-                    }
-                });
-            });
-            pac.turnos = turnosFiltrados;
-            generarInfo(pac);
-        });
-    } else {
-        generarInfo(pac);
-    }
-}
-// ---------------------------------------------------------------
-// ENVIAR AYUDA
-// ---------------------------------------------------------------
-function enviarAyuda(chatId) {
-    if (!chatId || typeof chatId !== 'string' || chatId.length < 3) {
-        console.error("❌ enviarAyuda: chatId inválido", chatId);
-        return;
-    }
-    if (!validarChatId(chatId)) return;
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: `📋 COMANDOS DISPONIBLES:\n━━━━━━━━━━━━━━━━━━\n• [Nombre del paciente] - Ver ficha clínica\n• "parte diario" + novedades - Reporte diario\n• "CUD" - Ver vencimientos\n• Respuesta automática: "saqué turno", "listo", "pendiente", "enfermo"`,
-        ts: Date.now(),
-        tipo: 'sistema'
-    }).then(function() {
-        console.log("✅ Ayuda enviada a chat " + chatId);
-    }).catch(function(err) {
-        console.error("❌ Error al enviar ayuda:", err);
-    });
-}
-
-// ============================================================
-// =============== 20. PUNTO DE ESCUCHA ÚNICO =================
+// ESCUCHA ÚNICA DE DOMINGUITO
 // ============================================================
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
-    if (!validarChatId(chatId)) return;
+    
     refChatsIndividuales.on('child_added', function(snap) {
         if (!snap || !snap.key) return;
         
         var chatId = snap.key;
         
-        // ✅ FILTRO ESTRICTO: Solo chats que contengan "dominguito"
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        // ✅ Guardar para el closure
-        var chatIdLocal = chatId;
-        if (!validarChatId(chatId)) return;
-        refChatsIndividuales.child(chatIdLocal).child('mensajes').on('child_added', function(snapMsg) {
-            
+        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
             if (!snapMsg || !snapMsg.val) return;
             
             var msg = snapMsg.val();
@@ -2826,62 +1615,38 @@ function dominguitoEscuchaUnico() {
             var textoOriginal = (msg.texto || '').trim();
             if (!textoOriginal) return;
             
-            var textoLower = textoOriginal.toLowerCase().trim();
             var autor = msg.autor;
             
-            // -------------------------------------------------------
-            // PASO 1: Comandos
-            // -------------------------------------------------------
-            
-            // 1a. AYUDA
-            if (textoLower.includes('ayuda') || textoLower.includes('hola') || textoLower.includes('buen')) {
-                enviarAyuda(chatIdLocal);
+            if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola') || textoOriginal.toLowerCase().includes('buen')) {
+                refChatsIndividuales.child(chatId).child('mensajes').push({
+                    autor: '🤖 DOMINGUITO',
+                    texto: `Hola ${autor}! Soy DOMINGUITO.\n\nConsultame sobre pacientes, CUDs, ausencias o envía "parte diario" para registrar novedades.`,
+                    ts: Date.now(),
+                    tipo: 'sistema'
+                });
                 return;
             }
             
-            // 1b. PARTE DIARIO
-            if (textoLower.includes('parte') || textoLower.includes('novedades')) {
-                procesarParteDiario(textoOriginal, autor, chatIdLocal);
-                return;
-            }
-            
-            // 1c. CUD
-            if (textoLower.includes('cud') || textoLower.includes('vencido')) {
-                procesarComandoCUD(chatIdLocal);
-                return;
-            }
-            
-            // -------------------------------------------------------
-            // PASO 2: TODO lo demás
-            // -------------------------------------------------------
-            procesarComandoDominguito(textoOriginal, autor, chatIdLocal);
-            return;
+            enviarADominguitoAPI(textoOriginal, autor, chatId);
         });
     });
 }
+
 // ============================================================
-// =============== 21. INICIALIZAR DOMINGUITO V2.0 ============
+// INICIAR SISTEMA COMPLETO
 // ============================================================
-async function iniciarSistemaCompleto() {
-    console.log("🚀 Iniciando Dominguito v2.0...");
+function iniciarSistemaCompleto() {
+    console.log("🚀 Iniciando Dominguito...");
     
-    // 1. Escaneo inicial del radar (CUDs + ausencias)
     escanearBaseDeDatos();
+    setInterval(escanearBaseDeDatos, 300000); // Cada 5 minutos
     
-    // 2. Repetir escaneo cada 24 horas
-    setInterval(escanearBaseDeDatos, 86400000);
-    
-    // 3. Iniciar escucha única de mensajes (después de 3 segundos para que todo cargue)
     setTimeout(() => {
         dominguitoEscuchaUnico();
         console.log("✅ Dominguito modo único activo");
     }, 3000);
-    
-    // 4. Revisar recordatorios cada hora
-    setInterval(revisarRecordatorios, 3600000);
-    
-    console.log("🚀 Dominguito v2.0 listo");
 }
+
 </script>
 </body>
 </html>
