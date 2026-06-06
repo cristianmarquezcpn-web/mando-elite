@@ -375,9 +375,7 @@ function sanitizarKey(key) {
     if (!key) return "vacio";
     return key.toString().replace(/[.$[\]\/@]/g, '');
 }
-============================================================
-// AUTENTICACIÓN
-// ============================================================
+
 auth.onAuthStateChanged(user => {
     const bloqueo = document.getElementById('bloqueo-mando');
     if (user) {
