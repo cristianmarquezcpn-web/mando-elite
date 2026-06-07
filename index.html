@@ -1653,24 +1653,33 @@ const MAPACONSULTORIOS = {
 function dominguitoEscuchaUnico() {
     console.log("👂 Dominguito modo único activado");
     
+    // Usamos 'on' para chats, pero controlamos el flujo dentro
     refChatsIndividuales.on('child_added', function(snap) {
         if (!snap || !snap.key) return;
         
         var chatId = snap.key;
-        
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        refChatsIndividuales.child(chatId).child('mensajes').on('child_added', function(snapMsg) {
+        // CORRECCIÓN CLAVE: Usamos 'limitToLast(1)' para no procesar todo el histórico cada vez
+        // y para asegurarnos de solo reaccionar a mensajes nuevos entrantes.
+        refChatsIndividuales.child(chatId).child('mensajes').limitToLast(1).on('child_added', function(snapMsg) {
             if (!snapMsg || !snapMsg.val) return;
             
             var msg = snapMsg.val();
-            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo) return;
+            
+            // FILTRO DE SEGURIDAD:
+            // 1. Si es mensaje del bot, ignora.
+            // 2. Si es mensaje del usuario activo, ignora (evita que el propio bot se auto-responda).
+            // 3. Si el mensaje es antiguo (más de 15 segundos), ignora (evita procesar el histórico al iniciar).
+            var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
+            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo || esMensajeAntiguo) return;
             
             var textoOriginal = (msg.texto || '').trim();
             if (!textoOriginal) return;
             
             var autor = msg.autor;
             
+            // Lógica de respuesta automática
             if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola') || textoOriginal.toLowerCase().includes('buen')) {
                 refChatsIndividuales.child(chatId).child('mensajes').push({
                     autor: '🤖 DOMINGUITO',
@@ -1681,6 +1690,7 @@ function dominguitoEscuchaUnico() {
                 return;
             }
             
+            // Si llega aquí, es un mensaje nuevo y válido de un usuario real
             enviarADominguitoAPI(textoOriginal, autor, chatId);
         });
     });
