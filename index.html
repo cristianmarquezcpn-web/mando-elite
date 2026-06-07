@@ -1688,46 +1688,49 @@ const MAPACONSULTORIOS = {
 // ESCUCHA ÚNICA DE DOMINGUITO
 // ============================================================
 function dominguitoEscuchaUnico() {
-    console.log("👂 Dominguito modo único activado");
-    
-    // Usamos 'on' para chats, pero controlamos el flujo dentro
+    console.log("%c👂 Dominguito modo único activado", "color: green"); // P
+
     refChatsIndividuales.on('child_added', function(snap) {
         if (!snap || !snap.key) return;
         
         var chatId = snap.key;
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
         
-        // CORRECCIÓN CLAVE: Usamos 'limitToLast(1)' para no procesar todo el histórico cada vez
-        // y para asegurarnos de solo reaccionar a mensajes nuevos entrantes.
         refChatsIndividuales.child(chatId).child('mensajes').limitToLast(1).on('child_added', function(snapMsg) {
             if (!snapMsg || !snapMsg.val) return;
             
             var msg = snapMsg.val();
-            
-            // FILTRO DE SEGURIDAD:
-            // 1. Si es mensaje del bot, ignora.
-            // 2. Si es mensaje del usuario activo, ignora (evita que el propio bot se autorresponda). // 🔵 AC
-            // 3. Si el mensaje es antiguo (más de 15 segundos), ignora (evita procesar el histórico al iniciar).
             var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
-           if (!msg || msg.autor === usuarioActivo || esMensajeAntiguo) return;
+            
+            // Log de diagnóstico previo al filtro
+            console.log("%c[AC] Analizando mensaje:", "color: blue", msg, "Autor:", msg.autor, "Antiguo:", esMensajeAntiguo); // AC
+
+            if (!msg || msg.autor === usuarioActivo || esMensajeAntiguo) {
+                console.log("%c[A] Mensaje ignorado por filtro de seguridad.", "color: red"); // A
+                return;
+            }
             
             var textoOriginal = (msg.texto || '').trim();
             if (!textoOriginal) return;
             
             var autor = msg.autor;
             
-            // Lógica de respuesta automática
             if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola') || textoOriginal.toLowerCase().includes('buen')) {
+                console.log("%c[P] Ejecutando respuesta automática de bienvenida.", "color: green"); // P
                 refChatsIndividuales.child(chatId).child('mensajes').push({
                     autor: '🤖 DOMINGUITO',
-                    texto: `Hola ${autor}! Soy DOMINGUITO.\n\nConsultame sobre pacientes, CUDs, ausencias o enviá "parte diario" para registrar novedades.`, // 🔴 A
+                    texto: `Hola ${autor}! Soy DOMINGUITO.`,
                     ts: Date.now(),
                     tipo: 'sistema'
+                }).then(() => {
+                    console.log("%c[AC] Mensaje de bienvenida enviado correctamente a Firebase.", "color: blue"); // AC
+                }).catch((error) => {
+                    console.error("%c[A] Error al escribir en Firebase:", "color: red", error); // A
                 });
                 return;
             }
             
-            // Si llega aquí, es un mensaje nuevo y válido de un usuario real
+            console.log("%c[P] Enviando texto a API externa...", "color: green"); // P
             enviarADominguitoAPI(textoOriginal, autor, chatId);
         });
     });
