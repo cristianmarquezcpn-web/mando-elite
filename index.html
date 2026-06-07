@@ -678,8 +678,12 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // DOMINGUITO - LLAMADA A LA API
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
+
 async function enviarADominguitoAPI(texto, autor, chatId) {
+    // 1. Preparar la interfaz visual (UI)
     const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
+    if (!chatContainer) return; // Validación para evitar errores si no encuentra el chat
+
     const escribiendo = document.createElement('div');
     escribiendo.className = 'msg msg-bot';
     escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
@@ -687,14 +691,30 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
     try {
-        const res = await fetch(DOMINGUITOAPI + '/procesar', {
+        // 2. Ejecutar la petición POST con modo CORS activado
+        const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
+            mode: 'cors', // Crucial para permitir peticiones entre dominios diferentes
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ 
+                texto, 
+                autor, 
+                chatId, 
+                usuarioActivo, 
+                rangoActivo, 
+                uidActivo 
+            })
         });
+
+        // 3. Procesar la respuesta
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+        
         const data = await res.json();
         escribiendo.remove();
         
+        // 4. Agregar la respuesta del bot a la base de datos
         if (data.respuesta) {
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
@@ -704,12 +724,16 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
             });
         }
         
+        // 5. Refrescar si es necesario
         if (data.refrescarRadar) {
             escanearBaseDeDatos();
         }
+
     } catch(e) {
+        // 6. Manejo de errores visuales
         escribiendo.remove();
         console.error('Error API Dominguito:', e);
+        
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: '⚠️ Estoy teniendo problemas de conexión. Respondé de nuevo en unos segundos.',
@@ -718,7 +742,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         });
     }
 }
-
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
