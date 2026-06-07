@@ -704,10 +704,11 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
-        console.log("📦 [Dominguito] Datos recibidos:", data); 
+        console.log("📦 [Dominguito] Datos recibidos:", data);
         
         escribiendo.remove();
         
+        // CORRECCIÓN: Validar que data.respuesta exista
         if (data && (data.respuesta || data.mensaje)) {
             const textoRespuesta = data.respuesta || data.mensaje;
             refChatsIndividuales.child(chatId).child('mensajes').push({
@@ -717,6 +718,21 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
                 tipo: 'sistema'
             });
             console.log("✅ [Dominguito] Mensaje enviado a Firebase");
+            
+            // 👇 ACÁ VA EL BLOQUE DE PINTADO DIRECTO 👇
+            const contenedorChat = document.getElementById('chat-domingo-modal') || document.getElementById('chat-individual');
+            if (contenedorChat && contenedorChat.style.display !== 'none') {
+                const nuevoMsg = document.createElement('div');
+                nuevoMsg.className = 'msg msg-bot';
+                nuevoMsg.innerHTML = `
+                    <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
+                    ${textoRespuesta}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
+                `;
+                contenedorChat.appendChild(nuevoMsg);
+                contenedorChat.scrollTop = contenedorChat.scrollHeight;
+            }
+            
         } else {
             console.warn("⚠️ [Dominguito] Respuesta recibida pero sin texto:", data);
         }
@@ -1690,7 +1706,7 @@ function dominguitoEscuchaUnico() {
             // 2. Si es mensaje del usuario activo, ignora (evita que el propio bot se autorresponda). // 🔵 AC
             // 3. Si el mensaje es antiguo (más de 15 segundos), ignora (evita procesar el histórico al iniciar).
             var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
-            if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo || esMensajeAntiguo) return;
+           if (!msg || msg.autor === usuarioActivo || esMensajeAntiguo) return;
             
             var textoOriginal = (msg.texto || '').trim();
             if (!textoOriginal) return;
