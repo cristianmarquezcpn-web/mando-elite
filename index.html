@@ -717,8 +717,11 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
                 tipo: 'sistema'
             });
             console.log("✅ [Dominguito] Mensaje enviado a Firebase");
-            
-            // 👇 ACÁ VA EL BLOQUE DE PINTADO DIRECTO 👇
+             console.log("🔍 [DEBUG] data COMPLETA recibida:", JSON.stringify(data));
+        console.log("🔍 [DEBUG] data.respuesta:", data.respuesta);
+        console.log("🔍 [DEBUG] data.mensaje:", data.mensaje);
+        
+    // 👇 ACÁ VA EL BLOQUE DE PINTADO DIRECTO 👇
             const contenedorChat = document.getElementById('chat-domingo-modal') || document.getElementById('chat-individual');
             if (contenedorChat && contenedorChat.style.display !== 'none') {
                 const nuevoMsg = document.createElement('div');
