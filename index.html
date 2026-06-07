@@ -678,44 +678,47 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // DOMINGUITO - LLAMADA A LA API
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
-function enviarADominguitoAPI(texto, autor, chatId) {
-    // RESPONDEMOS LOCALMENTE, SIN FETCH. NO ROMPE NUNCA.
-    const respuestas = {
-        cud: '🔍 Revisando CUDs próximos a vencer... Dame un segundo.',
-        vencimiento: '🔍 Revisando CUDs próximos a vencer... Dame un segundo.',
-        vencido: '🔍 Revisando CUDs próximos a vencer... Dame un segundo.',
-        ausencia: '📋 Revisando ausencias recurrentes...',
-        falta: '📋 Revisando ausencias recurrentes...',
-        inasistencia: '📋 Revisando ausencias recurrentes...',
-        radar: '🔄 Actualizando el radar de pacientes...',
-        resumen: '🔄 Actualizando el radar de pacientes...',
-        tablero: '🔄 Actualizando el radar de pacientes...',
-        parte: '📝 ¿Qué novedades querés agregar al parte diario?',
-        novedad: '📝 ¿Qué novedades querés agregar al parte diario?',
-        hola: '👋 ¡Hola! Soy Dominguito. Podés preguntarme sobre CUDs, ausencias, pacientes o pedir el radar.',
-        ayuda: '👋 ¡Hola! Soy Dominguito. Podés preguntarme sobre CUDs, ausencias, pacientes o pedir el radar.',
-        buenos: '👋 ¡Hola! Soy Dominguito. Podés preguntarme sobre CUDs, ausencias, pacientes o pedir el radar.',
-        buenas: '👋 ¡Hola! Soy Dominguito. Podés preguntarme sobre CUDs, ausencias, pacientes o pedir el radar.'
-    };
-
-    const t = texto.toLowerCase();
-    let respuesta = `📌 Buscando información sobre: "${texto}"`;
+async function enviarADominguitoAPI(texto, autor, chatId) {
+    const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
+    const escribiendo = document.createElement('div');
+    escribiendo.className = 'msg msg-bot';
+    escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
+    chatContainer.appendChild(escribiendo);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
     
-    for (const [palabra, msg] of Object.entries(respuestas)) {
-        if (t.includes(palabra)) {
-            respuesta = msg;
-            break;
+    try {
+        const res = await fetch(DOMINGUITOAPI + '/procesar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
+        });
+        const data = await res.json();
+        escribiendo.remove();
+        
+        if (data.respuesta) {
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: data.respuesta,
+                ts: Date.now(),
+                tipo: 'sistema'
+            });
         }
+        
+        if (data.refrescarRadar) {
+            escanearBaseDeDatos();
+        }
+    } catch(e) {
+        escribiendo.remove();
+        console.error('Error API Dominguito:', e);
+        refChatsIndividuales.child(chatId).child('mensajes').push({
+            autor: '🤖 DOMINGUITO',
+            texto: '⚠️ Estoy teniendo problemas de conexión. Respondé de nuevo en unos segundos.',
+            ts: Date.now(),
+            tipo: 'sistema'
+        });
     }
-
-    // MANDAMOS DIRECTO A FIREBASE SIN ESPERAR NINGUNA API
-    refChatsIndividuales.child(chatId).child('mensajes').push({
-        autor: '🤖 DOMINGUITO',
-        texto: respuesta,
-        ts: Date.now(),
-        tipo: 'sistema'
-    });
 }
+
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
