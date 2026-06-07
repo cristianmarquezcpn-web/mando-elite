@@ -565,7 +565,7 @@ function escanearBaseDeDatos() {
     const ramas = ['cd', 'cet', 'rehab'];
     const hoy = new Date().toISOString().split('T')[0];
 
-    if (feed) feed.innerHTML = '<div style="text-align:center; color:64748b; font-size:12px; margin-top:20px;">🔍 Escaneando pacientes...</div>';
+    if (feed) feed.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">🔍 Escaneando pacientes...</div>';
 
     let ramasCompletadas = 0;
 
@@ -575,7 +575,7 @@ function escanearBaseDeDatos() {
                 const nombre = childPac.key;
                 const pac = childPac.val();
                 
-                if (!document.querySelector(`sel-paciente option[value="${nombre}"]`)) {
+                if (!document.querySelector(`#sel-paciente option[value="${nombre}"]`)) {
                     if (selectPac) {
                         const opt = document.createElement('option');
                         opt.value = nombre; opt.text = nombre;
@@ -656,9 +656,9 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
     
     card.innerHTML = `
         <div style="font-size:10px; font-weight:900; color:${color}">${tipo}</div>
-        <div style="font-size:13px; margin:4px 0; font-weight:800; color:fff;">${paciente}</div>
-        <div style="font-size:11px; color:94a3b8;">${msg}</div>
-        <div style="font-size:9px; color:64748b; margin-top:5px;">🕐 ${new Date().toLocaleTimeString()}</div>
+        <div style="font-size:13px; margin:4px 0; font-weight:800; color:#ffffff;">${paciente}</div>
+        <div style="font-size:11px; color:#94a3b8;">${msg}</div>
+        <div style="font-size:9px; color:#64748b; margin-top:5px;">🕐 ${new Date().toLocaleTimeString()}</div>
     `;
     
     feed.prepend(card);
@@ -704,11 +704,10 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
-        console.log("📦 [Dominguito] Datos recibidos:", data); // Verifica aquí si 'respuesta' existe
+        console.log("📦 [Dominguito] Datos recibidos:", data); 
         
         escribiendo.remove();
         
-        // CORRECCIÓN: Validar que data.respuesta exista
         if (data && (data.respuesta || data.mensaje)) {
             const textoRespuesta = data.respuesta || data.mensaje;
             refChatsIndividuales.child(chatId).child('mensajes').push({
@@ -772,10 +771,10 @@ function renderizarContactos() {
         
         return `
             <div class="contacto-item ${activo}" onclick="seleccionarContacto('${c.nombre}', '${c.email}')">
-                <div class="avatar" style="background: ${color}">${inicial}</div>
+                <div class="avatar" style="background: #${color}">${inicial}</div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 600; font-size: 13px;">${c.nombre}</div>
-                    <div style="font-size: 10px; color: 64748b;">${c.rol}</div>
+                    <div style="font-size: 10px; color: #64748b;">${c.rol}</div>
                 </div>
                 <div class="no-leido" id="${notifId}" style="display: none;"></div>
             </div>
@@ -787,7 +786,7 @@ function filtrarContactos() {
     const input = document.getElementById('busc-contacto');
     if (!input) return;
     const filtro = input.value.toUpperCase();
-    document.querySelectorAll('lista-contactos .contacto-item').forEach(item => {
+    document.querySelectorAll('#lista-contactos .contacto-item').forEach(item => {
         const texto = item.textContent || '';
         item.style.display = texto.toUpperCase().includes(filtro) ? 'flex' : 'none';
     });
@@ -802,7 +801,7 @@ function seleccionarContacto(contacto, email) {
     contactoEscuchando = `chat${participantes.join('')}`;
     
     document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
-    const items = document.querySelectorAll('lista-contactos .contacto-item');
+    const items = document.querySelectorAll('#lista-contactos .contacto-item');
     items.forEach(el => {
         if (el.textContent.includes(contacto)) el.classList.add('activo');
     });
@@ -817,8 +816,7 @@ function cargarHistorialChatIndividual(chatId) {
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer || !chatId) return;
     
-    // ELIMINA O COMENTA LA LÍNEA QUE TE ROMPE EL CÓDIGO:
-    // console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val()); 
+    // console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val()); // ERROR: snap no definido en este nivel
     
     chatContainer.innerHTML = `
         <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
@@ -828,9 +826,6 @@ function cargarHistorialChatIndividual(chatId) {
     refChatsIndividuales.child(chatId).child('mensajes').off();
     
     refChatsIndividuales.child(chatId).child('mensajes').on('child_added', snap => {
-        // AHORA SÍ ESTÁ DENTRO DEL SCOPE
-        console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val());
-        
         const m = snap.val();
         if (!m) return;
 
@@ -849,6 +844,7 @@ function cargarHistorialChatIndividual(chatId) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 }
+
 function enviarMensajeIndividual() {
     const input = document.getElementById('chat-individual-input');
     const texto = input.value.trim();
@@ -952,7 +948,7 @@ function renderizarGrupos() {
     if (!container) return;
     
     if (misGrupos.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:64748b; font-size:12px;">No estás en ningún grupo. Creá uno.</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b; font-size:12px;">No estás en ningún grupo. Creá uno.</div>';
         return;
     }
     
@@ -963,10 +959,10 @@ function renderizarGrupos() {
         
         return `
             <div class="contacto-item ${activo}" onclick="seleccionarGrupo('${g.id}')">
-                <div class="avatar" style="background: 8b5cf6;">👥</div>
+                <div class="avatar" style="background: #8b5cf6;">👥</div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 600; font-size: 13px;">${g.nombre}</div>
-                    <div style="font-size: 10px; color: 64748b;">${miembrosCount} miembros • ${ultMsg}</div>
+                    <div style="font-size: 10px; color: #64748b;">${miembrosCount} miembros • ${ultMsg}</div>
                 </div>
             </div>
         `;
@@ -977,7 +973,7 @@ function seleccionarGrupo(grupoId) {
     grupoSeleccionado = grupoId;
     
     document.querySelectorAll('.contacto-item').forEach(el => el.classList.remove('activo'));
-    document.querySelectorAll('lista-grupos .contacto-item').forEach(item => {
+    document.querySelectorAll('#lista-grupos .contacto-item').forEach(item => {
         if (item.textContent.includes(misGrupos.find(g => g.id === grupoId)?.nombre || '')) {
             item.classList.add('activo');
         }
@@ -993,31 +989,29 @@ function seleccionarGrupo(grupoId) {
     grupoEscuchando = grupoId;
     
     refGrupos.child(grupoId).child('mensajes').on('value', snap => {
-    const grupo = misGrupos.find(g => g.id === grupoId);
-    
-    // CORRECCIÓN: Colores con # y sintaxis de estilo
-    chatContainer.innerHTML = `
-        <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-            <span>👥 <b>${grupo?.nombre || 'Grupo'}</b> (${Object.keys(grupo?.miembros || {}).length} miembros)</span>
-            <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#3b82f6;">ℹ️</button>
-        </div>`;
-    
-    snap.forEach(child => {
-        const m = child.val();
-        let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-        if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
+        const grupo = misGrupos.find(g => g.id === grupoId);
+        chatContainer.innerHTML = `
+            <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>👥 <b>${grupo?.nombre || 'Grupo'}</b> (${Object.keys(grupo?.miembros || {}).length} miembros)</span>
+                <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#3b82f6;">ℹ️</button>
+            </div>`;
         
-        chatContainer.innerHTML += `
-            <div class="msg ${claseMsg}">
-                <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
-                ${m.texto}
-                <div style="font-size:8px; opacity:0.5; margin-top:3px;">${m.ts ? new Date(m.ts).toLocaleTimeString() : ''}</div>
-            </div>
-        `;
+        snap.forEach(child => {
+            const m = child.val();
+            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+            if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
+            
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
+                    ${m.texto}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleTimeString()}</div>
+                </div>
+            `;
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
     });
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-});
-      }
+}
 
 function enviarMensajeGrupo() {
     const input = document.getElementById('chat-grupo-input');
@@ -1047,30 +1041,30 @@ function mostrarModalCrearGrupo() {
     overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
     
     overlay.innerHTML = `
-    <div class="modal-content" style="padding: 24px;">
-        <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
-        <div style="margin-bottom:15px;">
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
-            <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-        <div style="margin-bottom:15px;">
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
-            <div style="max-height:250px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:8px;">
-                ${contactosDisponibles.map(c => `
-                    <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid #f1f5f9; font-size:13px; cursor:pointer;">
-                        <input type="checkbox" class="check-miembro" value="${c.nombre}">
-                        <span>${c.nombre}</span>
-                        <span style="color:#94a3b8; font-size:10px;">(${c.rol})</span>
-                    </label>
-                `).join('')}
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
+                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
+                <div style="max-height:250px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:8px;">
+                    ${contactosDisponibles.map(c => `
+                        <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid #f1f5f9; font-size:13px; cursor:pointer;">
+                            <input type="checkbox" class="check-miembro" value="${c.nombre}">
+                            <span>${c.nombre}</span>
+                            <span style="color:#94a3b8; font-size:10px;">(${c.rol})</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
+                <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
             </div>
         </div>
-        <div style="display:flex; gap:8px;">
-            <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
-            <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
-        </div>
-    </div>
-`;
+    `;
     document.body.appendChild(overlay);
 }
 
@@ -1107,25 +1101,25 @@ function abrirInfoGrupo(grupoId) {
     overlay.className = 'modal-overlay';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     
-   overlay.innerHTML = `
-    <div class="modal-content" style="padding: 24px;">
-        <h3 style="margin:0 0 15px 0;">👥 ${grupo.nombre}</h3>
-        <div style="margin-bottom:15px;">
-            <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
-            <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
-                ${miembrosArr.map(nm => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
-                        <span style="font-size:12px;">${nm}</span>
-                    </div>
-                `).join('')}
+    overlay.innerHTML = `
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin:0 0 15px 0;">👥 ${grupo.nombre}</h3>
+            <div style="margin-bottom:15px;">
+                <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
+                <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
+                    ${miembrosArr.map(nm => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+                            <span style="font-size:12px;">${nm}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:15px;">
+                <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
+                <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer; color: #000;">CERRAR</button>
             </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:15px;">
-            <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
-            <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer; color:#000;">CERRAR</button>
-        </div>
-    </div>
-`;
+    `;
     document.body.appendChild(overlay);
 }
 
@@ -1139,13 +1133,12 @@ function salirDelGrupo(grupoId) {
         grupoEscuchando = null;
         
         const chatContainer = document.getElementById('chat-grupo');
-        if (chatContainer) chatContainer.innerHTML = '<div style="text-align:center; color:94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo</div>';
+        if (chatContainer) chatContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Seleccioná un grupo</div>';
         
         document.querySelector('.modal-overlay')?.remove();
         mostrarToast("👋 Saliste del grupo");
     }
 }
-
 // ============================================================
 // ASIGNACIÓN DE T.S.
 // ============================================================
@@ -1153,7 +1146,7 @@ function cargarTsDisponibles() {
     const selTs = document.getElementById('sel-ts-asignar');
     if (!selTs) return;
     
-    selTs.innerHTML = '<option value="">Seleccionar T.S...</option>';
+    selTs.innerHTML = '<option value="">Seleccionar T. S...</option>'; // 🟢 P
     
     db.ref('SISTEMA_PERSONAL/empleados').once('value', snap => {
         snap.forEach(child => {
@@ -1174,7 +1167,7 @@ function cargarTsDisponibles() {
 function asignarPacienteATS() {
     const selPac = document.getElementById('sel-paciente-asignar');
     const selTs = document.getElementById('sel-ts-asignar');
-    if (!selPac || !selTs || !selPac.value || !selTs.value) return alert("Seleccioná un paciente y una T.S.");
+    if (!selPac || !selTs || !selPac.value || !selTs.value) return alert("Seleccioná un paciente y una T. S."); // 🟢 P
     
     const pacKey = sanitizarKey(selPac.value);
     const tsKey = selTs.value;
@@ -1187,7 +1180,7 @@ function asignarPacienteATS() {
     
     refExpedientes.child(pacKey).push({
         autor: '🤖 DOMINGUITO',
-        msg: `📌 Paciente asignado a T.S. ${selTs.options[selTs.selectedIndex].text} por ${usuarioActivo}`,
+        msg: `📌 Paciente asignado a T. S. ${selTs.options[selTs.selectedIndex].text} por ${usuarioActivo}`, // 🟢 P
         ts: Date.now(),
         tipo: 'sistema'
     });
@@ -1208,7 +1201,7 @@ function cargarAsignaciones() {
         }
         
         let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
-        html += '<tr style="background:f1f5f9;"><th style="padding:8px; text-align:left;">Paciente</th><th style="padding:8px; text-align:left;">T.S.</th><th style="padding:8px; text-align:left;">Acción</th></tr>';
+        html += '<tr style="background:f1f5f9;"><th style="padding:8px; text-align:left;">Paciente</th><th style="padding:8px; text-align:left;">T. S.</th><th style="padding:8px; text-align:left;">Acción</th></tr>'; // 🟢 P
         
         Object.keys(asignaciones).forEach(paciente => {
             const a = asignaciones[paciente];
@@ -1232,7 +1225,7 @@ function quitarAsignacion(paciente) {
 }
 
 // ============================================================
-// PANEL T.S.
+// PANEL T. S. // 🟢 P
 // ============================================================
 function cargarPacientesDeTs(emailTs) {
     refAsignaciones.off('value');
@@ -1285,19 +1278,19 @@ function cargarPanelTs(emailTs) {
         }
         
         let html = '<div style="font-size:11px; font-weight:600; margin-bottom:8px; color:var(--ts-color);">📋 MIS PACIENTES:</div>';
+        
         misPacientes.forEach(p => {
-        html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; 
-                    background:#ffffff; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0;
-                    cursor:pointer;" onclick="irAExpedientePaciente('${p}')">
-            <div>
-                <div style="font-weight:600; font-size:12px;">${p}</div>
-            </div>
-            <div style="font-size:10px; color:#3b82f6;">📋 Ver expediente ➤</div>
-        </div>
-    `;
-
-                });
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; 
+                            background:white; border-radius:8px; margin-bottom:5px; border:1px solid e2e8f0;
+                            cursor:pointer;" onclick="irAExpedientePaciente('${p}')">
+                    <div>
+                        <div style="font-weight:600; font-size:12px;">${p}</div>
+                    </div>
+                    <div style="font-size:10px; color:3b82f6;">📋 Ver expediente ➤</div>
+                </div>
+            `;
+        });
         
         container.innerHTML = html;
     });
@@ -1351,9 +1344,9 @@ function cargarExpedientePaciente() {
         const msgs = snap.val() || {};
         
         chatContainer.innerHTML = `
-    <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
-        📋 EXPEDIENTE: <b style="color:var(--primary);">${pacienteSeleccionado}</b>
-    </div>`;
+            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+                📋 EXPEDIENTE: <b style="color:var(--primary);">${pacienteSeleccionado}</b>
+            </div>`;
         
         const mensajesArray = Object.values(msgs).sort((a, b) => (a.ts || 0) - (b.ts || 0));
         
@@ -1365,13 +1358,12 @@ function cargarExpedientePaciente() {
             
             const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
             
-           chatContainer.innerHTML += `
-    <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease;">
-        <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
-        ${m.msg || m.texto || ''}
-        <div style="font-size:8px; opacity:0.5; margin-top:3px;">${fecha}</div>
-    </div>
-
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease;">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
+                    ${m.msg || m.texto || ''}
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${fecha}</div>
+                </div>
             `;
         });
         chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -1443,7 +1435,7 @@ function renderPizarraLocal() {
     container.innerHTML = "";
     
     if (filtradas.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
+        container.innerHTML = '<div style="text-align:center; color:94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
         return;
     }
     
@@ -1453,16 +1445,16 @@ function renderPizarraLocal() {
         card.style.opacity = t.estado === 'CONFIRMADO' ? '0.6' : '1';
         
         card.innerHTML = `
-            <div style="font-size:9px; color:#64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
+            <div style="font-size:9px; color:64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
                 <span>📅 ${t.vence || 'Sin fecha'} | 👤 ${t.emisor}</span>
                 <span>
                     <span class="badge ${t.prio === 'ALTA' ? 'badge-rojo' : 'badge-verde'}">${t.prio}</span>
-                    <span style="background:#3b82f6; color:#ffffff; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
+                    <span style="background:3b82f6; color:white; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
                 </span>
             </div>
-            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:#94a3b8;' : ''}">${t.desc}</h3>
+            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:94a3b8;' : ''}">${t.desc}</h3>
             
-            <div id="coments-${t.id}" style="margin:8px 0; background:#f8fafc; padding:5px; border-radius:4px; font-size:10px;">
+            <div id="coments-${t.id}" style="margin:8px 0; background:f8fafc; padding:5px; border-radius:4px; font-size:10px;">
                 ${t.comentarios ? Object.values(t.comentarios).map(c => `<div><b>${c.autor}:</b> ${c.texto}</div>`).join('') : ''}
             </div>
             
@@ -1472,15 +1464,14 @@ function renderPizarraLocal() {
             </div>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                <button class="btn-pro" style="background:#e2e8f0; color:#333333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
-                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '#64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
+                <button class="btn-pro" style="background:e2e8f0; color:333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
+                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
                     ${t.estado === 'CONFIRMADO' ? '↩️ REABRIR' : '✅ COMPLETAR'}
                 </button>
             </div>
         `;
         container.appendChild(card);
     });
-     
 }
 
 function crearTarea() {
@@ -1576,37 +1567,39 @@ function cargarDatosPrivados(nombre) {
         } else {
             snap.forEach(child => {
                 const l = child.val();
-               html = `
-    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
-        <tr style="background:#1e293b;">
-            <th style="padding:8px; color:#94a3b8;">Detalle</th>
-            <th style="padding:8px; color:#94a3b8; text-align:right;">Total</th>
-        </tr>
-        <tr>
-            <td style="padding:8px; border-bottom:1px solid #1e293b;">
-                <b>${l.puesto || 'General'}</b><br>
-                <span style="font-size:10px; color:#64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
-            </td>
-            <td style="padding:8px; border-bottom:1px solid #1e293b; text-align:right; font-weight:bold; color:#10b981;">
-                ${Number(l.total || 0).toLocaleString('es-AR')} ARS
-            </td>
-        </tr>
-    </table>`;
-    if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
-});
-
-db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
-    let hayDeuda = false;
-    let facturasHtml = '<div style="margin-top:10px; border-top:1px solid #1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
-    snapFact.forEach(child => {
-        const f = child.val();
-        if (f.estado === 'PENDIENTE') {
-            hayDeuda = true;
-            facturasHtml += `<li style="font-size:11px; color:#f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
+                html = `
+                <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
+                    <tr style="background:1e293b;">
+                        <th style="padding:8px; color:94a3b8;">Detalle</th>
+                        <th style="padding:8px; color:94a3b8; text-align:right;">Total</th>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px; border-bottom:1px solid 1e293b;">
+                            <b>${l.puesto || 'General'}</b><br>
+                            <span style="font-size:10px; color:64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
+                        </td>
+                        <td style="padding:8px; border-bottom:1px solid 1e293b; text-align:right; font-weight:bold; color:10b981;">
+                            ${Number(l.total || 0).toLocaleString('es-AR')} ARS
+                        </td>
+                    </tr>
+                </table>`;
+                if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
+            });
         }
-    });
+
+        db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
+            let hayDeuda = false;
+            let facturasHtml = '<div style="margin-top:10px; border-top:1px solid 1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
+            snapFact.forEach(child => {
+                const f = child.val();
+                if (f.estado === 'PENDIENTE') {
+                    hayDeuda = true;
+                    facturasHtml += `<li style="font-size:11px; color:f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
+                }
+            });
             container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
         });
+    });
 }
 
 function cargarHistorialLiquidaciones(nombre) {
@@ -1617,12 +1610,9 @@ function cargarHistorialLiquidaciones(nombre) {
         snap.forEach(c => items.push(c.val()));
         items.sort((a,b) => (b.periodo||'').localeCompare(a.periodo||''));
         items.forEach(l => {
-           html += `
-    <tr>
-        <td style="padding:4px; border-bottom:1px solid #1e293b;">${l.periodo}</td>
-        <td style="padding:4px; border-bottom:1px solid #1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td>
-    </tr>`;
-});
+            html += `<tr><td style="padding:4px; border-bottom:1px solid 1e293b;">${l.periodo}</td>
+                <td style="padding:4px; border-bottom:1px solid 1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td></tr>`;
+        });
         container.innerHTML = html + '</table>';
     });
 }
@@ -1697,7 +1687,7 @@ function dominguitoEscuchaUnico() {
             
             // FILTRO DE SEGURIDAD:
             // 1. Si es mensaje del bot, ignora.
-            // 2. Si es mensaje del usuario activo, ignora (evita que el propio bot se auto-responda).
+            // 2. Si es mensaje del usuario activo, ignora (evita que el propio bot se autorresponda). // 🔵 AC
             // 3. Si el mensaje es antiguo (más de 15 segundos), ignora (evita procesar el histórico al iniciar).
             var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
             if (!msg || msg.autor === '🤖 DOMINGUITO' || msg.autor === usuarioActivo || esMensajeAntiguo) return;
@@ -1711,7 +1701,7 @@ function dominguitoEscuchaUnico() {
             if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola') || textoOriginal.toLowerCase().includes('buen')) {
                 refChatsIndividuales.child(chatId).child('mensajes').push({
                     autor: '🤖 DOMINGUITO',
-                    texto: `Hola ${autor}! Soy DOMINGUITO.\n\nConsultame sobre pacientes, CUDs, ausencias o envía "parte diario" para registrar novedades.`,
+                    texto: `Hola ${autor}! Soy DOMINGUITO.\n\nConsultame sobre pacientes, CUDs, ausencias o enviá "parte diario" para registrar novedades.`, // 🔴 A
                     ts: Date.now(),
                     tipo: 'sistema'
                 });
@@ -1738,7 +1728,6 @@ function iniciarSistemaCompleto() {
         console.log("✅ Dominguito modo único activo");
     }, 3000);
 }
-
 </script>
 </body>
 </html>
