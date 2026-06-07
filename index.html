@@ -1607,7 +1607,6 @@ db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', 
     });
             container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
         });
-    });
 }
 
 function cargarHistorialLiquidaciones(nombre) {
