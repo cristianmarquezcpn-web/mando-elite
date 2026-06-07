@@ -680,9 +680,10 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
 
 async function enviarADominguitoAPI(texto, autor, chatId) {
-    // 1. Preparar la interfaz visual (UI)
+    console.log("🔍 [Dominguito] Iniciando petición para:", chatId);
+
     const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
-    if (!chatContainer) return; // Validación para evitar errores si no encuentra el chat
+    if (!chatContainer) return;
 
     const escribiendo = document.createElement('div');
     escribiendo.className = 'msg msg-bot';
@@ -691,52 +692,48 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
     try {
-        // 2. Ejecutar la petición POST con modo CORS activado
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
-            mode: 'cors', // Crucial para permitir peticiones entre dominios diferentes
-            headers: { 
-                'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify({ 
-                texto, 
-                autor, 
-                chatId, 
-                usuarioActivo, 
-                rangoActivo, 
-                uidActivo 
-            })
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
         });
 
-        // 3. Procesar la respuesta
-        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+        console.log("📡 [Dominguito] Status HTTP:", res.status);
+        
+        if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
+        console.log("📦 [Dominguito] Datos recibidos:", data); // Verifica aquí si 'respuesta' existe
+        
         escribiendo.remove();
         
-        // 4. Agregar la respuesta del bot a la base de datos
-        if (data.respuesta) {
+        // CORRECCIÓN: Validar que data.respuesta exista
+        if (data && (data.respuesta || data.mensaje)) {
+            const textoRespuesta = data.respuesta || data.mensaje;
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
-                texto: data.respuesta,
+                texto: textoRespuesta,
                 ts: Date.now(),
                 tipo: 'sistema'
             });
+            console.log("✅ [Dominguito] Mensaje enviado a Firebase");
+        } else {
+            console.warn("⚠️ [Dominguito] Respuesta recibida pero sin texto:", data);
         }
         
-        // 5. Refrescar si es necesario
         if (data.refrescarRadar) {
+            console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
             escanearBaseDeDatos();
         }
 
     } catch(e) {
-        // 6. Manejo de errores visuales
         escribiendo.remove();
-        console.error('Error API Dominguito:', e);
+        console.error('❌ [Dominguito] Error:', e);
         
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
-            texto: '⚠️ Estoy teniendo problemas de conexión. Respondé de nuevo en unos segundos.',
+            texto: '⚠️ Hubo un error procesando tu solicitud.',
             ts: Date.now(),
             tipo: 'sistema'
         });
