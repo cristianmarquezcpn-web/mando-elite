@@ -817,35 +817,36 @@ function cargarHistorialChatIndividual(chatId) {
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer || !chatId) return;
     
+    // Limpiamos una sola vez al cargar el chat
     chatContainer.innerHTML = `
-        <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
+        <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
             💬 <b>${contactoSeleccionado}</b>
         </div>`;
     
+    // Desconectamos cualquier listener previo
     refChatsIndividuales.child(chatId).child('mensajes').off();
-    refChatsIndividuales.child(chatId).child('mensajes').on('value', snap => {
-        chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
-                💬 <b>${contactoSeleccionado}</b>
-            </div>`;
+    
+    // Usamos 'child_added' para agregar solo el nuevo mensaje sin borrar el resto
+    refChatsIndividuales.child(chatId).child('mensajes').on('child_added', snap => {
+        const m = snap.val();
+        if (!m) return;
+
+        let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+        if (m.tipo === 'sistema' || m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
         
-        snap.forEach(child => {
-            const m = child.val();
-            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-            if (m.tipo === 'sistema' || m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
-            
-            chatContainer.innerHTML += `
-                <div class="msg ${claseMsg}">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
-                    ${m.texto}
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${m.ts ? new Date(m.ts).toLocaleTimeString() : ''}</div>
-                </div>
-            `;
-        });
+        // Creamos el elemento y lo añadimos al final
+        const nuevoMensaje = document.createElement('div');
+        nuevoMensaje.className = `msg ${claseMsg}`;
+        nuevoMensaje.innerHTML = `
+            <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
+            ${m.texto}
+            <div style="font-size:8px; opacity:0.5; margin-top:3px;">${m.ts ? new Date(m.ts).toLocaleTimeString() : ''}</div>
+        `;
+        
+        chatContainer.appendChild(nuevoMensaje);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 }
-
 function enviarMensajeIndividual() {
     const input = document.getElementById('chat-individual-input');
     const texto = input.value.trim();
