@@ -678,7 +678,6 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // DOMINGUITO - LLAMADA A LA API
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
-
 async function enviarADominguitoAPI(texto, autor, chatId) {
     console.log("🔍 [Dominguito] Iniciando petición para:", chatId);
 
@@ -708,9 +707,10 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         
         escribiendo.remove();
         
-        // CORRECCIÓN: Validar que data.respuesta exista
         if (data && (data.respuesta || data.mensaje)) {
             const textoRespuesta = data.respuesta || data.mensaje;
+            
+            // Enviar a Firebase
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
                 texto: textoRespuesta,
@@ -719,7 +719,7 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
             });
             console.log("✅ [Dominguito] Mensaje enviado a Firebase");
             
-            // 👇 ACÁ VA EL BLOQUE DE PINTADO DIRECTO 👇
+            // 👇 PINTADO DIRECTO EN EL DOM 👇
             const contenedorChat = document.getElementById('chat-domingo-modal') || document.getElementById('chat-individual');
             if (contenedorChat && contenedorChat.style.display !== 'none') {
                 const nuevoMsg = document.createElement('div');
@@ -754,6 +754,7 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         });
     }
 }
+
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
