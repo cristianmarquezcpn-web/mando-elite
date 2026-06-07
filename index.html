@@ -816,25 +816,27 @@ function seleccionarContacto(contacto, email) {
 function cargarHistorialChatIndividual(chatId) {
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer || !chatId) return;
-    console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val());
-    // Limpiamos una sola vez al cargar el chat
+    
+    // ELIMINA O COMENTA LA LÍNEA QUE TE ROMPE EL CÓDIGO:
+    // console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val()); 
+    
     chatContainer.innerHTML = `
         <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
             💬 <b>${contactoSeleccionado}</b>
         </div>`;
     
-    // Desconectamos cualquier listener previo
     refChatsIndividuales.child(chatId).child('mensajes').off();
     
-    // Usamos 'child_added' para agregar solo el nuevo mensaje sin borrar el resto
     refChatsIndividuales.child(chatId).child('mensajes').on('child_added', snap => {
+        // AHORA SÍ ESTÁ DENTRO DEL SCOPE
+        console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val());
+        
         const m = snap.val();
         if (!m) return;
 
         let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
         if (m.tipo === 'sistema' || m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
         
-        // Creamos el elemento y lo añadimos al final
         const nuevoMensaje = document.createElement('div');
         nuevoMensaje.className = `msg ${claseMsg}`;
         nuevoMensaje.innerHTML = `
@@ -991,29 +993,31 @@ function seleccionarGrupo(grupoId) {
     grupoEscuchando = grupoId;
     
     refGrupos.child(grupoId).child('mensajes').on('value', snap => {
-        const grupo = misGrupos.find(g => g.id === grupoId);
-        chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span>👥 <b>${grupo?.nombre || 'Grupo'}</b> (${Object.keys(grupo?.miembros || {}).length} miembros)</span>
-                <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:3b82f6;">ℹ️</button>
-            </div>`;
+    const grupo = misGrupos.find(g => g.id === grupoId);
+    
+    // CORRECCIÓN: Colores con # y sintaxis de estilo
+    chatContainer.innerHTML = `
+        <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>👥 <b>${grupo?.nombre || 'Grupo'}</b> (${Object.keys(grupo?.miembros || {}).length} miembros)</span>
+            <button onclick="abrirInfoGrupo('${grupoId}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#3b82f6;">ℹ️</button>
+        </div>`;
+    
+    snap.forEach(child => {
+        const m = child.val();
+        let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
+        if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
         
-        snap.forEach(child => {
-            const m = child.val();
-            let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-            if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
-            
-            chatContainer.innerHTML += `
-                <div class="msg ${claseMsg}">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
-                    ${m.texto}
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date(m.ts).toLocaleTimeString()}</div>
-                </div>
-            `;
-        });
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        chatContainer.innerHTML += `
+            <div class="msg ${claseMsg}">
+                <b style="font-size:9px; display:block; opacity:0.7">${m.autor}</b>
+                ${m.texto}
+                <div style="font-size:8px; opacity:0.5; margin-top:3px;">${m.ts ? new Date(m.ts).toLocaleTimeString() : ''}</div>
+            </div>
+        `;
     });
-}
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+      }
 
 function enviarMensajeGrupo() {
     const input = document.getElementById('chat-grupo-input');
@@ -1043,30 +1047,30 @@ function mostrarModalCrearGrupo() {
     overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
     
     overlay.innerHTML = `
-        <div class="modal-content" style="padding: 24px;">
-            <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
-            <div style="margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
-                <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid ddd; border-radius:8px;">
-            </div>
-            <div style="margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
-                <div style="max-height:250px; overflow-y:auto; border:1px solid e2e8f0; border-radius:8px; padding:8px;">
-                    ${contactosDisponibles.map(c => `
-                        <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid f1f5f9; font-size:13px; cursor:pointer;">
-                            <input type="checkbox" class="check-miembro" value="${c.nombre}">
-                            <span>${c.nombre}</span>
-                            <span style="color:94a3b8; font-size:10px;">(${c.rol})</span>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
-                <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
+    <div class="modal-content" style="padding: 24px;">
+        <h3 style="margin:0 0 15px 0;">📱 CREAR GRUPO</h3>
+        <div style="margin-bottom:15px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Nombre del grupo:</label>
+            <input type="text" id="input-nombre-grupo" placeholder="Ej: Dirección, RRHH..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Agregar miembros:</label>
+            <div style="max-height:250px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:8px;">
+                ${contactosDisponibles.map(c => `
+                    <label style="display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid #f1f5f9; font-size:13px; cursor:pointer;">
+                        <input type="checkbox" class="check-miembro" value="${c.nombre}">
+                        <span>${c.nombre}</span>
+                        <span style="color:#94a3b8; font-size:10px;">(${c.rol})</span>
+                    </label>
+                `).join('')}
             </div>
         </div>
-    `;
+        <div style="display:flex; gap:8px;">
+            <button onclick="crearGrupoDesdeModal()" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">CREAR GRUPO</button>
+            <button onclick="this.closest('.modal-overlay').remove()" style="padding:12px 20px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer;">CANCELAR</button>
+        </div>
+    </div>
+`;
     document.body.appendChild(overlay);
 }
 
@@ -1103,25 +1107,25 @@ function abrirInfoGrupo(grupoId) {
     overlay.className = 'modal-overlay';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     
-    overlay.innerHTML = `
-        <div class="modal-content" style="padding: 24px;">
-            <h3 style="margin:0 0 15px 0;">👥 ${grupo.nombre}</h3>
-            <div style="margin-bottom:15px;">
-                <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
-                <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
-                    ${miembrosArr.map(nm => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid f1f5f9;">
-                            <span style="font-size:12px;">${nm}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:15px;">
-                <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
-                <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:e2e8f0; border:none; border-radius:8px; cursor:pointer; color: 000;">CERRAR</button>
+   overlay.innerHTML = `
+    <div class="modal-content" style="padding: 24px;">
+        <h3 style="margin:0 0 15px 0;">👥 ${grupo.nombre}</h3>
+        <div style="margin-bottom:15px;">
+            <b style="font-size:12px;">Miembros (${miembrosArr.length}):</b>
+            <div style="max-height:200px; overflow-y:auto; margin-top:8px;">
+                ${miembrosArr.map(nm => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:12px;">${nm}</span>
+                    </div>
+                `).join('')}
             </div>
         </div>
-    `;
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <button onclick="salirDelGrupo('${grupoId}')" style="flex:1; padding:10px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SALIR DEL GRUPO</button>
+            <button onclick="this.closest('.modal-overlay').remove()" style="flex:1; padding:10px; background:#e2e8f0; border:none; border-radius:8px; cursor:pointer; color:#000;">CERRAR</button>
+        </div>
+    </div>
+`;
     document.body.appendChild(overlay);
 }
 
@@ -1281,19 +1285,19 @@ function cargarPanelTs(emailTs) {
         }
         
         let html = '<div style="font-size:11px; font-weight:600; margin-bottom:8px; color:var(--ts-color);">📋 MIS PACIENTES:</div>';
-        
         misPacientes.forEach(p => {
-            html += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; 
-                            background:white; border-radius:8px; margin-bottom:5px; border:1px solid e2e8f0;
-                            cursor:pointer;" onclick="irAExpedientePaciente('${p}')">
-                    <div>
-                        <div style="font-weight:600; font-size:12px;">${p}</div>
-                    </div>
-                    <div style="font-size:10px; color:3b82f6;">📋 Ver expediente ➤</div>
-                </div>
-            `;
-        });
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; 
+                    background:#ffffff; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0;
+                    cursor:pointer;" onclick="irAExpedientePaciente('${p}')">
+            <div>
+                <div style="font-weight:600; font-size:12px;">${p}</div>
+            </div>
+            <div style="font-size:10px; color:#3b82f6;">📋 Ver expediente ➤</div>
+        </div>
+    `;
+
+                });
         
         container.innerHTML = html;
     });
@@ -1347,9 +1351,9 @@ function cargarExpedientePaciente() {
         const msgs = snap.val() || {};
         
         chatContainer.innerHTML = `
-            <div style="font-size:10px; text-align:center; color:94a3b8; margin-bottom:10px; padding:8px; background:f1f5f9; border-radius:8px;">
-                📋 EXPEDIENTE: <b style="color:var(--primary);">${pacienteSeleccionado}</b>
-            </div>`;
+    <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
+        📋 EXPEDIENTE: <b style="color:var(--primary);">${pacienteSeleccionado}</b>
+    </div>`;
         
         const mensajesArray = Object.values(msgs).sort((a, b) => (a.ts || 0) - (b.ts || 0));
         
@@ -1361,12 +1365,13 @@ function cargarExpedientePaciente() {
             
             const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
             
-            chatContainer.innerHTML += `
-                <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease;">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
-                    ${m.msg || m.texto || ''}
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${fecha}</div>
-                </div>
+           chatContainer.innerHTML += `
+    <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease;">
+        <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
+        ${m.msg || m.texto || ''}
+        <div style="font-size:8px; opacity:0.5; margin-top:3px;">${fecha}</div>
+    </div>
+
             `;
         });
         chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -1438,7 +1443,7 @@ function renderPizarraLocal() {
     container.innerHTML = "";
     
     if (filtradas.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
+        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px; font-size:14px;">📌 No hay órdenes activas</div>';
         return;
     }
     
@@ -1448,16 +1453,16 @@ function renderPizarraLocal() {
         card.style.opacity = t.estado === 'CONFIRMADO' ? '0.6' : '1';
         
         card.innerHTML = `
-            <div style="font-size:9px; color:64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
+            <div style="font-size:9px; color:#64748b; margin-bottom:5px; display:flex; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
                 <span>📅 ${t.vence || 'Sin fecha'} | 👤 ${t.emisor}</span>
                 <span>
                     <span class="badge ${t.prio === 'ALTA' ? 'badge-rojo' : 'badge-verde'}">${t.prio}</span>
-                    <span style="background:3b82f6; color:white; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
+                    <span style="background:#3b82f6; color:#ffffff; padding:2px 8px; border-radius:10px; font-size:8px;">${t.destino}</span>
                 </span>
             </div>
-            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:94a3b8;' : ''}">${t.desc}</h3>
+            <h3 style="margin:0 0 10px 0; font-size:14px; ${t.estado === 'CONFIRMADO' ? 'text-decoration:line-through; color:#94a3b8;' : ''}">${t.desc}</h3>
             
-            <div id="coments-${t.id}" style="margin:8px 0; background:f8fafc; padding:5px; border-radius:4px; font-size:10px;">
+            <div id="coments-${t.id}" style="margin:8px 0; background:#f8fafc; padding:5px; border-radius:4px; font-size:10px;">
                 ${t.comentarios ? Object.values(t.comentarios).map(c => `<div><b>${c.autor}:</b> ${c.texto}</div>`).join('') : ''}
             </div>
             
@@ -1467,14 +1472,15 @@ function renderPizarraLocal() {
             </div>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                <button class="btn-pro" style="background:e2e8f0; color:333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
-                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
+                <button class="btn-pro" style="background:#e2e8f0; color:#333333; font-size:10px;" onclick="marcarVisto('${t.id}')">👁️ VISTO</button>
+                <button class="btn-pro" style="background:${t.estado === 'CONFIRMADO' ? '#64748b' : 'var(--verde)'}; font-size:10px;" onclick="cambiarEstadoTarea('${t.id}', '${t.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO'}')">
                     ${t.estado === 'CONFIRMADO' ? '↩️ REABRIR' : '✅ COMPLETAR'}
                 </button>
             </div>
         `;
         container.appendChild(card);
     });
+     
 }
 
 function crearTarea() {
@@ -1570,36 +1576,35 @@ function cargarDatosPrivados(nombre) {
         } else {
             snap.forEach(child => {
                 const l = child.val();
-                html = `
-                <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
-                    <tr style="background:1e293b;">
-                        <th style="padding:8px; color:94a3b8;">Detalle</th>
-                        <th style="padding:8px; color:94a3b8; text-align:right;">Total</th>
-                    </tr>
-                    <tr>
-                        <td style="padding:8px; border-bottom:1px solid 1e293b;">
-                            <b>${l.puesto || 'General'}</b><br>
-                            <span style="font-size:10px; color:64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
-                        </td>
-                        <td style="padding:8px; border-bottom:1px solid 1e293b; text-align:right; font-weight:bold; color:10b981;">
-                            ${Number(l.total || 0).toLocaleString('es-AR')} ARS
-                        </td>
-                    </tr>
-                </table>`;
-                if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
-            });
-        }
+               html = `
+    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
+        <tr style="background:#1e293b;">
+            <th style="padding:8px; color:#94a3b8;">Detalle</th>
+            <th style="padding:8px; color:#94a3b8; text-align:right;">Total</th>
+        </tr>
+        <tr>
+            <td style="padding:8px; border-bottom:1px solid #1e293b;">
+                <b>${l.puesto || 'General'}</b><br>
+                <span style="font-size:10px; color:#64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
+            </td>
+            <td style="padding:8px; border-bottom:1px solid #1e293b; text-align:right; font-weight:bold; color:#10b981;">
+                ${Number(l.total || 0).toLocaleString('es-AR')} ARS
+            </td>
+        </tr>
+    </table>`;
+    if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
+});
 
-        db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
-            let hayDeuda = false;
-            let facturasHtml = '<div style="margin-top:10px; border-top:1px solid 1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
-            snapFact.forEach(child => {
-                const f = child.val();
-                if (f.estado === 'PENDIENTE') {
-                    hayDeuda = true;
-                    facturasHtml += `<li style="font-size:11px; color:f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
-                }
-            });
+db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
+    let hayDeuda = false;
+    let facturasHtml = '<div style="margin-top:10px; border-top:1px solid #1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
+    snapFact.forEach(child => {
+        const f = child.val();
+        if (f.estado === 'PENDIENTE') {
+            hayDeuda = true;
+            facturasHtml += `<li style="font-size:11px; color:#f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
+        }
+    });
             container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
         });
     });
@@ -1613,9 +1618,12 @@ function cargarHistorialLiquidaciones(nombre) {
         snap.forEach(c => items.push(c.val()));
         items.sort((a,b) => (b.periodo||'').localeCompare(a.periodo||''));
         items.forEach(l => {
-            html += `<tr><td style="padding:4px; border-bottom:1px solid 1e293b;">${l.periodo}</td>
-                <td style="padding:4px; border-bottom:1px solid 1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td></tr>`;
-        });
+           html += `
+    <tr>
+        <td style="padding:4px; border-bottom:1px solid #1e293b;">${l.periodo}</td>
+        <td style="padding:4px; border-bottom:1px solid #1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td>
+    </tr>`;
+});
         container.innerHTML = html + '</table>';
     });
 }
