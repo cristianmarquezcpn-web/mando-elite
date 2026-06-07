@@ -816,7 +816,7 @@ function seleccionarContacto(contacto, email) {
 function cargarHistorialChatIndividual(chatId) {
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer || !chatId) return;
-    
+    console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val());
     // Limpiamos una sola vez al cargar el chat
     chatContainer.innerHTML = `
         <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
