@@ -709,7 +709,7 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         
         // CORRECCIÓN: Validar que data.respuesta exista
         if (data && (data.respuesta || data.mensaje)) {
-            const textoRespuesta = data.respuesta || data.mensaje;
+            const textoRespuesta = data.mensaje;
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
                 texto: textoRespuesta,
@@ -835,8 +835,6 @@ function cargarHistorialChatIndividual(chatId) {
     const chatContainer = document.getElementById('chat-individual');
     if (!chatContainer || !chatId) return;
     
-    // console.log("👂 [DEBUG] Nuevo hijo detectado en Firebase:", snap.val()); // ERROR: snap no definido en este nivel
-    
     chatContainer.innerHTML = `
         <div style="font-size:10px; text-align:center; color:#94a3b8; margin-bottom:10px; padding:8px; background:#f1f5f9; border-radius:8px;">
             💬 <b>${contactoSeleccionado}</b>
@@ -846,10 +844,10 @@ function cargarHistorialChatIndividual(chatId) {
     
     refChatsIndividuales.child(chatId).child('mensajes').on('child_added', snap => {
         const m = snap.val();
-        if (!m) return;
+        if (!m || !m.texto) return; // Validación extra por seguridad
 
-        let claseMsg = m.autor === usuarioActivo ? 'msg-me' : 'msg-them';
-        if (m.tipo === 'sistema' || m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
+        // Detecta si es el bot para darle la clase msg-bot
+        let claseMsg = (m.tipo === 'sistema' || m.autor.includes('DOMINGUITO')) ? 'msg-bot' : (m.autor === usuarioActivo ? 'msg-me' : 'msg-them');
         
         const nuevoMensaje = document.createElement('div');
         nuevoMensaje.className = `msg ${claseMsg}`;
@@ -863,12 +861,12 @@ function cargarHistorialChatIndividual(chatId) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 }
-
 function enviarMensajeIndividual() {
     const input = document.getElementById('chat-individual-input');
     const texto = input.value.trim();
     if (!texto || !contactoEscuchando) return;
     
+    // Primero guardamos en Firebase
     refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
         autor: usuarioActivo,
         texto: texto,
@@ -878,32 +876,39 @@ function enviarMensajeIndividual() {
     refChatsIndividuales.child(contactoEscuchando).update({
         ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() }
     });
+    
     input.value = '';
     
+    // Si es Dominguito, disparar la API (que ya tienes lista)
     if (contactoSeleccionado === '🤖 DOMINGUITO') {
         enviarADominguitoAPI(texto, usuarioActivo, contactoEscuchando);
     }
 }
-
 function enviarADominguito() {
     const input = document.getElementById('in-domingo-modal');
     const texto = input.value.trim();
     if (!texto) return;
     
     const idEmisor = sanitizarKey(uidActivo);
-    const participantes = [idEmisor, 'dominguito'].sort();
-    const chatId = `chat${participantes.join('')}`;
+    const chatId = `chat${[idEmisor, 'dominguito'].sort().join('')}`;
     
+    // Guardar mensaje
     refChatsIndividuales.child(chatId).child('mensajes').push({
         autor: usuarioActivo,
         texto: texto,
         ts: Date.now()
     });
+    
+    // IMPORTANTE: Actualizar "ultimo" para que aparezca en la lista de chats
+    refChatsIndividuales.child(chatId).update({
+        ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() },
+        participantes: [usuarioActivo, 'DOMINGUITO']
+    });
+
     input.value = '';
     
     enviarADominguitoAPI(texto, usuarioActivo, chatId);
 }
-
 function abrirChatDominguito() {
     const modal = document.getElementById('modal-dominguito');
     if (modal) modal.style.display = 'flex';
@@ -1702,10 +1707,9 @@ function dominguitoEscuchaUnico() {
             var msg = snapMsg.val();
             var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
             
-            // Log de diagnóstico previo al filtro
             console.log("%c[AC] Analizando mensaje:", "color: blue", msg, "Autor:", msg.autor, "Antiguo:", esMensajeAntiguo); // AC
 
-            if (!msg || msg.autor === usuarioActivo || esMensajeAntiguo) {
+            if (!msg || msg.autor === '🤖 DOMINGUITO' || esMensajeAntiguo) {
                 console.log("%c[A] Mensaje ignorado por filtro de seguridad.", "color: red"); // A
                 return;
             }
@@ -1715,23 +1719,43 @@ function dominguitoEscuchaUnico() {
             
             var autor = msg.autor;
             
-            if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola') || textoOriginal.toLowerCase().includes('buen')) {
+            // Lógica de bienvenida
+            if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola')) {
                 console.log("%c[P] Ejecutando respuesta automática de bienvenida.", "color: green"); // P
                 refChatsIndividuales.child(chatId).child('mensajes').push({
                     autor: '🤖 DOMINGUITO',
-                    texto: `Hola ${autor}! Soy DOMINGUITO.`,
+                    texto: `Hola ${autor}! Soy DOMINGUITO. Preguntame por CUDs, ausencias o pacientes.`,
                     ts: Date.now(),
                     tipo: 'sistema'
-                }).then(() => {
-                    console.log("%c[AC] Mensaje de bienvenida enviado correctamente a Firebase.", "color: blue"); // AC
-                }).catch((error) => {
-                    console.error("%c[A] Error al escribir en Firebase:", "color: red", error); // A
                 });
                 return;
             }
             
+            // PROCESAMIENTO CON LA API (Ahora usando el formato estandarizado)
             console.log("%c[P] Enviando texto a API externa...", "color: green"); // P
-            enviarADominguitoAPI(textoOriginal, autor, chatId);
+            
+            fetch('https://dominguito-san-juan.vercel.app/api/procesar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto: textoOriginal, autor: autor, chatId: chatId })
+})
+            .then(res => res.json())
+            .then(data => {
+                console.log("%c[AC] Respuesta recibida de API:", "color: blue", data); // AC
+                
+                // Aquí usamos data.mensaje (el nuevo estándar)
+                var respuestaTexto = data.mensaje || "Error: sin respuesta.";
+                
+                refChatsIndividuales.child(chatId).child('mensajes').push({
+                    autor: '🤖 DOMINGUITO',
+                    texto: respuestaTexto,
+                    ts: Date.now(),
+                    tipo: 'sistema'
+                });
+            })
+            .catch(err => {
+                console.error("%c[A] Error al contactar API:", "color: red", err); // A
+            });
         });
     });
 }
