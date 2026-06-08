@@ -681,77 +681,39 @@ const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
 async function enviarADominguitoAPI(texto, autor, chatId) {
     console.log("🔍 [Dominguito] Iniciando petición para:", chatId);
 
-    // 1. Identificar contenedor
-    const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
-    if (!chatContainer) {
-        console.error("❌ [Dominguito] No se encontró contenedor de chat.");
-        return;
-    }
-
-    // 2. Mostrar estado de carga
-    const escribiendo = document.createElement('div');
-    escribiendo.className = 'msg msg-bot';
-    escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
-    chatContainer.appendChild(escribiendo);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    
     try {
-        // 3. Petición al servidor
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
             mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texto, autor, chatId, usuarioActivo, rangoActivo, uidActivo })
+            body: JSON.stringify({ texto, autor, chatId })
         });
 
-        console.log("📡 [Dominguito] Status HTTP:", res.status);
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
-        const textoRespuesta = data.mensaje || data.respuesta;
-        if (escribiendo) escribiendo.remove();
+        const textoRespuesta = data.mensaje;
 
-        // 4. Procesar respuesta si existe texto
         if (textoRespuesta) {
-            // Guardar en Firebase
-            refChatsIndividuales.child(chatId).child('mensajes').push({
+            // Guardamos en Firebase. 
+            // EL LISTENER DE LA PANTALLA DETECTARÁ ESTE PUSH Y LO PINTARÁ SOLO.
+            await refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
                 texto: textoRespuesta,
                 ts: Date.now(),
                 tipo: 'sistema'
             });
 
-            // Pintar directamente en pantalla con estilos forzados
-            const nuevoMsg = document.createElement('div');
-            nuevoMsg.className = 'msg msg-bot';
+            console.log("✅ [Dominguito] Mensaje guardado en Firebase");
             
-            // Estilos forzados para garantizar visibilidad
-            nuevoMsg.style.cssText = "display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; margin: 5px 0;";
-            
-            nuevoMsg.innerHTML = `
-                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
-                ${textoRespuesta}
-                <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
-            `;
-            
-            chatContainer.appendChild(nuevoMsg);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            console.log("✅ [Dominguito] Mensaje pintado y guardado en Firebase");
-        } else {
-            console.warn("⚠️ [Dominguito] Respuesta recibida pero sin texto útil:", data);
+            if (data.refrescarRadar) {
+                console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
+                if (typeof escanearBaseDeDatos === 'function') escanearBaseDeDatos();
+            }
         }
-        
-        // 5. Acciones extra
-        if (data.refrescarRadar) {
-            console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
-            escanearBaseDeDatos();
-        }
-
     } catch(e) {
-        if (escribiendo) escribiendo.remove();
         console.error('❌ [Dominguito] Error:', e);
-        
+        // Error de comunicación, guardamos el aviso en el chat
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: '⚠️ Hubo un error procesando tu solicitud.',
@@ -1696,73 +1658,35 @@ const MAPACONSULTORIOS = {
 // ESCUCHA ÚNICA DE DOMINGUITO
 // ============================================================
 function dominguitoEscuchaUnico() {
-    console.log("%c👂 Dominguito modo único activado", "color: green"); // P
+    console.log("%c👂 Dominguito modo único activado", "color: green");
 
     refChatsIndividuales.on('child_added', function(snap) {
         if (!snap || !snap.key) return;
-        
         var chatId = snap.key;
         if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
-        
+
         refChatsIndividuales.child(chatId).child('mensajes').limitToLast(1).on('child_added', function(snapMsg) {
             if (!snapMsg || !snapMsg.val) return;
-            
             var msg = snapMsg.val();
-            var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
             
-            console.log("%c[AC] Analizando mensaje:", "color: blue", msg, "Autor:", msg.autor, "Antiguo:", esMensajeAntiguo); // AC
-
-            if (!msg || msg.autor === '🤖 DOMINGUITO' || esMensajeAntiguo) {
-                console.log("%c[A] Mensaje ignorado por filtro de seguridad.", "color: red"); // A
+            // --- FILTRO ANTI-BUCLE: Si el bot escribió, ignoramos ---
+            if (!msg || msg.autor === '🤖 DOMINGUITO') {
                 return;
             }
-            
+
+            var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
+            if (esMensajeAntiguo) return;
+
             var textoOriginal = (msg.texto || '').trim();
             if (!textoOriginal) return;
+
+            console.log("%c[AC] Procesando mensaje de usuario:", "color: blue", textoOriginal);
             
-            var autor = msg.autor;
-            
-            // Lógica de bienvenida
-            if (textoOriginal.toLowerCase().includes('ayuda') || textoOriginal.toLowerCase().includes('hola')) {
-                console.log("%c[P] Ejecutando respuesta automática de bienvenida.", "color: green"); // P
-                refChatsIndividuales.child(chatId).child('mensajes').push({
-                    autor: '🤖 DOMINGUITO',
-                    texto: `Hola ${autor}! Soy DOMINGUITO. Preguntame por CUDs, ausencias o pacientes.`,
-                    ts: Date.now(),
-                    tipo: 'sistema'
-                });
-                return;
-            }
-            
-            // PROCESAMIENTO CON LA API (Ahora usando el formato estandarizado)
-            console.log("%c[P] Enviando texto a API externa...", "color: green"); // P
-            
-            fetch('https://dominguito-san-juan.vercel.app/api/procesar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ texto: textoOriginal, autor: autor, chatId: chatId })
-})
-            .then(res => res.json())
-            .then(data => {
-                console.log("%c[AC] Respuesta recibida de API:", "color: blue", data); // AC
-                
-                // Aquí usamos data.mensaje (el nuevo estándar)
-                var respuestaTexto = data.mensaje || "Error: sin respuesta.";
-                
-                refChatsIndividuales.child(chatId).child('mensajes').push({
-                    autor: '🤖 DOMINGUITO',
-                    texto: respuestaTexto,
-                    ts: Date.now(),
-                    tipo: 'sistema'
-                });
-            })
-            .catch(err => {
-                console.error("%c[A] Error al contactar API:", "color: red", err); // A
-            });
+            // Llamamos a la API solo si es un mensaje de usuario real
+            enviarADominguitoAPI(textoOriginal, msg.autor, chatId);
         });
     });
 }
-
 // ============================================================
 // INICIAR SISTEMA COMPLETO
 // ============================================================
