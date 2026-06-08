@@ -709,7 +709,7 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         
         const data = await res.json();
         const textoRespuesta = data.mensaje || data.respuesta;
-        escribiendo.remove();
+        if (escribiendo) escribiendo.remove();
 
         // 4. Procesar respuesta si existe texto
         if (textoRespuesta) {
@@ -721,14 +721,19 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
                 tipo: 'sistema'
             });
 
-            // Pintar directamente en pantalla
+            // Pintar directamente en pantalla con estilos forzados
             const nuevoMsg = document.createElement('div');
             nuevoMsg.className = 'msg msg-bot';
+            
+            // Estilos forzados para garantizar visibilidad
+            nuevoMsg.style.cssText = "display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; margin: 5px 0;";
+            
             nuevoMsg.innerHTML = `
                 <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
                 ${textoRespuesta}
                 <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
             `;
+            
             chatContainer.appendChild(nuevoMsg);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
@@ -747,7 +752,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         if (escribiendo) escribiendo.remove();
         console.error('❌ [Dominguito] Error:', e);
         
-        // Notificar error al usuario
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: '⚠️ Hubo un error procesando tu solicitud.',
@@ -756,7 +760,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         });
     }
 }
-
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
