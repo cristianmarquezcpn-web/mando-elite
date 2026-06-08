@@ -681,9 +681,14 @@ const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
 async function enviarADominguitoAPI(texto, autor, chatId) {
     console.log("🔍 [Dominguito] Iniciando petición para:", chatId);
 
+    // 1. Identificar contenedor
     const chatContainer = document.getElementById('chat-individual') || document.getElementById('chat-domingo-modal');
-    if (!chatContainer) return;
+    if (!chatContainer) {
+        console.error("❌ [Dominguito] No se encontró contenedor de chat.");
+        return;
+    }
 
+    // 2. Mostrar estado de carga
     const escribiendo = document.createElement('div');
     escribiendo.className = 'msg msg-bot';
     escribiendo.innerHTML = '<b style="font-size:9px; opacity:0.7">🤖 DOMINGUITO</b><br><i>Escribiendo...</i>';
@@ -691,6 +696,7 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
     try {
+        // 3. Petición al servidor
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
             mode: 'cors',
@@ -699,55 +705,49 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         });
 
         console.log("📡 [Dominguito] Status HTTP:", res.status);
-        
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
-        console.log("📦 [Dominguito] Datos recibidos:", data);
-        
+        const textoRespuesta = data.mensaje || data.respuesta;
         escribiendo.remove();
-        
-        // CORRECCIÓN: Validar que data.respuesta exista
-        if (data && (data.respuesta || data.mensaje)) {
-            const textoRespuesta = data.mensaje;
+
+        // 4. Procesar respuesta si existe texto
+        if (textoRespuesta) {
+            // Guardar en Firebase
             refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
                 texto: textoRespuesta,
                 ts: Date.now(),
                 tipo: 'sistema'
             });
-            console.log("✅ [Dominguito] Mensaje enviado a Firebase");
-             console.log("🔍 [DEBUG] data COMPLETA recibida:", JSON.stringify(data));
-        console.log("🔍 [DEBUG] data.respuesta:", data.respuesta);
-        console.log("🔍 [DEBUG] data.mensaje:", data.mensaje);
-        
-    // 👇 ACÁ VA EL BLOQUE DE PINTADO DIRECTO 👇
-            const contenedorChat = document.getElementById('chat-domingo-modal') || document.getElementById('chat-individual');
-            if (contenedorChat && contenedorChat.style.display !== 'none') {
-                const nuevoMsg = document.createElement('div');
-                nuevoMsg.className = 'msg msg-bot';
-                nuevoMsg.innerHTML = `
-                    <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
-                    ${textoRespuesta}
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
-                `;
-                contenedorChat.appendChild(nuevoMsg);
-                contenedorChat.scrollTop = contenedorChat.scrollHeight;
-            }
+
+            // Pintar directamente en pantalla
+            const nuevoMsg = document.createElement('div');
+            nuevoMsg.className = 'msg msg-bot';
+            nuevoMsg.innerHTML = `
+                <b style="font-size:9px; display:block; opacity:0.7">🤖 DOMINGUITO</b>
+                ${textoRespuesta}
+                <div style="font-size:8px; opacity:0.5; margin-top:3px;">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatContainer.appendChild(nuevoMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
             
+            console.log("✅ [Dominguito] Mensaje pintado y guardado en Firebase");
         } else {
-            console.warn("⚠️ [Dominguito] Respuesta recibida pero sin texto:", data);
+            console.warn("⚠️ [Dominguito] Respuesta recibida pero sin texto útil:", data);
         }
         
+        // 5. Acciones extra
         if (data.refrescarRadar) {
             console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
             escanearBaseDeDatos();
         }
 
     } catch(e) {
-        escribiendo.remove();
+        if (escribiendo) escribiendo.remove();
         console.error('❌ [Dominguito] Error:', e);
         
+        // Notificar error al usuario
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: '⚠️ Hubo un error procesando tu solicitud.',
