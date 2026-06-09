@@ -679,8 +679,8 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
 async function enviarADominguitoAPI(texto, autor, chatId) {
-    console.log("🔍 [Dominguito] Iniciando petición para:", chatId);
-
+    console.log("🔍 [Dominguito] Enviando a API...");
+    
     try {
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
@@ -688,38 +688,33 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
             body: JSON.stringify({ texto, autor, chatId })
         });
 
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const data = await res.json();
-        console.log("📦 [Dominguito] Respuesta recibida:", data);
+        console.log("📦 [Dominguito] Respuesta:", data);
         
-        // ✅ GUARDAR LA RESPUESTA EN FIREBASE para que el listener la pinte
-        if (data && data.respuesta) {
-            refChatsIndividuales.child(chatId).child('mensajes').push({
+        // Guardar la respuesta en Firebase
+        if (data && data.mensaje) {
+            await refChatsIndividuales.child(chatId).child('mensajes').push({
                 autor: '🤖 DOMINGUITO',
-                texto: data.respuesta,
+                texto: data.mensaje,
                 ts: Date.now(),
                 tipo: 'sistema'
             });
-            console.log("✅ [Dominguito] Respuesta guardada en Firebase");
         }
         
         // Refrescar radar si la API lo indica
-        if (data.refrescarRadar && typeof escanearBaseDeDatos === 'function') {
-            console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
+        if (data.refrescarRadar) {
+            console.log("🔄 Refrescando radar...");
             escanearBaseDeDatos();
         }
-
+        
     } catch(e) {
-        console.error('❌ [Dominguito] Error:', e);
-        refChatsIndividuales.child(chatId).child('mensajes').push({
-            autor: '🤖 DOMINGUITO',
-            texto: '⚠️ Hubo un error de conexión con el servidor. Intentá de nuevo.',
-            ts: Date.now(),
-            tipo: 'sistema'
-        });
+        console.error('❌ Error de red:', e);
+        // Ya no guardamos mensaje de error para no generar más bucles
     }
 }
+
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
@@ -829,7 +824,7 @@ function enviarMensajeIndividual() {
     const texto = input.value.trim();
     if (!texto || !contactoEscuchando) return;
     
-    // Primero guardamos en Firebase
+    // 1. Guardar el mensaje del usuario en Firebase
     refChatsIndividuales.child(contactoEscuchando).child('mensajes').push({
         autor: usuarioActivo,
         texto: texto,
@@ -842,11 +837,13 @@ function enviarMensajeIndividual() {
     
     input.value = '';
     
-    // Si es Dominguito, disparar la API (que ya tienes lista)
+    // 2. SOLO si es Dominguito, llamar a la API DIRECTAMENTE
+    //    (NO desde Firebase listener)
     if (contactoSeleccionado === '🤖 DOMINGUITO') {
         enviarADominguitoAPI(texto, usuarioActivo, contactoEscuchando);
     }
 }
+
 function enviarADominguito() {
     const input = document.getElementById('in-domingo-modal');
     const texto = input.value.trim();
@@ -862,16 +859,17 @@ function enviarADominguito() {
         ts: Date.now()
     });
     
-    // IMPORTANTE: Actualizar "ultimo" para que aparezca en la lista de chats
     refChatsIndividuales.child(chatId).update({
         ultimo: { autor: usuarioActivo, texto: texto, ts: Date.now() },
         participantes: [usuarioActivo, 'DOMINGUITO']
     });
-
+    
     input.value = '';
     
+    // Llamar a la API DIRECTAMENTE
     enviarADominguitoAPI(texto, usuarioActivo, chatId);
 }
+
 function abrirChatDominguito() {
     const modal = document.getElementById('modal-dominguito');
     if (modal) modal.style.display = 'flex';
@@ -1656,31 +1654,13 @@ const MAPACONSULTORIOS = {
 // ESCUCHA ÚNICA DE DOMINGUITO
 // ============================================================
 function dominguitoEscuchaUnico() {
-    console.log("%c👂 Dominguito modo único activado", "color: green");
-
-    refChatsIndividuales.on('child_added', function(snap) {
-        if (!snap || !snap.key) return;
-        var chatId = snap.key;
-        if (typeof chatId !== 'string' || !chatId.includes('dominguito')) return;
-
-        refChatsIndividuales.child(chatId).child('mensajes').limitToLast(1).on('child_added', function(snapMsg) {
-            if (!snapMsg || !snapMsg.val) return;
-            var msg = snapMsg.val();
-            
-            // --- FILTRO ANTI-BUCLE: Si el bot escribió, ignoramos ---
-           if (!msg) return;
-            var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
-            if (esMensajeAntiguo) return;
-
-            var textoOriginal = (msg.texto || '').trim();
-            if (!textoOriginal) return;
-
-            console.log("%c[AC] Procesando mensaje de usuario:", "color: blue", textoOriginal);
-            
-            // Llamamos a la API solo si es un mensaje de usuario real
-            enviarADominguitoAPI(textoOriginal, msg.autor, chatId);
-        });
-    });
+    console.log("✅ Dominguito en modo manual (sin bucle)");
+}
+ function configurarListenerDominguito() {
+    console.log("👂 Configurando listener de Dominguito (manual)");
+    
+    // Este listener solo se ejecuta cuando el usuario ESCRIBE en el input del chat
+    // NO cuando hay cambios en Firebase
 }
 // ============================================================
 // INICIAR SISTEMA COMPLETO
@@ -1691,10 +1671,7 @@ function iniciarSistemaCompleto() {
     escanearBaseDeDatos();
     setInterval(escanearBaseDeDatos, 300000); // Cada 5 minutos
     
-    setTimeout(() => {
-        dominguitoEscuchaUnico();
-        console.log("✅ Dominguito modo único activo");
-    }, 3000);
+    configurarListenerDominguito();
 }
 </script>
 </body>
