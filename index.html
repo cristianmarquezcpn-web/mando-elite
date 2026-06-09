@@ -684,7 +684,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
     try {
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
             method: 'POST',
-            mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texto, autor, chatId })
         });
@@ -692,31 +691,19 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
-        const textoRespuesta = data.mensaje;
-
-        if (textoRespuesta) {
-            // Guardamos en Firebase. 
-            // EL LISTENER DE LA PANTALLA DETECTARÁ ESTE PUSH Y LO PINTARÁ SOLO.
-            await refChatsIndividuales.child(chatId).child('mensajes').push({
-                autor: '🤖 DOMINGUITO',
-                texto: textoRespuesta,
-                ts: Date.now(),
-                tipo: 'sistema'
-            });
-
-            console.log("✅ [Dominguito] Mensaje guardado en Firebase");
-            
-            if (data.refrescarRadar) {
-                console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
-                if (typeof escanearBaseDeDatos === 'function') escanearBaseDeDatos();
-            }
+        
+        // Si el servidor indica refrescar el radar, lo hacemos aquí
+        if (data.refrescarRadar && typeof escanearBaseDeDatos === 'function') {
+            console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
+            escanearBaseDeDatos();
         }
+
     } catch(e) {
         console.error('❌ [Dominguito] Error:', e);
         // Error de comunicación, guardamos el aviso en el chat
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
-            texto: '⚠️ Hubo un error procesando tu solicitud.',
+            texto: '⚠️ Hubo un error de conexión con el servidor. Intentá de nuevo.',
             ts: Date.now(),
             tipo: 'sistema'
         });
