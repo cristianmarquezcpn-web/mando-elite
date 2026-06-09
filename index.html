@@ -691,8 +691,20 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const data = await res.json();
+        console.log("📦 [Dominguito] Respuesta recibida:", data);
         
-        // Si el servidor indica refrescar el radar, lo hacemos aquí
+        // ✅ GUARDAR LA RESPUESTA EN FIREBASE para que el listener la pinte
+        if (data && data.respuesta) {
+            refChatsIndividuales.child(chatId).child('mensajes').push({
+                autor: '🤖 DOMINGUITO',
+                texto: data.respuesta,
+                ts: Date.now(),
+                tipo: 'sistema'
+            });
+            console.log("✅ [Dominguito] Respuesta guardada en Firebase");
+        }
+        
+        // Refrescar radar si la API lo indica
         if (data.refrescarRadar && typeof escanearBaseDeDatos === 'function') {
             console.log("🔄 [Dominguito] Ejecutando refrescarRadar");
             escanearBaseDeDatos();
@@ -700,7 +712,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
 
     } catch(e) {
         console.error('❌ [Dominguito] Error:', e);
-        // Error de comunicación, guardamos el aviso en el chat
         refChatsIndividuales.child(chatId).child('mensajes').push({
             autor: '🤖 DOMINGUITO',
             texto: '⚠️ Hubo un error de conexión con el servidor. Intentá de nuevo.',
@@ -1657,10 +1668,7 @@ function dominguitoEscuchaUnico() {
             var msg = snapMsg.val();
             
             // --- FILTRO ANTI-BUCLE: Si el bot escribió, ignoramos ---
-            if (!msg || msg.autor === '🤖 DOMINGUITO') {
-                return;
-            }
-
+           if (!msg) return;
             var esMensajeAntiguo = msg.ts && (Date.now() - msg.ts > 15000);
             if (esMensajeAntiguo) return;
 
