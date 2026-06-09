@@ -678,8 +678,11 @@ function renderizarAlerta(paciente, tipo, msg, severidad) {
 // DOMINGUITO - LLAMADA A LA API
 // ============================================================
 const DOMINGUITOAPI = 'https://dominguito-san-juan.vercel.app/api';
+
 async function enviarADominguitoAPI(texto, autor, chatId) {
     console.log("🔍 [Dominguito] Enviando a API...");
+    console.log("📤 URL COMPLETA:", `${DOMINGUITOAPI}/procesar`);
+    console.log("📤 DOMINGUITOAPI vale:", DOMINGUITOAPI);
     
     try {
         const res = await fetch(`${DOMINGUITOAPI}/procesar`, {
@@ -687,6 +690,8 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texto, autor, chatId })
         });
+
+        console.log("📥 Status respuesta:", res.status, res.statusText);
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
@@ -714,7 +719,6 @@ async function enviarADominguitoAPI(texto, autor, chatId) {
         // Ya no guardamos mensaje de error para no generar más bucles
     }
 }
-
 // ============================================================
 // CHATS INDIVIDUALES
 // ============================================================
