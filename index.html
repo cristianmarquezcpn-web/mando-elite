@@ -605,6 +605,7 @@ function escanearBaseDeDatos() {
                 document.getElementById('stat-cuds').textContent = contadorCuds;
             }
         });
+        });
      db.ref('/seguimiento_pacientes').once('value', snap => {
         snap.forEach(child => {
             const nombre = child.key;
@@ -633,6 +634,7 @@ function escanearBaseDeDatos() {
             document.getElementById('stat-aus').textContent = contadorAus;
         }
     });
+    }
 function renderizarAlerta(paciente, tipo, msg, severidad) {
     const feed = document.getElementById('radar-feed');
     if (!feed) return;
