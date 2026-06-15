@@ -606,24 +606,34 @@ function escanearBaseDeDatos() {
             }
         });
     });
-
     db.ref('/seguimiento_pacientes').once('value', snap => {
         snap.forEach(child => {
             const nombre = child.key;
             let faltas = 0;
-            child.forEach(dia => {
-                const val = dia.val();
-                if (val === 'A' || (val && typeof val === 'object' && val.val === 'A')) faltas++;
+            
+            // ACCESO CORREGIDO: Buscamos la carpeta 'historial'
+            const historial = child.child('historial');
+            
+            historial.forEach(diaSnap => {
+                const dia = diaSnap.val();
+                // Verificamos si el objeto tiene la propiedad 'estado'
+                const estado = dia.estado;
+                
+                if (estado === 'A') {
+                    faltas++;
+                }
             });
+            
             if (faltas >= 5) {
                 contadorAus++;
                 renderizarAlerta(nombre, '🚨 AUSENCIAS', `Acumula ${faltas} inasistencias.`, 'urgente');
             }
         });
-        if (document.getElementById('stat-aus')) document.getElementById('stat-aus').textContent = contadorAus;
+        
+        if (document.getElementById('stat-aus')) {
+            document.getElementById('stat-aus').textContent = contadorAus;
+        }
     });
-}
-
 function renderizarAlerta(paciente, tipo, msg, severidad) {
     const feed = document.getElementById('radar-feed');
     if (!feed) return;
