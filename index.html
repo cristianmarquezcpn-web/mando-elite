@@ -1545,8 +1545,10 @@ function switchTab(tab) {
 }
 
 // ============================================================
-// LIQUIDACIONES (RRHH)
+// LIQUIDACIONES (RRHH) - VERSIÓN MULTI-AÑO INTELIGENTE
 // ============================================================
+const RAMAS_LIQ = ['CD', 'CET_MANANA', 'CET_TARDE', 'CET_VESP', 'REHAB'];
+
 function abrirPanelLiquidacion() {
     const panel = document.getElementById('panel-liquidacion');
     if (panel) {
@@ -1558,64 +1560,103 @@ function abrirPanelLiquidacion() {
     }
 }
 
+// Busca en todas las ramas y en TODOS los años automáticamente
+function buscarTodasLasLiquidaciones(nombre, callback) {
+    let todas = [];
+    let ramasPendientes = RAMAS_LIQ.length;
+
+    RAMAS_LIQ.forEach(rama => {
+        db.ref(`/${rama}`).once('value', snapAnios => {
+            let aniosPendientes = snapAnios.numChildren();
+            
+            if (aniosPendientes === 0) {
+                ramasPendientes--;
+                if (ramasPendientes === 0) callback(todas);
+                return;
+            }
+
+            snapAnios.forEach(snapAnio => {
+                const anio = snapAnio.key; // ej: '2026'
+                snapAnio.forEach(snapMes => {
+                    snapMes.forEach(child => {
+                        const l = child.val();
+                        if (l.nombre === nombre) {
+                            l.periodo = `${anio}-${snapMes.key}`; // Formato "2026-3"
+                            todas.push(l);
+                        }
+                    });
+                });
+                aniosPendientes--;
+                if (aniosPendientes === 0) {
+                    ramasPendientes--;
+                    if (ramasPendientes === 0) callback(todas);
+                }
+            });
+        });
+    });
+}
+
 function cargarDatosPrivados(nombre) {
     const container = document.getElementById('tabla-container');
     const datosPagoCont = document.getElementById('datos-pago-container');
     const spanDatos = document.getElementById('datos-pago');
     container.innerHTML = "<p style='font-size:12px; color:64748b;'>🔄 Cargando información...</p>";
 
-    db.ref('/liquidacionescongeladas').orderByChild('nombre').equalTo(nombre).limitToLast(1).once('value', snap => {
-        let html = '';
-        if (!snap.exists()) {
-            html = "<p style='font-size:12px; color:64748b;'>No hay liquidaciones recientes.</p>";
+    buscarTodasLasLiquidaciones(nombre, (items) => {
+        // Ordenamos cronológicamente (el más nuevo primero)
+        items.sort((a, b) => b.periodo.localeCompare(a.periodo));
+        const l = items[0];
+
+        if (!l) {
+            container.innerHTML = "<p style='font-size:12px; color:64748b;'>No hay liquidaciones recientes.</p>";
         } else {
-            snap.forEach(child => {
-                const l = child.val();
-                html = `
-                <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
-                    <tr style="background:1e293b;">
-                        <th style="padding:8px; color:94a3b8;">Detalle</th>
-                        <th style="padding:8px; color:94a3b8; text-align:right;">Total</th>
-                    </tr>
-                    <tr>
-                        <td style="padding:8px; border-bottom:1px solid 1e293b;">
-                            <b>${l.puesto || 'General'}</b><br>
-                            <span style="font-size:10px; color:64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
-                        </td>
-                        <td style="padding:8px; border-bottom:1px solid 1e293b; text-align:right; font-weight:bold; color:10b981;">
-                            ${Number(l.total || 0).toLocaleString('es-AR')} ARS
-                        </td>
-                    </tr>
-                </table>`;
-                if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
+            const partes = l.periodo.split('-');
+            let html = `
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin-bottom:15px;">
+                <tr style="background:1e293b;">
+                    <th style="padding:8px; color:94a3b8;">Detalle (Mes ${partes[1]}/${partes[0]})</th>
+                    <th style="padding:8px; color:94a3b8; text-align:right;">Total</th>
+                </tr>
+                <tr>
+                    <td style="padding:8px; border-bottom:1px solid 1e293b;">
+                        <b>${l.puesto || 'General'}</b><br>
+                        <span style="font-size:10px; color:64748b;">${l.hs || 0}hs a ${l.vh || 0} + ${l.extras || 0} extras</span>
+                    </td>
+                    <td style="padding:8px; border-bottom:1px solid 1e293b; text-align:right; font-weight:bold; color:10b981;">
+                        ${Number(l.total || 0).toLocaleString('es-AR')} ARS
+                    </td>
+                </tr>
+            </table>`;
+            
+            if(l.cbu) { datosPagoCont.style.display = 'block'; spanDatos.innerText = l.cbu; }
+            
+            db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
+                let hayDeuda = false;
+                let facturasHtml = '<div style="margin-top:10px; border-top:1px solid 1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
+                snapFact.forEach(child => {
+                    const f = child.val();
+                    if (f.estado === 'PENDIENTE') {
+                        hayDeuda = true;
+                        facturasHtml += `<li style="font-size:11px; color:f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
+                    }
+                });
+                container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
             });
         }
-
-        db.ref('/facturas_estado').orderByChild('nombre').equalTo(nombre).once('value', snapFact => {
-            let hayDeuda = false;
-            let facturasHtml = '<div style="margin-top:10px; border-top:1px solid 1e293b; padding-top:10px;"><b>⚠️ Facturas pendientes:</b><ul style="margin:5px 0; padding-left:20px;">';
-            snapFact.forEach(child => {
-                const f = child.val();
-                if (f.estado === 'PENDIENTE') {
-                    hayDeuda = true;
-                    facturasHtml += `<li style="font-size:11px; color:f87171;">${f.descripcion || 'Sin descripción'} - <b>${Number(f.monto || 0).toLocaleString('es-AR')} ARS</b></li>`;
-                }
-            });
-            container.innerHTML = hayDeuda ? html + facturasHtml + '</ul></div>' : html;
-        });
     });
 }
 
 function cargarHistorialLiquidaciones(nombre) {
     const container = document.getElementById('historial-liquidaciones');
-    db.ref('/liquidacionescongeladas').orderByChild('nombre').equalTo(nombre).once('value', snap => {
+    buscarTodasLasLiquidaciones(nombre, (items) => {
+        items.sort((a, b) => b.periodo.localeCompare(a.periodo));
         let html = '<table style="width:100%; border-collapse:collapse;">';
-        let items = [];
-        snap.forEach(c => items.push(c.val()));
-        items.sort((a,b) => (b.periodo||'').localeCompare(a.periodo||''));
         items.forEach(l => {
-            html += `<tr><td style="padding:4px; border-bottom:1px solid 1e293b;">${l.periodo}</td>
-                <td style="padding:4px; border-bottom:1px solid 1e293b; text-align:right;">${Number(l.total).toLocaleString('es-AR')} ARS</td></tr>`;
+            const partes = l.periodo.split('-');
+            html += `<tr>
+                <td style="padding:4px; border-bottom:1px solid 1e293b;">${partes[1]}/${partes[0]}</td>
+                <td style="padding:4px; border-bottom:1px solid 1e293b; text-align:right;">${Number(l.total || 0).toLocaleString('es-AR')} ARS</td>
+            </tr>`;
         });
         container.innerHTML = html + '</table>';
     });
