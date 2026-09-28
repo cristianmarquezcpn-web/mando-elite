@@ -1316,11 +1316,74 @@ function irAExpedientePaciente(paciente) {
 // ============================================================
 // EXPEDIENTES & FICHERO DIGITAL (ADAPTADO Y SEGURO)
 // ============================================================
+// ============================================================
+// FICHERO DIGITAL Y EXPEDIENTES (CORREGIDO Y SIN DUPLICADOS)
+// ============================================================
+// 1. Filtrar el selector de pacientes en tiempo real
+function filtrarPacientes() {
+    const input = document.getElementById('busc-paciente');
+    if (!input) return;
+    const filtro = input.value.toUpperCase();
+    
+    const sel = document.getElementById('sel-paciente');
+    if (sel) {
+        Array.from(sel.options).forEach(opt => {
+            opt.style.display = opt.text.toUpperCase().includes(filtro) ? '' : 'none';
+        });
+    }
+}
+
+// 2. Extraer todos los links automáticamente de la ficha
+function extraerTodosLosLinks(pacienteObj) {
+    let linksEncontrados = [];
+    function buscar(obj, rutaPadre = '') {
+        if (!obj || typeof obj !== 'object') return;
+        for (let key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                let valor = obj[key];
+                let rutaActual = rutaPadre ? `${rutaPadre} > ${key}` : key;
+                if (typeof valor === 'string' && (valor.startsWith('http://') || valor.startsWith('https://'))) {
+                    linksEncontrados.push({
+                        campo: rutaActual,
+                        url: valor,
+                        nombreAmigable: formatearNombreCampo(key)
+                    });
+                } else if (typeof valor === 'object' && valor !== null) {
+                    buscar(valor, rutaActual);
+                }
+            }
+        }
+    }
+    buscar(pacienteObj);
+    return linksEncontrados;
+}
+
+function formatearNombreCampo(key) {
+    let limpio = key.replace(/_link$/, '').replace(/_doc$/, '');
+    let emoji = '🔗';
+    const kLower = limpio.toLowerCase();
+    if (kLower.includes('asist')) emoji = '📅';
+    else if (kLower.includes('cud')) emoji = '📄';
+    else if (kLower.includes('foto')) emoji = '🖼️';
+    else if (kLower.includes('inf') || kLower.includes('informe')) emoji = '📊';
+    else if (kLower.includes('plan')) emoji = '📋';
+    else if (kLower.includes('trim')) emoji = '📑';
+    else if (kLower.includes('diag')) emoji = '🧠';
+    else if (kLower.includes('presu')) emoji = '💰';
+    else if (kLower.includes('factu')) emoji = '🧾';
+    else if (kLower.includes('rhc') || kLower.includes('conf')) emoji = '🗂️';
+
+    let textoLegible = limpio.replace(/_/g, ' ').toUpperCase();
+    return `${emoji} ${textoLegible}`;
+}
+
+// 3. Cargar expediente respetando tu variable global y rutas de Firebase
 function cargarExpedientePaciente() {
     const sel = document.getElementById('sel-paciente');
     const chatContainer = document.getElementById('chat-dominguito');
     if (!sel || !chatContainer) return;
 
+    // Usamos tu variable original sin redeclarar
     pacienteSeleccionado = sel.value;
     
     if (!pacienteSeleccionado) {
@@ -1329,108 +1392,104 @@ function cargarExpedientePaciente() {
     }
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
+    const dbRef = typeof database !== 'undefined' ? database : (typeof db !== 'undefined' ? db : null);
     
-    // 1. Buscamos primero en la caché global de pacientes que ya levanta iniciarApp()
-    let pData = cachePacientes[pacienteSeleccionado] || {};
-    
-    // Si no está exacto en caché, hacemos búsqueda flexible
-    if (!pData.dni && !pData.os && !pData.edad) {
-        const encontrado = buscarPaciente(pacienteSeleccionado);
-        if (encontrado) pData = encontrado;
-    }
-    
-    // 2. Escuchamos el expediente interactivo en tiempo real
-    refExpedientes.child(pacKey).off();
-    refExpedientes.child(pacKey).on('value', snap => {
-        const rawData = snap.val() || {};
-        const msgs = rawData.novedades || (typeof rawData === 'object' ? rawData : {});
-        const todosLosLinks = extraerTodosLosLinks(pData);
+    dbRef.ref('pacientes').child(pacKey).once('value', snapPac => {
+        const pData = snapPac.val() || {};
+        
+        refExpedientes.child(pacKey).off();
+        refExpedientes.child(pacKey).on('value', snap => {
+            const rawData = snap.val() || {};
+            const msgs = rawData.novedades || (typeof rawData === 'object' ? rawData : {});
+            const todosLosLinks = extraerTodosLosLinks(pData);
 
-        chatContainer.innerHTML = `
-            <!-- FICHERO DIGITAL VISUAL SUPERIOR -->
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
-                    <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
-                    <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || pData.documento || 'S/D'}</span>
-                </div>
+            chatContainer.innerHTML = `
+                <!-- FICHERO DIGITAL VISUAL SUPERIOR -->
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
+                        <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
+                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || pData.documento || 'S/D'}</span>
+                    </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                    <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || pData.obrasocial || 'No especificada'}</div>
-                    <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
-                    <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || pData.madre || 'S/D'}</div>
-                    <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
-                    <div>🏫 <b>Modalidad/Sala:</b> ${pData.modalidad || 'CD'} (${pData.sala || 'Sala 1'})</div>
-                    <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
-                </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                        <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || pData.obrasocial || 'No especificada'}</div>
+                        <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
+                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || pData.madre || 'S/D'}</div>
+                        <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
+                        <div>🏫 <b>Modalidad/Sala:</b> ${pData.modalidad || 'CD'} (${pData.sala || 'Sala 1'})</div>
+                        <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
+                    </div>
 
-                <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
-                    <b style="color: var(--dark); display: block; margin-bottom: 2px;">🧠 Diagnóstico:</b>
-                    <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || pData.diagnostico || 'Sin diagnóstico registrado'}</div>
-                </div>
+                    <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
+                        <b style="color: var(--dark); display: block; margin-bottom: 2px;">🧠 Diagnóstico:</b>
+                        <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || pData.diagnostico || 'Sin diagnóstico registrado'}</div>
+                    </div>
 
-                <!-- REPOSITORIO DE LINKS CLOUDINARY -->
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
-                    <b style="color: #1e3a8a; display: block; margin-bottom: 4px;">📂 Repositorio de Documentos (${todosLosLinks.length}):</b>
-                    <div id="contenedor-links-fichero" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto;">
-                        ${todosLosLinks.length === 0 ? '<span style="color:#64748b; font-size:10px;">No hay links cargados.</span>' : ''}
+                    <!-- REPOSITORIO DE LINKS CLOUDINARY -->
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+                        <b style="color: #1e3a8a; display: block; margin-bottom: 4px;">📂 Repositorio de Documentos (${todosLosLinks.length}):</b>
+                        <div id="contenedor-links-fichero" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto;">
+                            ${todosLosLinks.length === 0 ? '<span style="color:#64748b; font-size:10px;">No hay links cargados.</span>' : ''}
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:6px; border-radius:6px;">
+                        <div>👩‍⚕️ T.S. Asignada: <b id="ts-asignada-ficha" style="color:var(--ts-color);">Buscando...</b></div>
+                        <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">0</b></div>
                     </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:6px; border-radius:6px;">
-                    <div>👩‍⚕️ T.S. Asignada: <b id="ts-asignada-ficha" style="color:var(--ts-color);">Buscando...</b></div>
-                    <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">0</b></div>
-                </div>
-            </div>
-
-            <div style="font-size: 10px; font-weight: bold; color: #64748b; margin: 10px 0 5px 2px; text-transform: uppercase;">💬 Historial de Novedades y Evolución</div>
-        `;
-
-        const contenedorLinksHTML = document.getElementById('contenedor-links-fichero');
-        if (todosLosLinks.length > 0 && contenedorLinksHTML) {
-            todosLosLinks.forEach(item => {
-                const btnLink = document.createElement('a');
-                btnLink.href = item.url;
-                btnLink.target = '_blank';
-                btnLink.textContent = item.nombreAmigable;
-                btnLink.style.cssText = "background: white; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 9px; text-decoration: none; border: 1px solid #93c5fd; font-weight: 600; display: inline-block;";
-                contenedorLinksHTML.appendChild(btnLink);
-            });
-        }
-
-        const mensajesArray = Object.values(msgs).filter(m => typeof m === 'object' && (m.msg || m.texto)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-        
-        mensajesArray.forEach(m => {
-            let claseMsg = 'msg-them';
-            if (m.autor === usuarioActivo) claseMsg = 'msg-me';
-            if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
-            if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
-            
-            const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
-            
-            chatContainer.innerHTML += `
-                <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease; width: 100%; box-sizing: border-box;">
-                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
-                    <div style="margin-top:2px;">${m.msg || m.texto || ''}</div>
-                    <div style="font-size:8px; opacity:0.5; margin-top:3px; text-align:right;">${fecha}</div>
-                </div>
+                <div style="font-size: 10px; font-weight: bold; color: #64748b; margin: 10px 0 5px 2px; text-transform: uppercase;">💬 Historial de Novedades y Evolución</div>
             `;
+
+            const contenedorLinksHTML = document.getElementById('contenedor-links-fichero');
+            if (todosLosLinks.length > 0 && contenedorLinksHTML) {
+                todosLosLinks.forEach(item => {
+                    const btnLink = document.createElement('a');
+                    btnLink.href = item.url;
+                    btnLink.target = '_blank';
+                    btnLink.textContent = item.nombreAmigable;
+                    btnLink.style.cssText = "background: white; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 9px; text-decoration: none; border: 1px solid #93c5fd; font-weight: 600; display: inline-block;";
+                    contenedorLinksHTML.appendChild(btnLink);
+                });
+            }
+
+            const mensajesArray = Object.values(msgs).filter(m => typeof m === 'object' && (m.msg || m.texto)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            
+            mensajesArray.forEach(m => {
+                let claseMsg = 'msg-them';
+                if (m.autor === usuarioActivo) claseMsg = 'msg-me';
+                if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
+                if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
+                
+                const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
+                
+                chatContainer.innerHTML += `
+                    <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease; width: 100%; box-sizing: border-box;">
+                        <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
+                        <div style="margin-top:2px;">${m.msg || m.texto || ''}</div>
+                        <div style="font-size:8px; opacity:0.5; margin-top:3px; text-align:right;">${fecha}</div>
+                    </div>
+                `;
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         });
-        chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 
-    // 3. Buscar T.S. Asignada en Firebase
-    refAsignaciones.child(pacKey).once('value', snap => {
+    // 4. Buscar T.S. Asignada en Firebase
+    dbRef.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
-        if (tsLabel && val && val.ts) {
-            tsLabel.textContent = val.ts;
+        if (tsLabel && val) {
+            const asignacion = Object.values(val)[0];
+            tsLabel.textContent = asignacion.ts || 'Asignada';
         } else if (tsLabel) {
             tsLabel.textContent = 'Sin T.S.';
         }
     });
 
-    // 4. Sincronizar el conteo de ausencias exacto desde 'seguimiento_pacientes' (usando la carpeta 'historial' y estado 'A')
-    db.ref(`/seguimiento_pacientes/${pacienteSeleccionado}/historial`).once('value', snap => {
+    // 5. Sincronizar el conteo de ausencias exacto desde 'seguimiento_pacientes'
+    dbRef.ref(`/seguimiento_pacientes/${pacienteSeleccionado}/historial`).once('value', snap => {
         const ausenciasLabel = document.getElementById('contador-ausencias-ficha');
         if (!ausenciasLabel) return;
         
@@ -1443,6 +1502,49 @@ function cargarExpedientePaciente() {
         });
         ausenciasLabel.textContent = totalFaltas;
     });
+}
+
+// 6. Enviar reporte y notificar al profesional en segundo plano
+function enviarReporteDominguito() {
+    const input = document.getElementById('in-dominguito');
+    if (!pacienteSeleccionado) return alert("Seleccioná un paciente");
+    if (!input || !input.value.trim()) return;
+
+    const pacKey = sanitizarKey(pacienteSeleccionado);
+    const textoNovedad = input.value.trim();
+    const timestamp = Date.now();
+    const dbRef = typeof database !== 'undefined' ? database : (typeof db !== 'undefined' ? db : null);
+
+    refExpedientes.child(pacKey).push({ 
+        autor: usuarioActivo, 
+        rol: rangoActivo, 
+        msg: textoNovedad, 
+        ts: timestamp 
+    });
+
+    dbRef.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+        const val = snap.val();
+        if (val) {
+            Object.values(val).forEach(asig => {
+                if (asig.ts) {
+                    const destinoNotif = sanitizarKey(asig.ts);
+                    dbRef.ref(`notificaciones_usuarios/${destinoNotif}`).push({
+                        tipo: 'expediente_actualizado',
+                        paciente: pacienteSeleccionado,
+                        autor: usuarioActivo,
+                        mensaje: `Actualización en legajo de ${pacienteSeleccionado}: "${textoNovedad}"`,
+                        ts: timestamp,
+                        leido: false
+                    });
+                }
+            });
+        }
+    });
+
+    input.value = '';
+    if (typeof mostrarToast === 'function') {
+        mostrarToast("✅ Novedad registrada y notificada");
+    }
 }
 // ============================================================
 // PIZARRA DE ÓRDENES
