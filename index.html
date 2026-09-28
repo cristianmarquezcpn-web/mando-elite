@@ -1387,9 +1387,20 @@ function cargarExpedientePaciente() {
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    // 1. Buscamos los datos del paciente en Firebase de forma segura
-    db.ref('pacientes').child(pacKey).once('value', snapPac => {
-        const pData = snapPac.val() || {};
+    db.ref('pacientes').once('value', snapAllPacientes => {
+        const allPacs = snapAllPacientes.val() || {};
+        
+        let pData = allPacs[pacKey] || allPacs[pacienteSeleccionado] || {};
+        
+        if (!pData.dni && !pData.os && !pData.edad) {
+            for (let k in allPacs) {
+                let p = allPacs[k];
+                if (p && (p.nombre === pacienteSeleccionado || k === pacKey || sanitizarKey(p.nombre || '') === pacKey)) {
+                    pData = p;
+                    break;
+                }
+            }
+        }
         
         refExpedientes.child(pacKey).off();
         refExpedientes.child(pacKey).on('value', snap => {
@@ -1402,7 +1413,7 @@ function cargarExpedientePaciente() {
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
                         <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
-                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || 'S/D'}</span>
+                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || pData.documento || 'S/D'}</span>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
@@ -1411,7 +1422,7 @@ function cargarExpedientePaciente() {
                         <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || 'S/D'}</div>
                         <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
                         <div>🏫 <b>Sala/Turno:</b> Sala ${pData.sala || '1'} (${pData.turno || 'S/D'})</div>
-                        <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || 'S/D'}</span></div>
+                        <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
                     </div>
 
                     <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
@@ -1429,7 +1440,7 @@ function cargarExpedientePaciente() {
 
                     <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:6px; border-radius:6px;">
                         <div>👩‍⚕️ T.S. Asignada: <b id="ts-asignada-ficha" style="color:var(--ts-color);">Buscando...</b></div>
-                        <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">Sincronizado</b></div>
+                        <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">Calculando...</b></div>
                     </div>
                 </div>
 
@@ -1470,7 +1481,7 @@ function cargarExpedientePaciente() {
         });
     });
 
-    // 2. Consulta segura usando refAsignaciones en lugar de una ruta prohibida
+    // Buscar T.S. Asignada
     refAsignaciones.child(pacKey).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
@@ -1478,6 +1489,24 @@ function cargarExpedientePaciente() {
             tsLabel.textContent = val.ts;
         } else if (tsLabel) {
             tsLabel.textContent = 'Sin T.S.';
+        }
+    });
+
+    // 🟢 Sincronizar Contador de Ausencias Real del paciente
+    db.ref('ausencias').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+        const ausenciasLabel = document.getElementById('contador-ausencias-ficha');
+        if (!ausenciasLabel) return;
+        
+        const data = snap.val();
+        if (data) {
+            const totalAusencias = Object.keys(data).length;
+            ausenciasLabel.textContent = totalAusencias;
+        } else {
+            // Si tu estructura de ausencias guarda un contador directo o numérico en otra ruta
+            db.ref('pacientes').child(pacKey).child('ausencias').once('value', snapSub => {
+                const subVal = snapSub.val();
+                ausenciasLabel.textContent = (subVal !== null && subVal !== undefined) ? subVal : '0';
+            });
         }
     });
 }
