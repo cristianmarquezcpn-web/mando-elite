@@ -1376,14 +1376,12 @@ function formatearNombreCampo(key) {
     let textoLegible = limpio.replace(/_/g, ' ').toUpperCase();
     return `${emoji} ${textoLegible}`;
 }
-
-// 3. Cargar expediente respetando tu variable global y rutas de Firebase
+// 3. Cargar expediente buscando en las tres ramas reales de Firebase (CD, CET, Rehab)
 function cargarExpedientePaciente() {
     const sel = document.getElementById('sel-paciente');
     const chatContainer = document.getElementById('chat-dominguito');
     if (!sel || !chatContainer) return;
 
-    // Usamos tu variable original sin redeclarar
     pacienteSeleccionado = sel.value;
     
     if (!pacienteSeleccionado) {
@@ -1394,8 +1392,23 @@ function cargarExpedientePaciente() {
     const pacKey = sanitizarKey(pacienteSeleccionado);
     const dbRef = typeof database !== 'undefined' ? database : (typeof db !== 'undefined' ? db : null);
     
-    dbRef.ref('pacientes').child(pacKey).once('value', snapPac => {
-        const pData = snapPac.val() || {};
+    // Función auxiliar para buscar al paciente en una ruta específica
+    function buscarEnRuta(path) {
+        return new Promise((resolve) => {
+            dbRef.ref(path).child(pacKey).once('value', snap => {
+                resolve(snap.exists() ? snap.val() : null);
+            });
+        });
+    }
+
+    // Buscamos en CD, CET y Rehab de manera simultánea
+    Promise.all([
+        buscarEnRuta('cd/pacientes'),
+        buscarEnRuta('cet/pacientes'),
+        buscarEnRuta('rehab/pacientes')
+    ]).then(([pCD, pCET, pRehab]) => {
+        // Nos quedamos con el primer resultado que exista
+        const pData = pCD || pCET || pRehab || {};
         
         refExpedientes.child(pacKey).off();
         refExpedientes.child(pacKey).on('value', snap => {
@@ -1476,6 +1489,33 @@ function cargarExpedientePaciente() {
         });
     });
 
+    // Buscar T.S. Asignada
+    dbRef.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+        const val = snap.val();
+        const tsLabel = document.getElementById('ts-asignada-ficha');
+        if (tsLabel && val) {
+            const asignacion = Object.values(val)[0];
+            tsLabel.textContent = asignacion.ts || 'Asignada';
+        } else if (tsLabel) {
+            tsLabel.textContent = 'Sin T.S.';
+        }
+    });
+
+    // Conteo de ausencias
+    dbRef.ref(`/seguimiento_pacientes/${pacienteSeleccionado}/historial`).once('value', snap => {
+        const ausenciasLabel = document.getElementById('contador-ausencias-ficha');
+        if (!ausenciasLabel) return;
+        
+        let totalFaltas = 0;
+        snap.forEach(diaSnap => {
+            const dia = diaSnap.val();
+            if (dia && dia.estado === 'A') {
+                totalFaltas++;
+            }
+        });
+        ausenciasLabel.textContent = totalFaltas;
+    });
+}
     // 4. Buscar T.S. Asignada en Firebase
     dbRef.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
         const val = snap.val();
