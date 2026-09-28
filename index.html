@@ -1316,63 +1316,6 @@ function irAExpedientePaciente(paciente) {
 // ============================================================
 // EXPEDIENTES & FICHERO DIGITAL (ADAPTADO Y SEGURO)
 // ============================================================
-
-function filtrarPacientes() {
-    const input = document.getElementById('busc-paciente');
-    if (!input) return;
-    const filtro = input.value.toUpperCase();
-    
-    const sel = document.getElementById('sel-paciente');
-    if (sel) {
-        Array.from(sel.options).forEach(opt => {
-            opt.style.display = opt.text.toUpperCase().includes(filtro) ? '' : 'none';
-        });
-    }
-}
-
-// 2. Extraer todos los links automáticamente de la ficha
-function extraerTodosLosLinks(pacienteObj) {
-    let linksEncontrados = [];
-    function buscar(obj, rutaPadre = '') {
-        if (!obj || typeof obj !== 'object') return;
-        for (let key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                let valor = obj[key];
-                let rutaActual = rutaPadre ? `${rutaPadre} > ${key}` : key;
-                if (typeof valor === 'string' && (valor.startsWith('http://') || valor.startsWith('https://'))) {
-                    linksEncontrados.push({
-                        campo: rutaActual,
-                        url: valor,
-                        nombreAmigable: formatearNombreCampo(key)
-                    });
-                } else if (typeof valor === 'object' && valor !== null) {
-                    buscar(valor, rutaActual);
-                }
-            }
-        }
-    }
-    buscar(pacienteObj);
-    return linksEncontrados;
-}
-
-function formatearNombreCampo(key) {
-    let limpio = key.replace(/_link$/, '').replace(/_doc$/, '');
-    let emoji = '🔗';
-    const kLower = limpio.toLowerCase();
-    if (kLower.includes('asist')) emoji = '📅';
-    else if (kLower.includes('cud')) emoji = '📄';
-    else if (kLower.includes('foto')) emoji = '🖼️';
-    else if (kLower.includes('inf') || kLower.includes('informe')) emoji = '📊';
-    else if (kLower.includes('plan')) emoji = '📋';
-    else if (kLower.includes('trim')) emoji = '📑';
-    else if (kLower.includes('diag')) emoji = '🧠';
-    else if (kLower.includes('presu')) emoji = '💰';
-    else if (kLower.includes('factu')) emoji = '🧾';
-    else if (kLower.includes('rhc') || kLower.includes('conf')) emoji = '🗂️';
-
-    let textoLegible = limpio.replace(/_/g, ' ').toUpperCase();
-    return `${emoji} ${textoLegible}`;
-}
 function cargarExpedientePaciente() {
     const sel = document.getElementById('sel-paciente');
     const chatContainer = document.getElementById('chat-dominguito');
@@ -1389,16 +1332,22 @@ function cargarExpedientePaciente() {
     
     db.ref('pacientes').once('value', snapAllPacientes => {
         const allPacs = snapAllPacientes.val() || {};
+        console.log("Pacientes en Firebase:", allPacs); // Para depurar en F12 si hace falta
         
-        let pData = allPacs[pacKey] || allPacs[pacienteSeleccionado] || {};
-        
-        if (!pData.dni && !pData.os && !pData.edad) {
-            for (let k in allPacs) {
-                let p = allPacs[k];
-                if (p && (p.nombre === pacienteSeleccionado || k === pacKey || sanitizarKey(p.nombre || '') === pacKey)) {
-                    pData = p;
-                    break;
-                }
+        let pData = {};
+        const selClean = pacienteSeleccionado.toLowerCase().trim();
+
+        // Búsqueda ultra flexible en todo el listado de pacientes
+        for (let k in allPacs) {
+            let p = allPacs[k];
+            if (!p) continue;
+            
+            let nombreDb = (p.nombre || p.nombreCompleto || k || '').toLowerCase().trim();
+            let keyClean = k.toLowerCase().trim();
+            
+            if (nombreDb === selClean || keyClean === pacKey || nombreDb.includes(selClean) || selClean.includes(nombreDb)) {
+                pData = p;
+                break;
             }
         }
         
@@ -1417,9 +1366,9 @@ function cargarExpedientePaciente() {
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                        <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || 'No especificada'}</div>
+                        <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || pData.obrasocial || 'No especificada'}</div>
                         <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
-                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || 'S/D'}</div>
+                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || pData.madre || 'S/D'}</div>
                         <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
                         <div>🏫 <b>Sala/Turno:</b> Sala ${pData.sala || '1'} (${pData.turno || 'S/D'})</div>
                         <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
@@ -1492,64 +1441,25 @@ function cargarExpedientePaciente() {
         }
     });
 
-    // 🟢 Sincronizar Contador de Ausencias Real del paciente
-    db.ref('ausencias').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+    // Sincronizar Contador de Ausencias Real
+    db.ref('ausencias').once('value', snap => {
         const ausenciasLabel = document.getElementById('contador-ausencias-ficha');
         if (!ausenciasLabel) return;
         
         const data = snap.val();
+        let total = 0;
         if (data) {
-            const totalAusencias = Object.keys(data).length;
-            ausenciasLabel.textContent = totalAusencias;
-        } else {
-            // Si tu estructura de ausencias guarda un contador directo o numérico en otra ruta
-            db.ref('pacientes').child(pacKey).child('ausencias').once('value', snapSub => {
-                const subVal = snapSub.val();
-                ausenciasLabel.textContent = (subVal !== null && subVal !== undefined) ? subVal : '0';
-            });
-        }
-    });
-}
-// 4. Enviar reporte y notificar al profesional en segundo plano
-function enviarReporteDominguito() {
-    const input = document.getElementById('in-dominguito');
-    if (!pacienteSeleccionado) return alert("Seleccioná un paciente");
-    if (!input || !input.value.trim()) return;
-
-    const pacKey = sanitizarKey(pacienteSeleccionado);
-    const textoNovedad = input.value.trim();
-    const timestamp = Date.now();
-
-    refExpedientes.child(pacKey).push({ 
-        autor: usuarioActivo, 
-        rol: rangoActivo, 
-        msg: textoNovedad, 
-        ts: timestamp 
-    });
-
-    database.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
-        const val = snap.val();
-        if (val) {
-            Object.values(val).forEach(asig => {
-                if (asig.ts) {
-                    const destinoNotif = sanitizarKey(asig.ts);
-                    database.ref(`notificaciones_usuarios/${destinoNotif}`).push({
-                        tipo: 'expediente_actualizado',
-                        paciente: pacienteSeleccionado,
-                        autor: usuarioActivo,
-                        mensaje: `Actualización en legajo de ${pacienteSeleccionado}: "${textoNovedad}"`,
-                        ts: timestamp,
-                        leido: false
-                    });
+            Object.values(data).forEach(item => {
+                if (item && item.paciente && item.paciente.toLowerCase().trim() === pacienteSeleccionado.toLowerCase().trim()) {
+                    total++;
                 }
             });
         }
+        ausenciasLabel.textContent = total > 0 ? total : (pDataAusencias => {
+            // fallback al nodo del paciente si existe
+            return '0';
+        })();
     });
-
-    input.value = '';
-    if (typeof mostrarToast === 'function') {
-        mostrarToast("✅ Novedad registrada y notificada");
-    }
 }
 // ============================================================
 // PIZARRA DE ÓRDENES
