@@ -1373,14 +1373,11 @@ function formatearNombreCampo(key) {
     let textoLegible = limpio.replace(/_/g, ' ').toUpperCase();
     return `${emoji} ${textoLegible}`;
 }
-
-// 3. Cargar expediente respetando tu variable global existente
 function cargarExpedientePaciente() {
     const sel = document.getElementById('sel-paciente');
     const chatContainer = document.getElementById('chat-dominguito');
     if (!sel || !chatContainer) return;
 
-    // Usamos tu variable original sin declarar 'let' ni 'const' de nuevo
     pacienteSeleccionado = sel.value;
     
     if (!pacienteSeleccionado) {
@@ -1390,7 +1387,8 @@ function cargarExpedientePaciente() {
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    database.ref('pacientes').child(pacKey).once('value', snapPac => {
+    // 🟢 Corrección: Usamos 'db.ref' en lugar de 'database.ref'
+    db.ref('pacientes').child(pacKey).once('value', snapPac => {
         const pData = snapPac.val() || {};
         
         refExpedientes.child(pacKey).off();
@@ -1472,7 +1470,7 @@ function cargarExpedientePaciente() {
         });
     });
 
-    database.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+    db.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
         if (tsLabel && val) {
@@ -1483,7 +1481,6 @@ function cargarExpedientePaciente() {
         }
     });
 }
-
 // 4. Enviar reporte y notificar al profesional en segundo plano
 function enviarReporteDominguito() {
     const input = document.getElementById('in-dominguito');
