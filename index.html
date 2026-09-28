@@ -1330,107 +1330,95 @@ function cargarExpedientePaciente() {
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    db.ref('pacientes').once('value', snapAllPacientes => {
-        const allPacs = snapAllPacientes.val() || {};
-        console.log("Pacientes en Firebase:", allPacs); // Para depurar en F12 si hace falta
-        
-        let pData = {};
-        const selClean = pacienteSeleccionado.toLowerCase().trim();
+    // 1. Buscamos primero en la caché global de pacientes que ya levanta iniciarApp()
+    let pData = cachePacientes[pacienteSeleccionado] || {};
+    
+    // Si no está exacto en caché, hacemos búsqueda flexible
+    if (!pData.dni && !pData.os && !pData.edad) {
+        const encontrado = buscarPaciente(pacienteSeleccionado);
+        if (encontrado) pData = encontrado;
+    }
+    
+    // 2. Escuchamos el expediente interactivo en tiempo real
+    refExpedientes.child(pacKey).off();
+    refExpedientes.child(pacKey).on('value', snap => {
+        const rawData = snap.val() || {};
+        const msgs = rawData.novedades || (typeof rawData === 'object' ? rawData : {});
+        const todosLosLinks = extraerTodosLosLinks(pData);
 
-        // Búsqueda ultra flexible en todo el listado de pacientes
-        for (let k in allPacs) {
-            let p = allPacs[k];
-            if (!p) continue;
-            
-            let nombreDb = (p.nombre || p.nombreCompleto || k || '').toLowerCase().trim();
-            let keyClean = k.toLowerCase().trim();
-            
-            if (nombreDb === selClean || keyClean === pacKey || nombreDb.includes(selClean) || selClean.includes(nombreDb)) {
-                pData = p;
-                break;
-            }
-        }
-        
-        refExpedientes.child(pacKey).off();
-        refExpedientes.child(pacKey).on('value', snap => {
-            const rawData = snap.val() || {};
-            const msgs = rawData.novedades || (typeof rawData === 'object' ? rawData : {});
-            const todosLosLinks = extraerTodosLosLinks(pData);
+        chatContainer.innerHTML = `
+            <!-- FICHERO DIGITAL VISUAL SUPERIOR -->
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
+                    <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
+                    <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || pData.documento || 'S/D'}</span>
+                </div>
 
-            chatContainer.innerHTML = `
-                <!-- FICHERO DIGITAL VISUAL SUPERIOR -->
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
-                        <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
-                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || pData.documento || 'S/D'}</span>
-                    </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                    <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || pData.obrasocial || 'No especificada'}</div>
+                    <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
+                    <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || pData.madre || 'S/D'}</div>
+                    <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
+                    <div>🏫 <b>Modalidad/Sala:</b> ${pData.modalidad || 'CD'} (${pData.sala || 'Sala 1'})</div>
+                    <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
+                </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                        <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || pData.obrasocial || 'No especificada'}</div>
-                        <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
-                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || pData.madre || 'S/D'}</div>
-                        <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
-                        <div>🏫 <b>Sala/Turno:</b> Sala ${pData.sala || '1'} (${pData.turno || 'S/D'})</div>
-                        <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || pData.vencCud || 'S/D'}</span></div>
-                    </div>
+                <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
+                    <b style="color: var(--dark); display: block; margin-bottom: 2px;">🧠 Diagnóstico:</b>
+                    <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || pData.diagnostico || 'Sin diagnóstico registrado'}</div>
+                </div>
 
-                    <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
-                        <b style="color: var(--dark); display: block; margin-bottom: 2px;">🧠 Diagnóstico:</b>
-                        <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || pData.diagnostico || 'Sin diagnóstico registrado'}</div>
-                    </div>
-
-                    <!-- REPOSITORIO DE LINKS CLOUDINARY -->
-                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
-                        <b style="color: #1e3a8a; display: block; margin-bottom: 4px;">📂 Repositorio de Documentos (${todosLosLinks.length}):</b>
-                        <div id="contenedor-links-fichero" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto;">
-                            ${todosLosLinks.length === 0 ? '<span style="color:#64748b; font-size:10px;">No hay links cargados.</span>' : ''}
-                        </div>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:6px; border-radius:6px;">
-                        <div>👩‍⚕️ T.S. Asignada: <b id="ts-asignada-ficha" style="color:var(--ts-color);">Buscando...</b></div>
-                        <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">Calculando...</b></div>
+                <!-- REPOSITORIO DE LINKS CLOUDINARY -->
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+                    <b style="color: #1e3a8a; display: block; margin-bottom: 4px;">📂 Repositorio de Documentos (${todosLosLinks.length}):</b>
+                    <div id="contenedor-links-fichero" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto;">
+                        ${todosLosLinks.length === 0 ? '<span style="color:#64748b; font-size:10px;">No hay links cargados.</span>' : ''}
                     </div>
                 </div>
 
-                <div style="font-size: 10px; font-weight: bold; color: #64748b; margin: 10px 0 5px 2px; text-transform: uppercase;">💬 Historial de Novedades y Evolución</div>
-            `;
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:6px; border-radius:6px;">
+                    <div>👩‍⚕️ T.S. Asignada: <b id="ts-asignada-ficha" style="color:var(--ts-color);">Buscando...</b></div>
+                    <div>📉 Ausencias: <b id="contador-ausencias-ficha" style="color:var(--urgente);">0</b></div>
+                </div>
+            </div>
 
-            const contenedorLinksHTML = document.getElementById('contenedor-links-fichero');
-            if (todosLosLinks.length > 0 && contenedorLinksHTML) {
-                todosLosLinks.forEach(item => {
-                    const btnLink = document.createElement('a');
-                    btnLink.href = item.url;
-                    btnLink.target = '_blank';
-                    btnLink.textContent = item.nombreAmigable;
-                    btnLink.style.cssText = "background: white; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 9px; text-decoration: none; border: 1px solid #93c5fd; font-weight: 600; display: inline-block;";
-                    contenedorLinksHTML.appendChild(btnLink);
-                });
-            }
+            <div style="font-size: 10px; font-weight: bold; color: #64748b; margin: 10px 0 5px 2px; text-transform: uppercase;">💬 Historial de Novedades y Evolución</div>
+        `;
 
-            const mensajesArray = Object.values(msgs).filter(m => typeof m === 'object' && (m.msg || m.texto)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-            
-            mensajesArray.forEach(m => {
-                let claseMsg = 'msg-them';
-                if (m.autor === usuarioActivo) claseMsg = 'msg-me';
-                if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
-                if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
-                
-                const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
-                
-                chatContainer.innerHTML += `
-                    <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease; width: 100%; box-sizing: border-box;">
-                        <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
-                        <div style="margin-top:2px;">${m.msg || m.texto || ''}</div>
-                        <div style="font-size:8px; opacity:0.5; margin-top:3px; text-align:right;">${fecha}</div>
-                    </div>
-                `;
+        const contenedorLinksHTML = document.getElementById('contenedor-links-fichero');
+        if (todosLosLinks.length > 0 && contenedorLinksHTML) {
+            todosLosLinks.forEach(item => {
+                const btnLink = document.createElement('a');
+                btnLink.href = item.url;
+                btnLink.target = '_blank';
+                btnLink.textContent = item.nombreAmigable;
+                btnLink.style.cssText = "background: white; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 9px; text-decoration: none; border: 1px solid #93c5fd; font-weight: 600; display: inline-block;";
+                contenedorLinksHTML.appendChild(btnLink);
             });
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        const mensajesArray = Object.values(msgs).filter(m => typeof m === 'object' && (m.msg || m.texto)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        
+        mensajesArray.forEach(m => {
+            let claseMsg = 'msg-them';
+            if (m.autor === usuarioActivo) claseMsg = 'msg-me';
+            if (m.autor === '🤖 DOMINGUITO') claseMsg = 'msg-bot';
+            if (m.tipo === 'sistema') claseMsg = 'msg-sistema';
+            
+            const fecha = m.ts ? new Date(m.ts).toLocaleString() : 'Sin fecha';
+            
+            chatContainer.innerHTML += `
+                <div class="msg ${claseMsg}" style="animation: fadeIn 0.3s ease; width: 100%; box-sizing: border-box;">
+                    <b style="font-size:9px; display:block; opacity:0.7">${m.autor || 'Usuario'} ${m.rol ? '(' + m.rol + ')' : ''}</b>
+                    <div style="margin-top:2px;">${m.msg || m.texto || ''}</div>
+                    <div style="font-size:8px; opacity:0.5; margin-top:3px; text-align:right;">${fecha}</div>
+                </div>
+            `;
         });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 
-    // Buscar T.S. Asignada
+    // 3. Buscar T.S. Asignada en Firebase
     refAsignaciones.child(pacKey).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
@@ -1441,24 +1429,19 @@ function cargarExpedientePaciente() {
         }
     });
 
-    // Sincronizar Contador de Ausencias Real
-    db.ref('ausencias').once('value', snap => {
+    // 4. Sincronizar el conteo de ausencias exacto desde 'seguimiento_pacientes' (usando la carpeta 'historial' y estado 'A')
+    db.ref(`/seguimiento_pacientes/${pacienteSeleccionado}/historial`).once('value', snap => {
         const ausenciasLabel = document.getElementById('contador-ausencias-ficha');
         if (!ausenciasLabel) return;
         
-        const data = snap.val();
-        let total = 0;
-        if (data) {
-            Object.values(data).forEach(item => {
-                if (item && item.paciente && item.paciente.toLowerCase().trim() === pacienteSeleccionado.toLowerCase().trim()) {
-                    total++;
-                }
-            });
-        }
-        ausenciasLabel.textContent = total > 0 ? total : (pDataAusencias => {
-            // fallback al nodo del paciente si existe
-            return '0';
-        })();
+        let totalFaltas = 0;
+        snap.forEach(diaSnap => {
+            const dia = diaSnap.val();
+            if (dia && dia.estado === 'A') {
+                totalFaltas++;
+            }
+        });
+        ausenciasLabel.textContent = totalFaltas;
     });
 }
 // ============================================================
