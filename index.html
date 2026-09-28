@@ -1387,7 +1387,7 @@ function cargarExpedientePaciente() {
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    // 🟢 Corrección: Usamos 'db.ref' en lugar de 'database.ref'
+    // 1. Buscamos los datos del paciente en Firebase de forma segura
     db.ref('pacientes').child(pacKey).once('value', snapPac => {
         const pData = snapPac.val() || {};
         
@@ -1402,21 +1402,21 @@ function cargarExpedientePaciente() {
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 8px;">
                         <span style="font-weight: 900; font-size: 13px; color: var(--primary);">🗂️ FICHA: ${pacienteSeleccionado}</span>
-                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || 'S/D'}</span>
+                        <span class="badge badge-verde" style="font-size:10px;">DNI: ${pData.dni || pData.DNI || 'S/D'}</span>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                        <div>🏥 <b>Obra Social:</b> ${pData.os || 'No especificada'}</div>
+                        <div>🏥 <b>Obra Social:</b> ${pData.os || pData.obraSocial || 'No especificada'}</div>
                         <div>🎂 <b>Edad:</b> ${pData.edad || 'S/D'}</div>
-                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || 'S/D'}</div>
-                        <div>📞 <b>Teléfono:</b> ${pData.tel || 'S/D'}</div>
+                        <div>👨‍👩‍👦 <b>Tutor:</b> ${pData.padre || pData.tutor || 'S/D'}</div>
+                        <div>📞 <b>Teléfono:</b> ${pData.tel || pData.telefono || 'S/D'}</div>
                         <div>🏫 <b>Sala/Turno:</b> Sala ${pData.sala || '1'} (${pData.turno || 'S/D'})</div>
                         <div>📅 <b>Venc. CUD:</b> <span style="color:var(--urgente); font-weight:bold;">${pData.cud || 'S/D'}</span></div>
                     </div>
 
                     <div style="background: #f8fafc; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
                         <b style="color: var(--dark); display: block; margin-bottom: 2px;">🧠 Diagnóstico:</b>
-                        <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || 'Sin diagnóstico registrado'}</div>
+                        <div style="color: #475569; font-size: 10px; line-height: 1.2;">${pData.diag || pData.diagnostico || 'Sin diagnóstico registrado'}</div>
                     </div>
 
                     <!-- REPOSITORIO DE LINKS CLOUDINARY -->
@@ -1470,12 +1470,12 @@ function cargarExpedientePaciente() {
         });
     });
 
-    db.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
+    // 2. Consulta segura usando refAsignaciones en lugar de una ruta prohibida
+    refAsignaciones.child(pacKey).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
-        if (tsLabel && val) {
-            const asignacion = Object.values(val)[0];
-            tsLabel.textContent = asignacion.ts || 'Asignada';
+        if (tsLabel && val && val.ts) {
+            tsLabel.textContent = val.ts;
         } else if (tsLabel) {
             tsLabel.textContent = 'Sin T.S.';
         }
