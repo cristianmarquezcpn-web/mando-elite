@@ -1313,12 +1313,9 @@ function irAExpedientePaciente(paciente) {
         });
     }
 }
-
 // ============================================================
 // EXPEDIENTES & FICHERO DIGITAL (ADAPTADO Y SEGURO)
 // ============================================================
-
-let pacienteSeleccionado = null;
 
 function filtrarPacientes() {
     const input = document.getElementById('busc-paciente');
@@ -1333,7 +1330,7 @@ function filtrarPacientes() {
     }
 }
 
-// Función auxiliar para extraer links de Cloudinary/Drive de la ficha del paciente
+// 2. Extraer todos los links automáticamente de la ficha
 function extraerTodosLosLinks(pacienteObj) {
     let linksEncontrados = [];
     function buscar(obj, rutaPadre = '') {
@@ -1377,12 +1374,13 @@ function formatearNombreCampo(key) {
     return `${emoji} ${textoLegible}`;
 }
 
-// 📌 TU FUNCIÓN ORIGINAL RESPETADA Y ENRIQUECIDA CON EL FICHERO VISUAL
+// 3. Cargar expediente respetando tu variable global existente
 function cargarExpedientePaciente() {
     const sel = document.getElementById('sel-paciente');
     const chatContainer = document.getElementById('chat-dominguito');
     if (!sel || !chatContainer) return;
 
+    // Usamos tu variable original sin declarar 'let' ni 'const' de nuevo
     pacienteSeleccionado = sel.value;
     
     if (!pacienteSeleccionado) {
@@ -1392,19 +1390,15 @@ function cargarExpedientePaciente() {
     
     const pacKey = sanitizarKey(pacienteSeleccionado);
     
-    // Consultamos los datos generales del paciente en Firebase para armar el fichero superior
     database.ref('pacientes').child(pacKey).once('value', snapPac => {
         const pData = snapPac.val() || {};
         
         refExpedientes.child(pacKey).off();
         refExpedientes.child(pacKey).on('value', snap => {
             const rawData = snap.val() || {};
-            
-            // Compatibilidad total: maneja tanto si guardas mensajes directos como si están dentro de .novedades
             const msgs = rawData.novedades || (typeof rawData === 'object' ? rawData : {});
             const todosLosLinks = extraerTodosLosLinks(pData);
 
-            // Renderizamos la Ficha Visual + El Historial de Mensajes Abajo
             chatContainer.innerHTML = `
                 <!-- FICHERO DIGITAL VISUAL SUPERIOR -->
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11px; color: #1e293b;">
@@ -1444,7 +1438,6 @@ function cargarExpedientePaciente() {
                 <div style="font-size: 10px; font-weight: bold; color: #64748b; margin: 10px 0 5px 2px; text-transform: uppercase;">💬 Historial de Novedades y Evolución</div>
             `;
 
-            // Inyectar los botones de Cloudinary dinámicamente
             const contenedorLinksHTML = document.getElementById('contenedor-links-fichero');
             if (todosLosLinks.length > 0 && contenedorLinksHTML) {
                 todosLosLinks.forEach(item => {
@@ -1457,7 +1450,6 @@ function cargarExpedientePaciente() {
                 });
             }
 
-            // Renderizar los mensajes del expediente cronológicamente
             const mensajesArray = Object.values(msgs).filter(m => typeof m === 'object' && (m.msg || m.texto)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
             
             mensajesArray.forEach(m => {
@@ -1480,7 +1472,6 @@ function cargarExpedientePaciente() {
         });
     });
 
-    // Cargar T.S. asignada en la ficha superior
     database.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
         const val = snap.val();
         const tsLabel = document.getElementById('ts-asignada-ficha');
@@ -1493,7 +1484,7 @@ function cargarExpedientePaciente() {
     });
 }
 
-// 📌 TU FUNCIÓN ORIGINAL DE ENVÍO + NOTIFICACIÓN AUTOMÁTICA EN SEGUNDO PLANO
+// 4. Enviar reporte y notificar al profesional en segundo plano
 function enviarReporteDominguito() {
     const input = document.getElementById('in-dominguito');
     if (!pacienteSeleccionado) return alert("Seleccioná un paciente");
@@ -1503,7 +1494,6 @@ function enviarReporteDominguito() {
     const textoNovedad = input.value.trim();
     const timestamp = Date.now();
 
-    // 1. Guardar la novedad en el expediente (mantiene tu estructura exacta)
     refExpedientes.child(pacKey).push({ 
         autor: usuarioActivo, 
         rol: rangoActivo, 
@@ -1511,7 +1501,6 @@ function enviarReporteDominguito() {
         ts: timestamp 
     });
 
-    // 2. Disparar notificación automática al profesional asignado en segundo plano
     database.ref('asignaciones_ts').orderByChild('paciente').equalTo(pacienteSeleccionado).once('value', snap => {
         const val = snap.val();
         if (val) {
@@ -1532,7 +1521,9 @@ function enviarReporteDominguito() {
     });
 
     input.value = '';
-    mostrarToast("✅ Novedad registrada en el expediente y notificada");
+    if (typeof mostrarToast === 'function') {
+        mostrarToast("✅ Novedad registrada y notificada");
+    }
 }
 // ============================================================
 // PIZARRA DE ÓRDENES
